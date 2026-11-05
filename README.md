@@ -9,5 +9,5 @@ Restaurant Order Management System Project
 
 - [Use Case Diagram](https://drive.google.com/file/d/1xEsPVNDFSx9nrrUEiUo_d0SA5rIboU4T/view?usp=sharing)
 - [Data Flow Diagram](DAN_LINK_GOOGLE_DRIVE)
-- [Class Diagram](DAN_LINK_GOOGLE_DRIVE)
+- [Class Diagram](https://drive.google.com/file/d/1RjFUXmWJW-UTqoGynt741rLAZbVXKEbm/view?usp=sharing)
 - [Entity Relationship Diagram](DAN_LINK_GOOGLE_DRIVE)
