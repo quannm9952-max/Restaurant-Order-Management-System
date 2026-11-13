@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Management | RMS</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">
+    <b>RMS</b><span>RESTAURANT</span>
+  </div>
+  <div class="side-label">WORKSPACE</div>
+  <a class="nav" href="/dashboard">▦ <span>Tổng quan</span></a>
+  <a class="nav active" href="/payments" th:if="${user.role=='Cashier' or user.role=='Manager'}">＄ <span>Quản lý thanh toán</span></a>
+  <a class="nav" href="/history" th:if="${user.role=='Cashier' or user.role=='Manager'}">◷ <span>Lịch sử giao dịch</span></a>
+  <a class="nav" href="/menu" th:if="${user.role=='Manager'}">◈ <span>Thực đơn</span></a>
+  <a class="nav" href="/dashboard#tables">▤ <span>Bàn ăn</span></a>
+  <a class="nav" href="/dashboard#orders">☷ <span>Đơn hàng</span></a>
+  <a class="nav" href="/reports" th:if="${user.role=='Manager'}">▥ <span>Báo cáo</span></a>
+
+  <div class="side-bottom">
+    <div class="avatar" th:text="${#strings.substring(user.name,0,1)}">C</div>
+    <div>
+      <b th:text="${user.name}">Cashier</b>
+      <small th:text="${user.role}">Cashier</small>
+    </div>
+    <form method="post" action="/logout">
+      <button class="logout" title="Đăng xuất">↪</button>
+    </form>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">WORKSPACE / UC08 – PAYMENT & INVOICE MANAGEMENT</p>
+      <h1>Quản lý thanh toán & Hóa đơn</h1>
+      <p class="muted">Xử lý thanh toán cho các đơn hàng đã phục vụ xong, ghi nhận giao dịch và xuất hóa đơn.</p>
+    </div>
+    <div class="top-right">
+      <span class="live-dot"></span>
+      <span>Hệ thống thanh toán trực tuyến</span>
+      <span class="role-chip" th:text="${user.role}">Cashier</span>
+    </div>
+  </header>
+
+  <!-- ALERTS -->
+  <div th:if="${success}" class="alert success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+  <!-- DASHBOARD STATISTICS (FIGMA PAYMENT STATS) -->
+  <section class="stats">
+    <div class="stat">
+      <span class="stat-icon orange">☷</span>
+      <small>Đơn chờ thanh toán</small>
+      <strong th:text="${stats.pendingPayments}">0</strong>
+      <em>Đang mở (Open)</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon green">✓</span>
+      <small>Đã thanh toán hôm nay</small>
+      <strong th:text="${stats.completedPayments}">0</strong>
+      <em>Giao dịch thành công</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon purple">＄</span>
+      <small>Doanh thu hôm nay</small>
+      <strong th:text="${#numbers.formatDecimal(stats.todayRevenue,0,'COMMA',0,'POINT')} + ' đ'">0 đ</strong>
+      <em>Chỉ tính Successful</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">▥</span>
+      <small>Tổng số giao dịch</small>
+      <strong th:text="${stats.totalTransactions}">0</strong>
+      <em>Tất cả thanh toán</em>
+    </div>
+  </section>
+
+  <!-- SEARCH BAR -->
+  <section class="panel filter-panel">
+    <form method="get" action="/payments" class="filter-bar">
+      <div class="search-input-wrap" style="flex:1;">
+        <span class="search-icon">🔍</span>
+        <input type="text" name="search" th:value="${currentSearch}" placeholder="Tìm theo Mã đơn (#ID) hoặc Mã bàn (T01, T02...)..." class="search-input">
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="tiny primary">Tìm kiếm đơn</button>
+        <a href="/payments" class="tiny" style="text-decoration:none; display:inline-flex; align-items:center;">↺ Đặt lại</a>
+      </div>
+    </form>
+  </section>
+
+  <!-- PENDING ORDERS TABLE -->
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Đơn hàng cần thanh toán</h2>
+        <p class="muted">Chỉ đơn hàng có tất cả món ăn đã được phục vụ (Served) mới đủ điều kiện hoàn tất thanh toán.</p>
+      </div>
+      <div>
+        <span class="badge-count" th:text="'Đang chờ: ' + ${#lists.size(pendingOrders)} + ' đơn'"></span>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(pendingOrders)}" class="empty-state">
+      <div class="empty-icon">✓</div>
+      <h3>Không có đơn hàng nào cần thanh toán</h3>
+      <p class="muted">Tất cả các bàn đã được thanh toán hoặc chưa có đơn hàng mới nào được tạo.</p>
+    </div>
+
+    <!-- Table -->
+    <div class="scroll" th:if="${!#lists.isEmpty(pendingOrders)}">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Mã đơn</th>
+            <th>Bàn</th>
+            <th>Thời gian tạo</th>
+            <th>Phục vụ (Waiter)</th>
+            <th>Số lượng món</th>
+            <th>Tổng tiền (VNĐ)</th>
+            <th>Điều kiện thanh toán</th>
+            <th style="text-align:center;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="o:${pendingOrders}">
+            <td style="font-weight:700; color:#697168;" th:text="'#'+${o.id}">#1</td>
+            <td>
+              <b style="font-size:15px; color:var(--green);" th:text="${o.table_code}">T01</b>
+            </td>
+            <td>
+              <span th:text="${#strings.substring(o.created_at,11,16)}">12:30</span>
+              <small class="muted" style="display:block;" th:text="${#strings.substring(o.created_at,0,10)}">2026-11-13</small>
+            </td>
+            <td th:text="${o.waiter_name}">Waiter Demo</td>
+            <td>
+              <span th:text="${o.total_items} + ' món'"></span>
+              <small class="muted" style="display:block;" th:text="'Đã phục vụ: ' + ${o.served_items} + '/' + ${o.total_items}"></small>
+            </td>
+            <td>
+              <b class="price-tag" th:text="${#numbers.formatDecimal(o.total_amount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</b>
+            </td>
+            <td>
+              <!-- Check Served -->
+              <span th:if="${o.readyToPay}" class="status available">
+                ✓ Đủ điều kiện thanh toán
+              </span>
+              <span th:if="${!o.readyToPay}" class="status occupied" th:title="'Còn ' + ${o.unserved_items} + ' món chưa phục vụ'">
+                ⏳ Chưa đủ: còn <b th:text="${o.unserved_items}"></b> món chưa Served
+              </span>
+            </td>
+            <td style="text-align:center;">
+              <div class="action-buttons">
+                <!-- Nút Xem chi tiết -->
+                <button type="button" class="btn-action view"
+                        th:attr="data-order-id=${o.id}"
+                        onclick="viewOrderDetail(this.getAttribute('data-order-id'))">
+                  👁️ Chi tiết
+                </button>
+
+                <!-- Nút Thanh toán -->
+                <button type="button" class="btn-action"
+                        th:classappend="${o.readyToPay ? ' primary' : ' disabled-pay'}"
+                        th:attr="data-order-id=${o.id}, data-ready=${o.readyToPay}"
+                        onclick="openPaymentProcess(this)">
+                  💳 Thanh toán
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RECENT TRANSACTIONS -->
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Giao dịch thanh toán gần đây</h2>
+        <p class="muted">Nhật ký các giao dịch thanh toán thành công và hóa đơn đã xuất.</p>
+      </div>
+      <div>
+        <a href="/history" class="tiny" style="text-decoration:none;">Xem toàn bộ lịch sử →</a>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Mã giao dịch</th>
+            <th>Mã đơn</th>
+            <th>Bàn</th>
+            <th>Số tiền</th>
+            <th>Phương thức</th>
+            <th>Thời gian thanh toán</th>
+            <th>Trạng thái</th>
+            <th style="text-align:center;">Hóa đơn</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="p, iterStat:${recentPayments}" th:if="${iterStat.index < 8}">
+            <td style="font-weight:700;" th:text="'GD-'+${p.id}">GD-1</td>
+            <td th:text="'#'+${p.order_id}">#1</td>
+            <td th:text="${p.table_code}">T01</td>
+            <td>
+              <b class="price-tag" th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</b>
+            </td>
+            <td>
+              <span class="category-chip" th:text="${p.payment_method != null ? p.payment_method : 'Cash'}">Cash</span>
+            </td>
+            <td th:text="${p.paid_at}">2026-11-13 12:45:00</td>
+            <td>
+              <span class="status" th:classappend="${p.status=='Successful'?' available':' off'}" th:text="${p.status}">Successful</span>
+            </td>
+            <td style="text-align:center;">
+              <a th:if="${p.status=='Successful'}" th:href="@{'/invoices/' + ${p.order_id}}" class="btn-action view" style="text-decoration:none; display:inline-block;">
+                📄 Xem & In hóa đơn
+              </a>
+              <span th:if="${p.status!='Successful'}" class="muted">—</span>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(recentPayments)}">
+            <td colspan="8" style="text-align:center; padding:20px;" class="muted">Chưa có giao dịch thanh toán nào được ghi nhận.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Restaurant Order Management System · UC08 Manage Payments and Invoices Module</footer>
+</main>
+
+<!-- ================= MODALS ================= -->
+
+<!-- 1. MODAL XEM CHI TIẾT ĐƠN HÀNG TRƯỚC THANH TOÁN -->
+<div id="orderDetailModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card detail-card">
+    <div class="modal-head">
+      <h3 id="detailModalTitle">Chi tiết đơn hàng #...</h3>
+      <button type="button" class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="order-summary-box">
+        <div><b>Bàn:</b> <span id="detailTable">T01</span></div>
+        <div><b>Phục vụ:</b> <span id="detailWaiter">Waiter Demo</span></div>
+        <div><b>Thời gian:</b> <span id="detailCreatedAt">...</span></div>
+        <div><b>Trạng thái:</b> <span id="detailStatus" class="status">Open</span></div>
+      </div>
+
+      <h4 style="margin:16px 0 8px;">Danh sách món trong đơn:</h4>
+      <div class="scroll">
+        <table class="data-table" style="font-size:13px;">
+          <thead>
+            <tr>
+              <th>Tên món ăn</th>
+              <th style="text-align:center;">Số lượng</th>
+              <th style="text-align:right;">Đơn giá</th>
+              <th style="text-align:right;">Thành tiền</th>
+              <th style="text-align:center;">Trạng thái phục vụ</th>
+            </tr>
+          </thead>
+          <tbody id="detailItemsTableBody">
+            <!-- Render dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="total-summary-card">
+        <div class="total-row">
+          <span>Tạm tính các món:</span>
+          <span id="detailSubtotal" style="font-weight:700;">0 đ</span>
+        </div>
+        <div class="total-row main-total">
+          <span>TỔNG TIỀN PHẢI THU:</span>
+          <span id="detailTotal" class="big-price">0 đ</span>
+        </div>
+      </div>
+
+      <div id="detailAlertCondition" class="alert-box" style="margin-top:12px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="tiny" onclick="closeDetailModal()">Đóng</button>
+      <button type="button" id="detailProceedPayBtn" class="primary" onclick="proceedToPaymentFromDetail()">Chuyển sang thanh toán →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. MODAL XÁC NHẬN THANH TOÁN (PAYMENT PROCESS MODAL) -->
+<div id="payModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card pay-card">
+    <div class="modal-head">
+      <h3 id="payModalTitle">Xác nhận thanh toán đơn #...</h3>
+      <button type="button" class="modal-close" onclick="closePayModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="pay-bill-summary">
+        <div class="pay-header-info">
+          <div>
+            <span class="muted">Mã đơn:</span> <b id="payOrderIdText">#1</b> &nbsp;|&nbsp;
+            <span class="muted">Bàn:</span> <b id="payTableText">T01</b>
+          </div>
+          <div>
+            <span class="status available">✓ Sẵn sàng thanh toán</span>
+          </div>
+        </div>
+
+        <div class="pay-amount-highlight">
+          <span class="pay-amount-label">TỔNG SỐ TIỀN CẦN THU</span>
+          <h1 id="payTotalAmountText" class="pay-amount-val">0 đ</h1>
+          <small class="muted">Tính từ đơn giá lịch sử của từng món trong order_details</small>
+        </div>
+      </div>
+
+      <form method="post" id="confirmPaymentForm" onsubmit="return handlePaymentSubmit(this)">
+        <div class="form-group" style="margin-top:15px;">
+          <label style="font-weight:700; margin-bottom:8px; display:block;">Chọn phương thức thanh toán <span class="req">*</span></label>
+          <div class="payment-methods-grid">
+            <label class="pay-method-card selected">
+              <input type="radio" name="paymentMethod" value="Cash" checked onchange="selectPaymentMethod(this)">
+              <div class="method-icon">💵</div>
+              <div class="method-details">
+                <b>Tiền mặt (Cash)</b>
+                <small>Khách thanh toán trực tiếp tại quầy</small>
+              </div>
+            </label>
+
+            <label class="pay-method-card">
+              <input type="radio" name="paymentMethod" value="Bank Transfer" onchange="selectPaymentMethod(this)">
+              <div class="method-icon">💳</div>
+              <div class="method-details">
+                <b>Chuyển khoản (Bank Transfer)</b>
+                <small>Quét mã QR / Chuyển khoản ngân hàng</small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="rule-verification-box">
+          <div class="rule-item">✓ Đơn hàng đang ở trạng thái <b>Open</b></div>
+          <div class="rule-item">✓ Tất cả món ăn đã được xác nhận <b>Served</b></div>
+          <div class="rule-item">✓ Chưa có giao dịch Successful nào trước đó</div>
+          <div class="rule-item">🔒 Giao dịch được bảo vệ bằng <b>Database Transaction & SELECT FOR UPDATE</b></div>
+        </div>
+
+        <div class="modal-foot" style="padding-top:15px;">
+          <button type="button" class="tiny" onclick="closePayModal()">Hủy bỏ</button>
+          <button type="submit" id="btnSubmitPayment" class="primary full-pay-btn">
+            ✓ Xác nhận đã thu đủ tiền & In hóa đơn
+          </button>
+        </div>
+      </form>
+
+      <!-- Phụ: Nút ghi nhận thất bại nếu khách hủy giao dịch -->
+      <form method="post" id="failPaymentForm" style="margin-top:10px; text-align:center;">
+        <button type="submit" class="link-btn danger-link" onclick="return confirm('Bạn có chắc chắn muốn ghi nhận giao dịch thanh toán thất bại? Đơn hàng vẫn sẽ giữ trạng thái Open.')">
+          ⚠ Ghi nhận thanh toán thất bại (Failed)
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- JAVASCRIPT XỬ LÝ THANH TOÁN & MODALS -->
+<script>
+  let currentActiveOrderId = null;
+  let currentOrderData = null;
+
+  // Lấy chi tiết đơn hàng bằng API JSON
+  async function fetchOrderDetails(orderId) {
+    try {
+      const res = await fetch('/payments/orders/' + orderId + '/json');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Lỗi tải đơn hàng');
+      }
+      return await res.json();
+    } catch (e) {
+      alert('Không thể lấy thông tin đơn #' + orderId + ': ' + e.message);
+      return null;
+    }
+  }
+
+  // Mở modal xem chi tiết đơn hàng
+  async function viewOrderDetail(orderId) {
+    const data = await fetchOrderDetails(orderId);
+    if (!data) return;
+
+    currentActiveOrderId = orderId;
+    currentOrderData = data;
+
+    document.getElementById('detailModalTitle').textContent = 'Chi tiết đơn hàng #' + orderId + ' · Bàn ' + data.table_code;
+    document.getElementById('detailTable').textContent = data.table_code;
+    document.getElementById('detailWaiter').textContent = data.waiter_name;
+    document.getElementById('detailCreatedAt').textContent = data.created_at;
+
+    const tbody = document.getElementById('detailItemsTableBody');
+    tbody.innerHTML = '';
+
+    data.items.forEach(item => {
+      const tr = document.createElement('tr');
+      const isCancelled = item.status === 'Cancelled';
+      const isServed = item.status === 'Served';
+
+      let statusBadge = '';
+      if (isServed) {
+        statusBadge = '<span class="status available">✓ Đã phục vụ (Served)</span>';
+      } else if (isCancelled) {
+        statusBadge = '<span class="status off">✕ Đã hủy (Cancelled)</span>';
+      } else {
+        statusBadge = '<span class="status occupied">⏳ ' + item.status + '</span>';
+      }
+
+      tr.innerHTML = `
+        <td><b>${item.item_name}</b></td>
+        <td style="text-align:center;">${item.quantity}</td>
+        <td style="text-align:right;">${parseFloat(item.unit_price).toLocaleString('vi-VN')} đ</td>
+        <td style="text-align:right; font-weight:700;">${parseFloat(item.line_total).toLocaleString('vi-VN')} đ</td>
+        <td style="text-align:center;">${statusBadge}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const totalVND = parseFloat(data.totalAmount).toLocaleString('vi-VN') + ' đ';
+    document.getElementById('detailSubtotal').textContent = totalVND;
+    document.getElementById('detailTotal').textContent = totalVND;
+
+    const alertBox = document.getElementById('detailAlertCondition');
+    const proceedBtn = document.getElementById('detailProceedPayBtn');
+
+    if (data.readyToPay) {
+      alertBox.className = 'alert-box success-box';
+      alertBox.innerHTML = '✓ Tất cả các món ăn đã được phục vụ (Served). Đơn hàng đã sẵn sàng thanh toán!';
+      proceedBtn.disabled = false;
+      proceedBtn.style.opacity = '1';
+      proceedBtn.style.cursor = 'pointer';
+    } else {
+      alertBox.className = 'alert-box warning-box';
+      alertBox.innerHTML = `⚠️ <b>Chưa đủ điều kiện thanh toán:</b> Vẫn còn ${data.unservedCount} món chưa được phục vụ (Served). Vui lòng đợi nhân viên phục vụ xác nhận Served trước khi thanh toán.`;
+      proceedBtn.disabled = true;
+      proceedBtn.style.opacity = '0.5';
+      proceedBtn.style.cursor = 'not-allowed';
+    }
+
+    document.getElementById('orderDetailModal').style.display = 'flex';
+  }
+
+  function closeDetailModal() {
+    document.getElementById('orderDetailModal').style.display = 'none';
+  }
+
+  function proceedToPaymentFromDetail() {
+    if (!currentOrderData || !currentOrderData.readyToPay) {
+      alert('Đơn hàng chưa đủ điều kiện thanh toán (còn món chưa Served).');
+      return;
+    }
+    closeDetailModal();
+    openPaymentModal(currentOrderData);
+  }
+
+  // Mở thanh toán từ nút trên bảng
+  async function openPaymentProcess(btn) {
+    const orderId = btn.getAttribute('data-order-id');
+    const isReady = btn.getAttribute('data-ready') === 'true';
+
+    const data = await fetchOrderDetails(orderId);
+    if (!data) return;
+
+    if (!data.readyToPay) {
+      alert(`⚠️ Không thể thanh toán đơn #${orderId}: Vẫn còn ${data.unservedCount} món chưa được phục vụ (Served)! Vui lòng xem chi tiết đơn.`);
+      viewOrderDetail(orderId);
+      return;
+    }
+
+    openPaymentModal(data);
+  }
+
+  function openPaymentModal(data) {
+    currentActiveOrderId = data.id;
+    currentOrderData = data;
+
+    document.getElementById('payModalTitle').textContent = 'Xử lý thanh toán Đơn #' + data.id + ' · Bàn ' + data.table_code;
+    document.getElementById('payOrderIdText').textContent = '#' + data.id;
+    document.getElementById('payTableText').textContent = data.table_code;
+    document.getElementById('payTotalAmountText').textContent = parseFloat(data.totalAmount).toLocaleString('vi-VN') + ' đ';
+
+    const confirmForm = document.getElementById('confirmPaymentForm');
+    confirmForm.action = '/payments/' + data.id + '/confirm';
+
+    const failForm = document.getElementById('failPaymentForm');
+    failForm.action = '/payments/' + data.id + '/fail';
+
+    document.getElementById('payModal').style.display = 'flex';
+  }
+
+  function closePayModal() {
+    document.getElementById('payModal').style.display = 'none';
+  }
+
+  function selectPaymentMethod(radio) {
+    document.querySelectorAll('.pay-method-card').forEach(card => card.classList.remove('selected'));
+    radio.closest('.pay-method-card').classList.add('selected');
+  }
+
+  // Chống nhấn đúp (Duplicate Submission Prevention)
+  function handlePaymentSubmit(form) {
+    const btn = document.getElementById('btnSubmitPayment');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Đang xử lý giao dịch trong Transaction...';
+    btn.style.opacity = '0.7';
+    return true;
+  }
+
+  // Đóng modal khi bấm ra ngoài
+  window.onclick = function(event) {
+    if (event.target.classList.contains('modal-backdrop')) {
+      event.target.style.display = 'none';
+    }
+  };
+</script>
+
+</body>
+</html>

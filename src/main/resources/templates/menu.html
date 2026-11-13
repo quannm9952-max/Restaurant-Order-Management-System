@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Menu Management | RMS</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">
+    <b>RMS</b><span>RESTAURANT</span>
+  </div>
+  <div class="side-label">WORKSPACE</div>
+  <a class="nav" href="/dashboard">▦ <span>Tổng quan</span></a>
+  <a class="nav active" href="/menu" th:if="${user.role=='Manager'}">◈ <span>Quản lý thực đơn</span></a>
+  <a class="nav" href="/payments" th:if="${user.role=='Cashier' or user.role=='Manager'}">＄ <span>Thanh toán</span></a>
+  <a class="nav" href="/dashboard#tables">▤ <span>Bàn ăn</span></a>
+  <a class="nav" href="/dashboard#orders">☷ <span>Đơn hàng</span></a>
+  <a class="nav" href="/dashboard#employees" th:if="${user.role=='Manager'}">♙ <span>Nhân viên</span></a>
+  <a class="nav" href="/reports" th:if="${user.role=='Manager'}">▥ <span>Báo cáo</span></a>
+  <a class="nav" href="/history" th:if="${user.role=='Manager' or user.role=='Cashier'}">◷ <span>Lịch sử giao dịch</span></a>
+
+  <div class="side-bottom">
+    <div class="avatar" th:text="${#strings.substring(user.name,0,1)}">M</div>
+    <div>
+      <b th:text="${user.name}">Manager</b>
+      <small th:text="${user.role}">Manager</small>
+    </div>
+    <form method="post" action="/logout">
+      <button class="logout" title="Đăng xuất">↪</button>
+    </form>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">WORKSPACE / UC09 – MENU MANAGEMENT</p>
+      <h1>Quản lý thực đơn nhà hàng</h1>
+      <p class="muted">Quản lý toàn bộ danh sách món ăn, phân loại, giá bán và trạng thái kinh doanh.</p>
+    </div>
+    <div class="top-right">
+      <button class="primary" onclick="openAddModal()">+ Thêm món mới</button>
+      <span class="live-dot"></span>
+      <span class="role-chip" th:text="${user.role}">Manager</span>
+    </div>
+  </header>
+
+  <!-- ALERTS -->
+  <div th:if="${success}" class="alert success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+  <!-- DASHBOARD STATISTICS (FIGMA STATS) -->
+  <section class="stats">
+    <div class="stat">
+      <span class="stat-icon green">◈</span>
+      <small>Tổng số món ăn</small>
+      <strong th:text="${stats.totalItems}">0</strong>
+      <em>Trong thực đơn</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">✓</span>
+      <small>Món đang bán</small>
+      <strong th:text="${stats.availableItems}">0</strong>
+      <em>Sẵn sàng phục vụ</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon orange">✕</span>
+      <small>Món ngừng bán</small>
+      <strong th:text="${stats.unavailableItems}">0</strong>
+      <em>Tạm ngưng kinh doanh</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon purple">▥</span>
+      <small>Tổng danh mục</small>
+      <strong th:text="${stats.totalCategories}">0</strong>
+      <em>Phân loại món</em>
+    </div>
+  </section>
+
+  <!-- SEARCH & FILTER BAR -->
+  <section class="panel filter-panel">
+    <form method="get" action="/menu" class="filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" name="search" th:value="${currentSearch}" placeholder="Tìm theo tên món ăn..." class="search-input">
+      </div>
+
+      <div class="filter-group">
+        <label>Danh mục:</label>
+        <select name="category" onchange="this.form.submit()">
+          <option value="All" th:selected="${currentCategory=='All'}">Tất cả danh mục</option>
+          <option th:each="c:${categories}" th:value="${c}" th:text="${c}" th:selected="${currentCategory==c}"></option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Trạng thái:</label>
+        <select name="availability" onchange="this.form.submit()">
+          <option value="all" th:selected="${currentAvailability=='all'}">Tất cả trạng thái</option>
+          <option value="available" th:selected="${currentAvailability=='available'}">Đang bán (Available)</option>
+          <option value="unavailable" th:selected="${currentAvailability=='unavailable'}">Ngừng bán (Unavailable)</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Sắp xếp:</label>
+        <select name="sortBy" onchange="this.form.submit()">
+          <option value="default" th:selected="${currentSort=='default'}">Mới nhất trước</option>
+          <option value="name_asc" th:selected="${currentSort=='name_asc'}">Tên món: A → Z</option>
+          <option value="name_desc" th:selected="${currentSort=='name_desc'}">Tên món: Z → A</option>
+          <option value="price_asc" th:selected="${currentSort=='price_asc'}">Giá: Thấp → Cao</option>
+          <option value="price_desc" th:selected="${currentSort=='price_desc'}">Giá: Cao → Thấp</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="tiny primary">Tìm kiếm</button>
+        <a href="/menu" class="tiny" style="text-decoration:none; display:inline-flex; align-items:center;">↺ Đặt lại</a>
+      </div>
+    </form>
+  </section>
+
+  <!-- MENU TABLE -->
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Danh sách thực đơn</h2>
+        <p class="muted">Hiển thị dữ liệu trực tiếp từ MySQL. Bấm vào món để xem chi tiết hoặc chỉnh sửa.</p>
+      </div>
+      <div>
+        <span class="badge-count" th:text="'Tổng cộng: ' + ${#lists.size(items)} + ' món'"></span>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(items)}" class="empty-state">
+      <div class="empty-icon">🍽️</div>
+      <h3>Không tìm thấy món ăn nào</h3>
+      <p class="muted">Không có món ăn nào phù hợp với điều kiện tìm kiếm hoặc lọc hiện tại.</p>
+      <a href="/menu" class="tiny primary" style="margin-top:10px; display:inline-block;">Xóa bộ lọc</a>
+    </div>
+
+    <!-- Table -->
+    <div class="scroll" th:if="${!#lists.isEmpty(items)}">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:50px;">Mã</th>
+            <th style="width:70px;">Hình ảnh</th>
+            <th>Tên món ăn</th>
+            <th>Danh mục</th>
+            <th>Mô tả</th>
+            <th>Giá bán (VNĐ)</th>
+            <th>Trạng thái</th>
+            <th style="text-align:center;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="m:${items}">
+            <td style="font-weight:700; color:#697168;" th:text="'#'+${m.id}">#1</td>
+            <td>
+              <img th:src="${m.image_url != null and !#strings.isEmpty(m.image_url) ? m.image_url : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80'}"
+                   alt="Dish Image" class="dish-thumb" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80'">
+            </td>
+            <td>
+              <b style="font-size:14px; color:var(--ink);" th:text="${m.name}">Phở bò đặc biệt</b>
+              <small class="muted" style="display:block;" th:if="${m.created_at!=null}" th:text="'Tạo: '+${#strings.substring(m.created_at,0,10)}"></small>
+            </td>
+            <td>
+              <span class="category-chip" th:text="${m.category}">Main Course</span>
+            </td>
+            <td style="max-width:280px; white-space:normal; font-size:12px; color:#596257;" th:text="${m.description != null and !#strings.isEmpty(m.description) ? m.description : '—'}">Mô tả món ăn</td>
+            <td>
+              <b class="price-tag" th:text="${#numbers.formatDecimal(m.price,0,'COMMA',0,'POINT')} + ' đ'">65.000 đ</b>
+            </td>
+            <td>
+              <span class="status" th:classappend="${m.available ? ' available' : ' off'}"
+                    th:text="${m.available ? '● Đang bán' : '○ Ngừng bán'}">● Đang bán</span>
+            </td>
+            <td style="text-align:center;">
+              <div class="action-buttons">
+                <!-- Nút Xem chi tiết -->
+                <button type="button" class="btn-action view"
+                        th:attr="data-id=${m.id}, data-name=${m.name}, data-category=${m.category}, data-price=${m.price}, data-desc=${m.description}, data-img=${m.image_url}, data-avail=${m.available}, data-created=${m.created_at}"
+                        onclick="openViewModal(this)" title="Xem chi tiết">
+                  👁️ Xem
+                </button>
+
+                <!-- Nút Sửa -->
+                <button type="button" class="btn-action edit"
+                        th:attr="data-id=${m.id}, data-name=${m.name}, data-category=${m.category}, data-price=${m.price}, data-desc=${m.description}, data-img=${m.image_url}, data-avail=${m.available}"
+                        onclick="openEditModal(this)" title="Chỉnh sửa món">
+                  ✎ Sửa
+                </button>
+
+                <!-- Nút Đổi trạng thái Ngừng bán / Mở bán lại -->
+                <button type="button" class="btn-action toggle"
+                        th:classappend="${m.available ? ' danger-btn' : ' success-btn'}"
+                        th:attr="data-id=${m.id}, data-name=${m.name}, data-avail=${m.available}"
+                        onclick="confirmToggleStatus(this)"
+                        th:text="${m.available ? '✕ Ngừng bán' : '✓ Mở bán'}">
+                  ✕ Ngừng bán
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Restaurant Order Management System · UC09 Manage Menu Module</footer>
+</main>
+
+<!-- ================= MODALS ================= -->
+
+<!-- 1. MODAL THÊM MÓN MỚI -->
+<div id="addModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>+ Thêm món ăn mới vào thực đơn</h3>
+      <button type="button" class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <form method="post" action="/menu" id="addMenuForm" onsubmit="return validateMenuForm('add')">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tên món ăn <span class="req">*</span></label>
+          <input type="text" name="name" id="addName" placeholder="Ví dụ: Bò lúc lắc sốt tiêu" maxlength="150" required>
+          <small class="form-hint">Tên món phải là duy nhất và không quá 150 ký tự.</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Danh mục món <span class="req">*</span></label>
+            <select name="category" id="addCategorySelect" onchange="toggleCustomCategory('add')">
+              <option value="Main Course">Main Course (Món chính)</option>
+              <option value="Appetizer">Appetizer (Khai vị)</option>
+              <option value="Drink">Drink (Đồ uống)</option>
+              <option value="Dessert">Dessert (Tráng miệng)</option>
+              <option value="Side Dish">Side Dish (Món phụ)</option>
+              <option value="__new__">+ Thêm danh mục mới...</option>
+            </select>
+          </div>
+          <div class="form-group" id="addCustomCategoryWrap" style="display:none;">
+            <label>Nhập tên danh mục mới <span class="req">*</span></label>
+            <input type="text" name="customCategory" id="addCustomCategory" placeholder="Ví dụ: Lẩu & Nướng" maxlength="80">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Giá bán (VNĐ) <span class="req">*</span></label>
+          <input type="number" name="price" id="addPrice" min="1000" step="1000" placeholder="Ví dụ: 65000" required>
+          <small class="form-hint">Giá bán phải lớn hơn 0 VNĐ.</small>
+        </div>
+
+        <div class="form-group">
+          <label>Đường dẫn hình ảnh (URL)</label>
+          <input type="url" name="imageUrl" id="addImageUrl" placeholder="https://example.com/dish.jpg" oninput="previewImage('add')">
+          <div class="image-preview-wrap">
+            <img id="addImagePreview" src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80" alt="Preview">
+            <small class="muted">Xem trước ảnh món ăn</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Mô tả món ăn</label>
+          <textarea name="description" id="addDescription" rows="3" placeholder="Mô tả nguyên liệu, hương vị đặc trưng của món ăn..."></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="tiny" onclick="closeAddModal()">Hủy bỏ</button>
+        <button type="submit" class="primary">+ Lưu món ăn</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 2. MODAL CHỈNH SỬA MÓN ĂN -->
+<div id="editModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>✎ Chỉnh sửa thông tin món ăn</h3>
+      <button type="button" class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <form method="post" id="editMenuForm" onsubmit="return validateMenuForm('edit')">
+      <div class="modal-body">
+        <input type="hidden" name="id" id="editId">
+
+        <div class="form-group">
+          <label>Tên món ăn <span class="req">*</span></label>
+          <input type="text" name="name" id="editName" maxlength="150" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Danh mục <span class="req">*</span></label>
+            <select name="category" id="editCategorySelect" onchange="toggleCustomCategory('edit')">
+              <option value="Main Course">Main Course (Món chính)</option>
+              <option value="Appetizer">Appetizer (Khai vị)</option>
+              <option value="Drink">Drink (Đồ uống)</option>
+              <option value="Dessert">Dessert (Tráng miệng)</option>
+              <option value="Side Dish">Side Dish (Món phụ)</option>
+              <option value="__new__">+ Thêm danh mục mới...</option>
+            </select>
+          </div>
+          <div class="form-group" id="editCustomCategoryWrap" style="display:none;">
+            <label>Tên danh mục mới <span class="req">*</span></label>
+            <input type="text" name="customCategory" id="editCustomCategory" maxlength="80">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Giá bán (VNĐ) <span class="req">*</span></label>
+          <input type="number" name="price" id="editPrice" min="1000" step="1000" required>
+        </div>
+
+        <div class="form-group">
+          <label>Đường dẫn hình ảnh (URL)</label>
+          <input type="url" name="imageUrl" id="editImageUrl" oninput="previewImage('edit')">
+          <div class="image-preview-wrap">
+            <img id="editImagePreview" src="" alt="Preview">
+            <small class="muted">Xem trước ảnh cập nhật</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Mô tả món ăn</label>
+          <textarea name="description" id="editDescription" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Trạng thái kinh doanh</label>
+          <div style="display:flex; gap:15px; margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="available" id="editAvailableTrue" value="true"> Đang bán (Available)
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="available" id="editAvailableFalse" value="false"> Ngừng bán (Unavailable)
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="tiny" onclick="closeEditModal()">Hủy bỏ</button>
+        <button type="submit" class="primary">Lưu thay đổi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. MODAL XEM CHI TIẾT MÓN ĂN -->
+<div id="viewModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card view-card">
+    <div class="modal-head">
+      <h3>Chi tiết món ăn</h3>
+      <button type="button" class="modal-close" onclick="closeViewModal()">✕</button>
+    </div>
+    <div class="modal-body view-body">
+      <div class="view-image-container">
+        <img id="viewImage" src="" alt="Dish Detail">
+        <span id="viewStatusBadge" class="status">Available</span>
+      </div>
+      <div class="view-info">
+        <div class="view-field">
+          <span class="view-label">Mã món ăn</span>
+          <span class="view-val" id="viewId">#1</span>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Tên món</span>
+          <h2 id="viewName" style="margin:2px 0 6px; font-size:20px; color:var(--ink);">Phở bò</h2>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Danh mục</span>
+          <span id="viewCategory" class="category-chip">Main Course</span>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Giá bán hiện tại</span>
+          <span id="viewPrice" class="price-val">65.000 VNĐ</span>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Mô tả món ăn</span>
+          <p id="viewDesc" class="view-desc-text">Mô tả chi tiết...</p>
+        </div>
+        <div class="view-field">
+          <span class="view-label">Ngày tạo trong hệ thống</span>
+          <span id="viewCreated" class="view-val muted">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="tiny primary" onclick="closeViewModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. MODAL XÁC NHẬN NGỪNG BÁN / MỞ BÁN (CONFIRM DIALOG) -->
+<div id="toggleModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card dialog-card">
+    <div class="modal-head">
+      <h3 id="toggleTitle">Xác nhận thay đổi trạng thái</h3>
+      <button type="button" class="modal-close" onclick="closeToggleModal()">✕</button>
+    </div>
+    <form method="post" id="toggleForm">
+      <div class="modal-body">
+        <p id="toggleMessage">Bạn có chắc chắn muốn ngừng kinh doanh món này?</p>
+        <div class="warning-box" id="toggleWarning">
+          ⚠️ <b>Lưu ý nghiệp vụ:</b> Món ăn sẽ chuyển sang trạng thái <i>Ngừng bán (Unavailable)</i>. Nhân viên phục vụ (Waiter) sẽ không thể thêm món này vào các đơn hàng mới. Mọi đơn hàng và hóa đơn đã lập trước đó vẫn được bảo toàn nguyên vẹn.
+        </div>
+        <input type="hidden" name="available" id="toggleAvailableInput">
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="tiny" onclick="closeToggleModal()">Hủy bỏ</button>
+        <button type="submit" id="toggleSubmitBtn" class="primary danger">Xác nhận ngừng bán</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JAVASCRIPT XỬ LÝ GIAO DIỆN & MODAL -->
+<script>
+  function openAddModal() {
+    document.getElementById('addModal').style.display = 'flex';
+    document.getElementById('addName').focus();
+  }
+  function closeAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+  }
+
+  function toggleCustomCategory(prefix) {
+    const sel = document.getElementById(prefix + 'CategorySelect');
+    const wrap = document.getElementById(prefix + 'CustomCategoryWrap');
+    const input = document.getElementById(prefix + 'CustomCategory');
+    if (sel.value === '__new__') {
+      wrap.style.display = 'block';
+      input.required = true;
+      input.focus();
+    } else {
+      wrap.style.display = 'none';
+      input.required = false;
+    }
+  }
+
+  function previewImage(prefix) {
+    const url = document.getElementById(prefix + 'ImageUrl').value;
+    const img = document.getElementById(prefix + 'ImagePreview');
+    if (url && url.trim() !== '') {
+      img.src = url;
+    } else {
+      img.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
+    }
+  }
+
+  function openEditModal(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    const category = btn.getAttribute('data-category');
+    const price = btn.getAttribute('data-price');
+    const desc = btn.getAttribute('data-desc');
+    const img = btn.getAttribute('data-img');
+    const avail = btn.getAttribute('data-avail') === 'true';
+
+    document.getElementById('editMenuForm').action = '/menu/' + id + '/update';
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editPrice').value = price;
+    document.getElementById('editDescription').value = desc || '';
+    document.getElementById('editImageUrl').value = img || '';
+    document.getElementById('editImagePreview').src = img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
+
+    const sel = document.getElementById('editCategorySelect');
+    let found = false;
+    for (let opt of sel.options) {
+      if (opt.value === category) {
+        opt.selected = true;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      sel.value = '__new__';
+      document.getElementById('editCustomCategoryWrap').style.display = 'block';
+      document.getElementById('editCustomCategory').value = category;
+    } else {
+      document.getElementById('editCustomCategoryWrap').style.display = 'none';
+    }
+
+    if (avail) {
+      document.getElementById('editAvailableTrue').checked = true;
+    } else {
+      document.getElementById('editAvailableFalse').checked = true;
+    }
+
+    document.getElementById('editModal').style.display = 'flex';
+  }
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+  }
+
+  function openViewModal(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    const category = btn.getAttribute('data-category');
+    const price = parseFloat(btn.getAttribute('data-price') || 0).toLocaleString('vi-VN') + ' VNĐ';
+    const desc = btn.getAttribute('data-desc') || 'Chưa có mô tả chi tiết cho món ăn này.';
+    const img = btn.getAttribute('data-img') || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
+    const avail = btn.getAttribute('data-avail') === 'true';
+    const created = btn.getAttribute('data-created') || '—';
+
+    document.getElementById('viewId').textContent = '#' + id;
+    document.getElementById('viewName').textContent = name;
+    document.getElementById('viewCategory').textContent = category;
+    document.getElementById('viewPrice').textContent = price;
+    document.getElementById('viewDesc').textContent = desc;
+    document.getElementById('viewCreated').textContent = created;
+    document.getElementById('viewImage').src = img;
+
+    const badge = document.getElementById('viewStatusBadge');
+    if (avail) {
+      badge.textContent = '● Đang kinh doanh';
+      badge.className = 'status available';
+    } else {
+      badge.textContent = '○ Ngừng kinh doanh';
+      badge.className = 'status off';
+    }
+
+    document.getElementById('viewModal').style.display = 'flex';
+  }
+  function closeViewModal() {
+    document.getElementById('viewModal').style.display = 'none';
+  }
+
+  function confirmToggleStatus(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    const isAvailable = btn.getAttribute('data-avail') === 'true';
+
+    const form = document.getElementById('toggleForm');
+    form.action = '/menu/' + id + '/toggle-status';
+
+    const title = document.getElementById('toggleTitle');
+    const msg = document.getElementById('toggleMessage');
+    const input = document.getElementById('toggleAvailableInput');
+    const submitBtn = document.getElementById('toggleSubmitBtn');
+    const warning = document.getElementById('toggleWarning');
+
+    if (isAvailable) {
+      title.textContent = 'Ngừng kinh doanh món ăn';
+      msg.innerHTML = 'Bạn có chắc chắn muốn ngừng bán món <b>"' + name + '"</b> không?';
+      input.value = 'false';
+      submitBtn.textContent = 'Xác nhận ngừng bán';
+      submitBtn.className = 'primary danger';
+      warning.style.display = 'block';
+    } else {
+      title.textContent = 'Mở bán lại món ăn';
+      msg.innerHTML = 'Bạn có muốn mở bán lại món <b>"' + name + '"</b> để nhân viên có thể gọi món trong các đơn mới?';
+      input.value = 'true';
+      submitBtn.textContent = 'Xác nhận mở bán';
+      submitBtn.className = 'primary';
+      warning.style.display = 'none';
+    }
+
+    document.getElementById('toggleModal').style.display = 'flex';
+  }
+  function closeToggleModal() {
+    document.getElementById('toggleModal').style.display = 'none';
+  }
+
+  function validateMenuForm(prefix) {
+    const name = document.getElementById(prefix + 'Name').value.trim();
+    const price = parseFloat(document.getElementById(prefix + 'Price').value);
+    if (!name) {
+      alert('Vui lòng nhập tên món ăn.');
+      return false;
+    }
+    if (isNaN(price) || price <= 0) {
+      alert('Giá bán phải là số dương lớn hơn 0 VNĐ.');
+      return false;
+    }
+    return true;
+  }
+
+  // Đóng modal khi bấm ra ngoài
+  window.onclick = function(event) {
+    if (event.target.classList.contains('modal-backdrop')) {
+      event.target.style.display = 'none';
+    }
+  };
+</script>
+
+</body>
+</html>
