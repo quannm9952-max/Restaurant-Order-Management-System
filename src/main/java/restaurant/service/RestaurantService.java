@@ -176,6 +176,10 @@ public class RestaurantService {
     }
 
     public List<Map<String, Object>> searchMenu(String keyword, String category, Boolean available, String sortBy) {
+        return searchMenu(keyword, category, available, sortBy, null);
+    }
+
+    public List<Map<String, Object>> searchMenu(String keyword, String category, Boolean available, String sortBy, String priceRange) {
         StringBuilder sql = new StringBuilder("SELECT * FROM menu_items WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
@@ -190,6 +194,17 @@ public class RestaurantService {
         if (available != null) {
             sql.append(" AND available = ?");
             params.add(available ? 1 : 0);
+        }
+        if (priceRange != null && !priceRange.trim().isEmpty() && !"all".equalsIgnoreCase(priceRange)) {
+            if ("under_100k".equalsIgnoreCase(priceRange)) {
+                sql.append(" AND price < 100000");
+            } else if ("100k_300k".equalsIgnoreCase(priceRange)) {
+                sql.append(" AND price >= 100000 AND price <= 300000");
+            } else if ("300k_600k".equalsIgnoreCase(priceRange)) {
+                sql.append(" AND price > 300000 AND price <= 600000");
+            } else if ("above_600k".equalsIgnoreCase(priceRange)) {
+                sql.append(" AND price > 600000");
+            }
         }
 
         if ("price_asc".equalsIgnoreCase(sortBy)) {
@@ -218,19 +233,19 @@ public class RestaurantService {
     @Transactional
     public void addMenu(String name, String category, String description, BigDecimal price, String imageUrl) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên món ăn không được để trống.");
+            throw new IllegalArgumentException("Dish name cannot be blank.");
         }
         if (name.trim().length() > 150) {
-            throw new IllegalArgumentException("Tên món không được vượt quá 150 ký tự.");
+            throw new IllegalArgumentException("Dish name cannot exceed 150 characters.");
         }
         if (category == null || category.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn hoặc nhập danh mục.");
+            throw new IllegalArgumentException("Category is required.");
         }
         if (category.trim().length() > 80) {
-            throw new IllegalArgumentException("Tên danh mục không được vượt quá 80 ký tự.");
+            throw new IllegalArgumentException("Category name cannot exceed 80 characters.");
         }
         if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Giá bán phải lớn hơn 0 VNĐ.");
+            throw new IllegalArgumentException("Price must be greater than 0 VND.");
         }
 
         Integer count = db.queryForObject(
@@ -239,7 +254,7 @@ public class RestaurantService {
             name.trim().toLowerCase()
         );
         if (count != null && count > 0) {
-            throw new IllegalArgumentException("Món ăn '" + name.trim() + "' đã tồn tại trong thực đơn.");
+            throw new IllegalArgumentException("Dish '" + name.trim() + "' already exists in menu.");
         }
 
         String img = (imageUrl != null && !imageUrl.trim().isEmpty()) 
@@ -261,19 +276,19 @@ public class RestaurantService {
         Map<String, Object> existing = getMenuItem(id);
 
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Tên món ăn không được để trống.");
+            throw new IllegalArgumentException("Dish name cannot be blank.");
         }
         if (name.trim().length() > 150) {
-            throw new IllegalArgumentException("Tên món không được vượt quá 150 ký tự.");
+            throw new IllegalArgumentException("Dish name cannot exceed 150 characters.");
         }
         if (category == null || category.trim().isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn hoặc nhập danh mục.");
+            throw new IllegalArgumentException("Category is required.");
         }
         if (category.trim().length() > 80) {
-            throw new IllegalArgumentException("Tên danh mục không được vượt quá 80 ký tự.");
+            throw new IllegalArgumentException("Category name cannot exceed 80 characters.");
         }
         if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Giá bán phải lớn hơn 0 VNĐ.");
+            throw new IllegalArgumentException("Price must be greater than 0 VND.");
         }
 
         Integer duplicate = db.queryForObject(
@@ -283,7 +298,7 @@ public class RestaurantService {
             id
         );
         if (duplicate != null && duplicate > 0) {
-            throw new IllegalArgumentException("Tên món '" + name.trim() + "' đã bị trùng với một món khác.");
+            throw new IllegalArgumentException("Dish name '" + name.trim() + "' is already in use by another item.");
         }
 
         String img = (imageUrl != null && !imageUrl.trim().isEmpty()) 
@@ -307,8 +322,47 @@ public class RestaurantService {
 
     @Transactional
     public void toggleMenuAvailability(long id, boolean available) {
-        getMenuItem(id); // Kiểm tra tồn tại
+        getMenuItem(id);
         db.update("UPDATE menu_items SET available=? WHERE id=?", available, id);
+    }
+
+    /**
+     * Delete menu item (UC09):
+     * - If dish has never appeared in past orders -> Permanently delete.
+     * - If dish appears in past orders:
+     *   + force = false: Soft delete (set available = 0) to protect history.
+     *   + force = true: Detach foreign key (menu_item_id = NULL) while preserving order line details, then delete.
+     */
+    @Transactional
+    public void deleteMenu(long id, boolean force) {
+        Map<String, Object> item = getMenuItem(id);
+        String itemName = (String) item.get("name");
+
+        Integer orderCount = db.queryForObject(
+            "SELECT COUNT(*) FROM order_details WHERE menu_item_id = ?",
+            Integer.class,
+            id
+        );
+
+        if (orderCount != null && orderCount > 0) {
+            if (!force) {
+                db.update("UPDATE menu_items SET available = 0 WHERE id = ?", id);
+                throw new IllegalStateException(
+                    "Dish '" + itemName + "' (ID #" + id + ") appears in " + orderCount + 
+                    " past order(s). To preserve historical invoices and reporting integrity, it has been automatically marked as 'Unavailable'. You may use force delete to permanently remove it."
+                );
+            } else {
+                db.update("UPDATE order_details SET menu_item_id = NULL WHERE menu_item_id = ?", id);
+                db.update("DELETE FROM menu_items WHERE id = ?", id);
+            }
+        } else {
+            db.update("DELETE FROM menu_items WHERE id = ?", id);
+        }
+    }
+
+    @Transactional
+    public void deleteMenu(long id) {
+        deleteMenu(id, false);
     }
 
     // ==========================================
@@ -416,46 +470,42 @@ public class RestaurantService {
     }
 
     /**
-     * Quy trình thanh toán:
-     * - Khóa bản ghi đơn hàng với SELECT ... FOR UPDATE chống duplicate/race-condition.
-     * - Kiểm tra đơn hàng đang Open.
-     * - Kiểm tra chưa có giao dịch Successful.
-     * - Kiểm tra tất cả món không bị hủy đã Served.
-     * - Tính tiền từ order_details lịch sử.
-     * - Ghi Payment, cập nhật Order thành Completed, giải phóng Table thành Available trong 1 transaction duy nhất.
+     * Checkout payment process:
+     * - Locks order row with SELECT ... FOR UPDATE to avoid duplicate race conditions.
+     * - Validates Open status.
+     * - Validates no prior Successful payment.
+     * - Validates all active items are Served.
+     * - Computes total from locked historical order_details.
+     * - Inserts Payment, marks Order Completed, and releases Table to Available in a single transaction.
      */
     @Transactional(rollbackFor = Exception.class)
     public long payOrder(long orderId, String paymentMethod, boolean success) {
-        // 1. Khóa bản ghi Order
         List<Map<String, Object>> orderRows = db.queryForList("SELECT * FROM orders WHERE id=? FOR UPDATE", orderId);
         if (orderRows.isEmpty()) {
-            throw new IllegalArgumentException("Đơn hàng #" + orderId + " không tồn tại.");
+            throw new IllegalArgumentException("Order #" + orderId + " does not exist.");
         }
         Map<String, Object> order = orderRows.get(0);
 
-        // 2. Kiểm tra trạng thái đơn
         if (!"Open".equals(order.get("status"))) {
-            throw new IllegalStateException("Đơn hàng #" + orderId + " không ở trạng thái Open (trạng thái: " + order.get("status") + ").");
+            throw new IllegalStateException("Order #" + orderId + " is not in Open status (current: " + order.get("status") + ").");
         }
 
-        // 3. Kiểm tra duplicate payment
         Integer paidCount = db.queryForObject(
             "SELECT COUNT(*) FROM payments WHERE order_id=? AND status='Successful'",
             Integer.class,
             orderId
         );
         if (paidCount != null && paidCount > 0) {
-            throw new IllegalStateException("Đơn hàng #" + orderId + " đã có giao dịch thanh toán thành công trước đó.");
+            throw new IllegalStateException("Order #" + orderId + " already has a successful payment recorded.");
         }
 
-        // 4. Kiểm tra món ăn
         Integer validItems = db.queryForObject(
             "SELECT COUNT(*) FROM order_details WHERE order_id=? AND status <> 'Cancelled'",
             Integer.class,
             orderId
         );
         if (validItems == null || validItems == 0) {
-            throw new IllegalStateException("Đơn hàng không có món ăn hợp lệ để thanh toán.");
+            throw new IllegalStateException("Order does not contain any valid items for payment.");
         }
 
         if (success) {
@@ -465,29 +515,26 @@ public class RestaurantService {
                 orderId
             );
             if (unservedCount != null && unservedCount > 0) {
-                throw new IllegalStateException("Không thể thanh toán: Vẫn còn " + unservedCount + " món chưa được phục vụ (Served).");
+                throw new IllegalStateException("Cannot process payment: There are still " + unservedCount + " unserved item(s).");
             }
         }
 
-        // 5. Tính tổng tiền từ order_details (giá lịch sử lúc tạo đơn)
         BigDecimal amount = total(orderId);
         if (amount.compareTo(BigDecimal.ZERO) <= 0 && success) {
-            throw new IllegalStateException("Tổng tiền thanh toán không hợp lệ.");
+            throw new IllegalStateException("Invalid total payment amount.");
         }
 
         String method = (paymentMethod != null && !paymentMethod.isBlank()) ? paymentMethod : "Cash";
 
-        // 6. Thêm bản ghi Payment
         long paymentId = insertId(
             "INSERT INTO payments(order_id, amount, payment_method, status, paid_at) VALUES(?, ?, ?, ?, NOW())",
             orderId, amount, method, success ? "Successful" : "Failed"
         );
 
-        // 7. Cập nhật Order và Table nếu thanh toán thành công
         if (success) {
             int updatedOrder = db.update("UPDATE orders SET status='Completed' WHERE id=? AND status='Open'", orderId);
             if (updatedOrder == 0) {
-                throw new IllegalStateException("Cập nhật đơn hàng thất bại.");
+                throw new IllegalStateException("Failed to update order status.");
             }
             long tableId = ((Number) order.get("table_id")).longValue();
             db.update("UPDATE restaurant_tables SET status='Available' WHERE id=?", tableId);

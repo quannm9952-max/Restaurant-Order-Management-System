@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Payment History | RMS</title>
+  <title>Payment History | Gourmet Palace 5★</title>
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
@@ -14,13 +14,13 @@
     <b>RMS</b><span>RESTAURANT</span>
   </div>
   <div class="side-label">WORKSPACE</div>
-  <a class="nav" href="/dashboard">▦ <span>Tổng quan</span></a>
-  <a class="nav" href="/payments" th:if="${user.role=='Cashier' or user.role=='Manager'}">＄ <span>Quản lý thanh toán</span></a>
-  <a class="nav active" href="/history" th:if="${user.role=='Cashier' or user.role=='Manager'}">◷ <span>Lịch sử giao dịch</span></a>
-  <a class="nav" href="/menu" th:if="${user.role=='Manager'}">◈ <span>Thực đơn</span></a>
-  <a class="nav" href="/dashboard#tables">▤ <span>Bàn ăn</span></a>
-  <a class="nav" href="/dashboard#orders">☷ <span>Đơn hàng</span></a>
-  <a class="nav" href="/reports" th:if="${user.role=='Manager'}">▥ <span>Báo cáo</span></a>
+  <a class="nav" href="/dashboard">▦ <span>Overview</span></a>
+  <a class="nav" href="/payments" th:if="${user.role=='Cashier' or user.role=='Manager'}">＄ <span>Billing & Payment</span></a>
+  <a class="nav active" href="/history" th:if="${user.role=='Cashier' or user.role=='Manager'}">◷ <span>Payment History</span></a>
+  <a class="nav" href="/menu" th:if="${user.role=='Manager'}">◈ <span>Menu Management</span></a>
+  <a class="nav" href="/dashboard#tables">▤ <span>Dining Tables</span></a>
+  <a class="nav" href="/dashboard#orders">☷ <span>Orders</span></a>
+  <a class="nav" href="/reports" th:if="${user.role=='Manager'}">▥ <span>Revenue Reports</span></a>
 
   <div class="side-bottom">
     <div class="avatar" th:text="${#strings.substring(user.name,0,1)}">U</div>
@@ -29,7 +29,7 @@
       <small th:text="${user.role}">Role</small>
     </div>
     <form method="post" action="/logout">
-      <button class="logout" title="Đăng xuất">↪</button>
+      <button class="logout" title="Sign Out">↪</button>
     </form>
   </div>
 </aside>
@@ -39,12 +39,12 @@
 
   <header class="topbar">
     <div>
-      <p class="eyebrow">WORKSPACE / UC08 – PAYMENT HISTORY</p>
-      <h1>Lịch sử giao dịch thanh toán</h1>
-      <p class="muted">Tra cứu toàn bộ lịch sử thanh toán thành công và thất bại trong hệ thống.</p>
+      <p class="eyebrow">WORKSPACE / UC08 – TRANSACTION AUDIT</p>
+      <h1>Payment & Transaction History</h1>
+      <p class="muted">Search and review all historical successful and failed payment records across the restaurant.</p>
     </div>
     <div class="top-right">
-      <a href="/payments" class="tiny" style="text-decoration:none; margin-right:8px;" th:if="${user.role=='Cashier' or user.role=='Manager'}">← Quản lý thanh toán</a>
+      <a href="/payments" class="tiny" style="text-decoration:none; margin-right:8px;" th:if="${user.role=='Cashier' or user.role=='Manager'}">← Billing Management</a>
       <span class="role-chip" th:text="${user.role}">Role</span>
     </div>
   </header>
@@ -54,40 +54,40 @@
     <form method="get" action="/history" class="filter-bar">
       <div class="search-input-wrap" style="flex:1;">
         <span class="search-icon">🔍</span>
-        <input type="text" name="search" th:value="${currentSearch}" placeholder="Tìm theo Mã GD (#ID), Mã đơn, hoặc Bàn..." class="search-input">
+        <input type="text" name="search" th:value="${currentSearch}" placeholder="Search by Txn ID (#ID), Order Ref, or Table Code..." class="search-input">
       </div>
 
       <div class="filter-group">
-        <label>Phương thức:</label>
+        <label>Method:</label>
         <select name="method" onchange="this.form.submit()">
-          <option value="All" th:selected="${currentMethod=='All'}">Tất cả</option>
-          <option value="Cash" th:selected="${currentMethod=='Cash'}">Tiền mặt (Cash)</option>
-          <option value="Bank Transfer" th:selected="${currentMethod=='Bank Transfer'}">Chuyển khoản (Bank Transfer)</option>
+          <option value="All" th:selected="${currentMethod=='All'}">All Methods</option>
+          <option value="Cash" th:selected="${currentMethod=='Cash'}">Cash</option>
+          <option value="Bank Transfer" th:selected="${currentMethod=='Bank Transfer'}">Bank Transfer</option>
         </select>
       </div>
 
       <div class="filter-group">
-        <label>Trạng thái:</label>
+        <label>Status:</label>
         <select name="status" onchange="this.form.submit()">
-          <option value="All" th:selected="${currentStatus=='All'}">Tất cả</option>
-          <option value="Successful" th:selected="${currentStatus=='Successful'}">Thành công (Successful)</option>
-          <option value="Failed" th:selected="${currentStatus=='Failed'}">Thất bại (Failed)</option>
+          <option value="All" th:selected="${currentStatus=='All'}">All Statuses</option>
+          <option value="Successful" th:selected="${currentStatus=='Successful'}">Successful</option>
+          <option value="Failed" th:selected="${currentStatus=='Failed'}">Failed</option>
         </select>
       </div>
 
       <div class="filter-group">
-        <label>Từ ngày:</label>
+        <label>From Date:</label>
         <input type="date" name="from" th:value="${fromDate}">
       </div>
 
       <div class="filter-group">
-        <label>Đến ngày:</label>
+        <label>To Date:</label>
         <input type="date" name="to" th:value="${toDate}">
       </div>
 
       <div class="filter-actions">
-        <button type="submit" class="tiny primary">Lọc</button>
-        <a href="/history" class="tiny" style="text-decoration:none; display:inline-flex; align-items:center;">↺ Đặt lại</a>
+        <button type="submit" class="tiny primary">Filter</button>
+        <a href="/history" class="tiny" style="text-decoration:none; display:inline-flex; align-items:center;">↺ Reset</a>
       </div>
     </form>
   </section>
@@ -96,47 +96,47 @@
   <section class="panel">
     <div class="panel-head">
       <div>
-        <h2>Danh sách giao dịch thanh toán</h2>
-        <p class="muted">Chỉ các giao dịch có trạng thái Successful mới được tính vào báo cáo doanh thu nhà hàng.</p>
+        <h2>Transactions Audit Log</h2>
+        <p class="muted">Only transactions with Successful status are aggregated into restaurant revenue analytics.</p>
       </div>
       <div>
-        <span class="badge-count" th:text="'Tổng cộng: ' + ${#lists.size(payments)} + ' giao dịch'"></span>
+        <span class="badge-count" th:text="'Total: ' + ${#lists.size(payments)} + ' transactions'"></span>
       </div>
     </div>
 
     <!-- Empty State -->
     <div th:if="${#lists.isEmpty(payments)}" class="empty-state">
       <div class="empty-icon">📂</div>
-      <h3>Không tìm thấy giao dịch nào</h3>
-      <p class="muted">Không có bản ghi thanh toán nào khớp với tiêu chí tìm kiếm.</p>
-      <a href="/history" class="tiny primary" style="margin-top:10px; display:inline-block;">Xóa bộ lọc</a>
+      <h3>No Transactions Found</h3>
+      <p class="muted">No payment records matched your current search filters.</p>
+      <a href="/history" class="tiny primary" style="margin-top:10px; display:inline-block;">Reset Filters</a>
     </div>
 
     <div class="scroll" th:if="${!#lists.isEmpty(payments)}">
       <table class="data-table">
         <thead>
           <tr>
-            <th>Mã GD</th>
-            <th>Mã đơn</th>
-            <th>Bàn</th>
-            <th>Phục vụ (Waiter)</th>
-            <th>Số tiền</th>
-            <th>Phương thức</th>
-            <th>Thời gian thanh toán</th>
-            <th>Trạng thái</th>
-            <th style="text-align:center;">Thao tác</th>
+            <th>Txn ID</th>
+            <th>Order Ref</th>
+            <th>Table</th>
+            <th>Waiter</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Payment Time</th>
+            <th>Status</th>
+            <th style="text-align:center;">Action</th>
           </tr>
         </thead>
         <tbody>
           <tr th:each="p:${payments}">
-            <td style="font-weight:700;" th:text="'GD-'+${p.id}">GD-1</td>
+            <td style="font-weight:700;" th:text="'TXN-'+${p.id}">TXN-1</td>
             <td th:text="'#'+${p.order_id}">#1</td>
             <td>
               <b style="color:var(--green);" th:text="${p.table_code}">T01</b>
             </td>
-            <td th:text="${p.waiter_name}">Waiter Demo</td>
+            <td th:text="${p.waiter_name}">Waiter</td>
             <td>
-              <b class="price-tag" th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')} + ' đ'">0 đ</b>
+              <b class="price-tag" th:text="${#numbers.formatDecimal(p.amount,0,'COMMA',0,'POINT')} + ' ₫'">0 ₫</b>
             </td>
             <td>
               <span class="category-chip" th:text="${p.payment_method != null ? p.payment_method : 'Cash'}">Cash</span>
@@ -147,7 +147,7 @@
             </td>
             <td style="text-align:center;">
               <a th:if="${p.status=='Successful'}" th:href="@{'/invoices/' + ${p.order_id}}" class="btn-action view" style="text-decoration:none; display:inline-block;">
-                📄 Xem hóa đơn
+                📄 View Invoice
               </a>
               <span th:if="${p.status!='Successful'}" class="muted">—</span>
             </td>
@@ -157,7 +157,7 @@
     </div>
   </section>
 
-  <footer>Restaurant Order Management System · Payment History Module</footer>
+  <footer>Gourmet Palace · 5-Star Luxury Restaurant Management System · UC08 Transaction History</footer>
 </main>
 
 </body>

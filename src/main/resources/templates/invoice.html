@@ -1,124 +1,124 @@
 <!doctype html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title th:text="'Hóa đơn #' + ${order.id} + ' | RMS'">Hóa đơn thanh toán</title>
+  <title th:text="'Invoice #' + ${order.id} + ' | Gourmet Palace 5★'">Dining Receipt</title>
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body class="invoice-page">
 
-<!-- TOP ACTION BAR (Ẩn khi in ấn qua @media print) -->
+<!-- TOP ACTION BAR (Hidden in print mode) -->
 <div class="invoice-top-actions no-print">
   <div class="action-container">
-    <a href="/payments" class="btn-back">← Quay lại Quản lý thanh toán</a>
+    <a href="/payments" class="btn-back">← Back to Payment Management</a>
     <div class="action-right">
       <a href="/dashboard" class="tiny" style="text-decoration:none; margin-right:10px;">▦ Dashboard</a>
       <button class="primary btn-print" onclick="window.print()">
-        🖨️ In hóa đơn (Print Invoice)
+        🖨️ Print Invoice
       </button>
     </div>
   </div>
 </div>
 
-<!-- KHUNG HÓA ĐƠN CHÍNH (Được in ra) -->
+<!-- INVOICE CONTAINER (Printable) -->
 <div class="invoice-container">
   <div class="invoice-paper">
 
-    <!-- HEADER NHÀ HÀNG -->
+    <!-- RESTAURANT HEADER -->
     <header class="inv-header">
       <div class="inv-brand">
-        <div class="inv-logo-mark">R</div>
+        <div class="inv-logo-mark">G</div>
         <div class="inv-brand-text">
           <h1>GOURMET PALACE</h1>
-          <p class="inv-tagline">HỆ THỐNG NHÀ HÀNG & QUẢN LÝ ẨM THỰC</p>
+          <p class="inv-tagline">5-STAR LUXURY DINING & GASTRONOMY</p>
         </div>
       </div>
       <div class="inv-contact">
-        <p>📍 70 Tô Ký, P. Tân Chánh Hiệp, Quận 12, TP.HCM</p>
-        <p>📞 Hotline: 1900 6868 &nbsp;|&nbsp; 🌐 www.rms-restaurant.vn</p>
+        <p>📍 70 To Ky Street, Tan Chanh Hiep Ward, District 12, Ho Chi Minh City</p>
+        <p>📞 Hotline: 1900 6868 &nbsp;|&nbsp; 🌐 www.gourmetpalace.com</p>
       </div>
     </header>
 
     <div class="inv-divider"></div>
 
-    <!-- TIÊU ĐỀ HÓA ĐƠN -->
+    <!-- INVOICE TITLE -->
     <div class="inv-title-section">
-      <h2>HÓA ĐƠN THANH TOÁN</h2>
+      <h2>OFFICIAL DINING INVOICE</h2>
       <span class="inv-subtitle">PAYMENT RECEIPT</span>
-      <div class="inv-badge-paid">ĐÃ THANH TOÁN / PAID</div>
+      <div class="inv-badge-paid">PAID & SETTLED</div>
     </div>
 
-    <!-- THÔNG TIN GIAO DỊCH -->
+    <!-- TRANSACTION META -->
     <section class="inv-meta-grid">
       <div class="inv-meta-col">
-        <p><span>Mã hóa đơn:</span> <b th:text="'HD-' + ${payment.id}">HD-1</b></p>
-        <p><span>Mã đơn hàng:</span> <b th:text="'#' + ${order.id}">#1</b></p>
-        <p><span>Bàn phục vụ:</span> <b th:text="${order.table_code}" style="color:var(--green); font-size:15px;">T01</b></p>
+        <p><span>Invoice No:</span> <b th:text="'INV-' + ${payment.id}">INV-1</b></p>
+        <p><span>Order Ref:</span> <b th:text="'#' + ${order.id}">#1</b></p>
+        <p><span>Dining Table:</span> <b th:text="${order.table_code}" style="color:var(--green); font-size:15px;">T01</b></p>
       </div>
       <div class="inv-meta-col">
-        <p><span>Thời gian thanh toán:</span> <b th:text="${payment.paid_at}">2026-11-13 14:30</b></p>
-        <p><span>Thu ngân (Cashier):</span> <b th:text="${user.name}">Cashier Demo</b></p>
-        <p><span>Nhân viên phục vụ:</span> <b th:text="${order.waiter_name}">Waiter Demo</b></p>
-        <p><span>Hình thức thanh toán:</span> <b th:text="${payment.payment_method != null ? payment.payment_method : 'Tiền mặt (Cash)'}">Cash</b></p>
+        <p><span>Settled At:</span> <b th:text="${payment.paid_at}">2026-11-13 14:30</b></p>
+        <p><span>Cashier:</span> <b th:text="${user.name}">Cashier</b></p>
+        <p><span>Server / Waiter:</span> <b th:text="${order.waiter_name}">Waiter</b></p>
+        <p><span>Payment Method:</span> <b th:text="${payment.payment_method != null ? payment.payment_method : 'Cash'}">Cash</b></p>
       </div>
     </section>
 
-    <!-- BẢNG CHI TIẾT MÓN ĂN TRONG HÓA ĐƠN -->
+    <!-- INVOICE ITEMS BREAKDOWN -->
     <table class="inv-table">
       <thead>
         <tr>
-          <th style="width:40px; text-align:center;">STT</th>
-          <th>Tên món ăn</th>
-          <th style="width:70px; text-align:center;">SL</th>
-          <th style="width:110px; text-align:right;">Đơn giá</th>
-          <th style="width:120px; text-align:right;">Thành tiền</th>
+          <th style="width:40px; text-align:center;">No.</th>
+          <th>Dish Name</th>
+          <th style="width:70px; text-align:center;">Qty</th>
+          <th style="width:120px; text-align:right;">Unit Price</th>
+          <th style="width:130px; text-align:right;">Line Total</th>
         </tr>
       </thead>
       <tbody>
         <tr th:each="item, iterStat : ${items}">
           <td style="text-align:center;" th:text="${iterStat.count}">1</td>
           <td>
-            <b th:text="${item.item_name}">Phở bò đặc biệt</b>
+            <b th:text="${item.item_name}">Wagyu A5 Steak</b>
           </td>
           <td style="text-align:center;" th:text="${item.quantity}">2</td>
-          <td style="text-align:right;" th:text="${#numbers.formatDecimal(item.unit_price,0,'COMMA',0,'POINT')} + ' đ'">65.000 đ</td>
-          <td style="text-align:right; font-weight:700;" th:text="${#numbers.formatDecimal(item.line_total,0,'COMMA',0,'POINT')} + ' đ'">130.000 đ</td>
+          <td style="text-align:right;" th:text="${#numbers.formatDecimal(item.unit_price,0,'COMMA',0,'POINT')} + ' ₫'">1,850,000 ₫</td>
+          <td style="text-align:right; font-weight:700;" th:text="${#numbers.formatDecimal(item.line_total,0,'COMMA',0,'POINT')} + ' ₫'">3,700,000 ₫</td>
         </tr>
       </tbody>
     </table>
 
-    <!-- TỔNG KẾT THANH TOÁN -->
+    <!-- INVOICE TOTAL SUMMARY -->
     <div class="inv-summary">
       <div class="inv-sum-row">
-        <span>Tạm tính các món:</span>
-        <b th:text="${#numbers.formatDecimal(total,0,'COMMA',0,'POINT')} + ' đ'">130.000 đ</b>
+        <span>Items Subtotal:</span>
+        <b th:text="${#numbers.formatDecimal(total,0,'COMMA',0,'POINT')} + ' ₫'">3,700,000 ₫</b>
       </div>
       <div class="inv-sum-row">
-        <span>Thuế VAT:</span>
-        <i>(Đã bao gồm trong giá món)</i>
+        <span>VAT & Service Charge:</span>
+        <i>(Included in listed prices)</i>
       </div>
       <div class="inv-sum-row inv-grand-total">
-        <span>TỔNG TIỀN THANH TOÁN:</span>
-        <strong th:text="${#numbers.formatDecimal(total,0,'COMMA',0,'POINT')} + ' VNĐ'">130.000 VNĐ</strong>
+        <span>TOTAL SETTLED:</span>
+        <strong th:text="${#numbers.formatDecimal(total,0,'COMMA',0,'POINT')} + ' VND'">3,700,000 VND</strong>
       </div>
     </div>
 
     <div class="inv-divider-dashed"></div>
 
-    <!-- LỜI CẢM ƠN VÀ CHÂN TRANG HÓA ĐƠN -->
+    <!-- INVOICE FOOTER & QR CODE -->
     <footer class="inv-footer">
       <div class="inv-qr-mock">
         <div class="qr-placeholder">
           <div style="font-size:10px; color:#555; text-align:center; padding:12px 5px;">
-            QR CODE<br>TRA CỨU<br>HÓA ĐƠN
+            QR CODE<br>VERIFY<br>INVOICE
           </div>
         </div>
       </div>
       <div class="inv-thanks">
-        <h3>Cảm ơn Quý khách và hẹn gặp lại!</h3>
-        <p>Hóa đơn điện tử có giá trị tra cứu và bảo hành dịch vụ ẩm thực.</p>
-        <small class="muted">Phần mềm quản lý nhà hàng RMS · UC08 Invoicing System</small>
+        <h3>Thank you for dining with us!</h3>
+        <p>We look forward to welcoming you back to Gourmet Palace soon.</p>
+        <small class="muted">Gourmet Palace · 5-Star Luxury Restaurant Management System · UC08 Invoicing</small>
       </div>
     </footer>
 

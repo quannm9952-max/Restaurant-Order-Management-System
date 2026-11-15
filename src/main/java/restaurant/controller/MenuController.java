@@ -21,13 +21,14 @@ public class MenuController {
     }
 
     /**
-     * Màn hình chính UC09 – Manage Menu
+     * UC09 – 5-Star Menu Management Main View
      */
     @GetMapping
     public String menuManagement(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String availability,
+            @RequestParam(required = false, defaultValue = "all") String priceRange,
             @RequestParam(required = false, defaultValue = "default") String sortBy,
             @SessionAttribute("user") Map<String, Object> user,
             Model model) {
@@ -39,7 +40,7 @@ public class MenuController {
             availableFilter = false;
         }
 
-        List<Map<String, Object>> items = service.searchMenu(search, category, availableFilter, sortBy);
+        List<Map<String, Object>> items = service.searchMenu(search, category, availableFilter, sortBy, priceRange);
         Map<String, Object> stats = service.menuStats();
         List<String> categories = service.categories();
 
@@ -50,13 +51,14 @@ public class MenuController {
         model.addAttribute("currentSearch", search != null ? search : "");
         model.addAttribute("currentCategory", category != null ? category : "All");
         model.addAttribute("currentAvailability", availability != null ? availability : "all");
+        model.addAttribute("currentPriceRange", priceRange != null ? priceRange : "all");
         model.addAttribute("currentSort", sortBy);
 
         return "menu";
     }
 
     /**
-     * API JSON lấy chi tiết 1 món để nạp vào Modal Edit / View
+     * JSON API to retrieve item details for Edit / View Modal
      */
     @GetMapping("/{id}/json")
     @ResponseBody
@@ -70,7 +72,7 @@ public class MenuController {
     }
 
     /**
-     * Thêm món mới
+     * Add new dish to menu
      */
     @PostMapping
     public String addMenuItem(
@@ -87,17 +89,35 @@ public class MenuController {
                 selectedCategory = customCategory;
             }
             service.addMenu(name, selectedCategory, description, price, imageUrl);
-            redirectAttrs.addFlashAttribute("success", "Thêm món ăn mới '" + name.trim() + "' vào thực đơn thành công!");
+            redirectAttrs.addFlashAttribute("success", "Successfully added new dish '" + name.trim() + "' to menu!");
         } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "Lỗi thêm món: " + e.getMessage());
+            redirectAttrs.addFlashAttribute("error", "Error adding menu item: " + e.getMessage());
         }
         return "redirect:/menu";
     }
 
     /**
-     * Cập nhật món ăn
+     * Direct GET /menu/{id}/edit opens modal
      */
-    @PostMapping("/{id}/update")
+    @GetMapping("/{id}/edit")
+    public String editMenuItemGet(@PathVariable long id, RedirectAttributes redirectAttrs) {
+        redirectAttrs.addFlashAttribute("autoOpenEditId", id);
+        return "redirect:/menu";
+    }
+
+    /**
+     * Direct GET /menu/{id} opens modal
+     */
+    @GetMapping("/{id}")
+    public String viewMenuItemGet(@PathVariable long id, RedirectAttributes redirectAttrs) {
+        redirectAttrs.addFlashAttribute("autoOpenViewId", id);
+        return "redirect:/menu";
+    }
+
+    /**
+     * Update menu item
+     */
+    @PostMapping({"/{id}/update", "/{id}/edit"})
     public String updateMenuItem(
             @PathVariable long id,
             @RequestParam String name,
@@ -114,18 +134,17 @@ public class MenuController {
                 selectedCategory = customCategory;
             }
             service.updateMenu(id, name, selectedCategory, description, price, imageUrl, available);
-            redirectAttrs.addFlashAttribute("success", "Cập nhật món ăn #" + id + " ('" + name.trim() + "') thành công!");
+            redirectAttrs.addFlashAttribute("success", "Successfully updated dish #" + id + " ('" + name.trim() + "')!");
         } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "Lỗi cập nhật món #" + id + ": " + e.getMessage());
+            redirectAttrs.addFlashAttribute("error", "Error updating dish #" + id + ": " + e.getMessage());
         }
         return "redirect:/menu";
     }
 
     /**
-     * Bật/Tắt trạng thái kinh doanh (Stop Selling / Available)
-     * Đảm bảo không xóa cứng dữ liệu để bảo toàn lịch sử giao dịch.
+     * Toggle dish availability
      */
-    @PostMapping("/{id}/toggle-status")
+    @PostMapping({"/{id}/toggle-status", "/{id}/status"})
     public String toggleStatus(
             @PathVariable long id,
             @RequestParam boolean available,
@@ -133,13 +152,40 @@ public class MenuController {
         try {
             service.toggleMenuAvailability(id, available);
             String msg = available 
-                ? "Đã mở bán lại món ăn #" + id + " thành công. Waiter có thể chọn món này trong đơn mới."
-                : "Đã ngừng kinh doanh món ăn #" + id + ". Món sẽ không xuất hiện trong danh sách gọi món mới.";
+                ? "Successfully re-activated dish #" + id + " to Available."
+                : "Successfully marked dish #" + id + " as Unavailable.";
             redirectAttrs.addFlashAttribute("success", msg);
         } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "Lỗi thay đổi trạng thái món #" + id + ": " + e.getMessage());
+            redirectAttrs.addFlashAttribute("error", "Error changing dish #" + id + " status: " + e.getMessage());
         }
         return "redirect:/menu";
     }
-}
 
+    /**
+     * Delete menu item
+     */
+    @PostMapping({"/{id}/delete", "/{id}/remove"})
+    public String deleteMenuItem(
+            @PathVariable long id,
+            @RequestParam(defaultValue = "false") boolean force,
+            RedirectAttributes redirectAttrs) {
+        try {
+            service.deleteMenu(id, force);
+            redirectAttrs.addFlashAttribute("success", "Successfully deleted dish #" + id + " from menu!");
+        } catch (IllegalStateException e) {
+            redirectAttrs.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            redirectAttrs.addFlashAttribute("error", "Error deleting dish #" + id + ": " + e.getMessage());
+        }
+        return "redirect:/menu";
+    }
+
+    /**
+     * Direct GET /menu/{id}/delete opens delete dialog
+     */
+    @GetMapping("/{id}/delete")
+    public String deleteMenuItemGet(@PathVariable long id, RedirectAttributes redirectAttrs) {
+        redirectAttrs.addFlashAttribute("autoOpenDeleteId", id);
+        return "redirect:/menu";
+    }
+}
