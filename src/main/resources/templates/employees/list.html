@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Employee accounts</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 40px; }
+    .card { background: white; padding: 24px; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+    th { background: #c0392b; color: white; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Employee accounts (Manager only)</h2>
+    <a th:href="@{/home}">Back to home</a>
+    <table>
+      <tr>
+        <th>ID</th><th>Full name</th><th>Username</th><th>Role</th><th>Status</th>
+      </tr>
+      <tr th:each="a : ${accounts}">
+        <td th:text="${a.accountId}">1</td>
+        <td th:text="${a.employee.fullName}">Name</td>
+        <td th:text="${a.username}">user</td>
+        <td th:text="${a.role}">ROLE</td>
+        <td th:text="${a.active} ? 'Active' : 'Disabled'">Active</td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Home - Restaurant Order Management System</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 40px; }
+    .card { background: white; padding: 24px; border-radius: 8px; max-width: 480px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .role { display: inline-block; background: #c0392b; color: white;
+            padding: 2px 10px; border-radius: 12px; font-size: 13px; }
+    a.link { display: block; margin: 12px 0; color: #c0392b; }
+    button { padding: 8px 16px; background: #555; color: white; border: none;
+             border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Welcome, <span th:text="${username}">user</span></h2>
+    <p>Your role: <span class="role" th:text="${role}">ROLE</span></p>
+
+    <a class="link" th:if="${isManager}" th:href="@{/employees}">Manage employee accounts (Manager only)</a>
+    <a class="link" th:href="@{/employees}">Try opening the Manager-only page</a>
+
+    <form th:action="@{/logout}" method="post">
+      <button type="submit">Logout</button>
+    </form>
+  </div>
+</body>
+</html>
