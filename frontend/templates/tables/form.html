@@ -1,0 +1,7 @@
+<!DOCTYPE html><html xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head}"></head><body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav><main class="container py-4"><h1 th:text="${table.id == null ? 'Add table' : 'Edit table'}">Table</h1>
+<form th:action="@{/tables/save}" method="post" class="card p-4"><input type="hidden" name="id" th:value="${table.id}">
+<label class="form-label" for="name">Table name</label><input class="form-control mb-3" id="name" name="name" th:value="${table.tableName}" maxlength="30" required>
+<label class="form-label" for="capacity">Capacity</label><input class="form-control mb-3" id="capacity" name="capacity" type="number" min="1" max="100" th:value="${table.capacity}" required>
+<p>Use Out of Service on the table details page to stop using a table while retaining its history.</p>
+<div><button class="btn btn-primary" type="submit">Save table</button> <a class="btn btn-secondary" href="/tables">Cancel</a></div></form></main></body></html>

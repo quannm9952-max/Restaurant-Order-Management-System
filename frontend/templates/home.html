@@ -1,0 +1,10 @@
+<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Restaurant workspace</title><link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/workspace.css"><link rel="stylesheet" href="/css/vendor/bootstrap-5.3.8.min.css"></head><body style="background:#f6f7f9">
+<div th:replace="~{shared/navigation :: navigation}"></div><main class="workspace"><p th:text="${user.role} + ' workspace'"></p><h1 th:text="'Welcome, ' + ${user.name}">Welcome</h1><p>Manage today's restaurant activity.</p><div class="workspace-grid">
+<a class="workspace-card" th:if="${user.role=='Manager' or user.role=='Waiter'}" href="/tables"><h2>Tables &amp; orders</h2><p>Check tables, create orders and update pending items.</p></a>
+<a class="workspace-card" th:if="${user.role=='Manager'}" href="/employees"><h2>Employee accounts</h2><p>Create, update and deactivate employee accounts.</p></a>
+<a class="workspace-card" th:if="${user.role=='Manager'}" href="/menu"><h2>Menu management</h2><p>Manage dishes, prices and availability.</p></a>
+<a class="workspace-card" th:if="${user.role=='Manager' or user.role=='Cashier'}" href="/payments"><h2>Payments &amp; invoices</h2><p>Review eligible orders and retained invoices.</p></a>
+<a class="workspace-card" th:if="${user.role=='Manager'}" href="/manager/orders"><h2>Order monitoring</h2><p>Search current and historical orders.</p></a>
+<a class="workspace-card" th:if="${user.role=='Manager'}" href="/manager/reports"><h2>Revenue reports</h2><p>Review successful transactions and revenue.</p></a>
+<a class="workspace-card" th:if="${user.role=='Manager'}" href="/manager/payment-history"><h2>Payment history</h2><p>Search transactions and view payment details.</p></a></div>
+<p th:if="${user.role=='Chef'}" class="workspace-note">The kitchen workspace will be available after the kitchen module is integrated.</p></main></body></html>

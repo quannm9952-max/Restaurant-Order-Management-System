@@ -15,13 +15,14 @@
         <div><strong>Restaurant</strong><small>ORDER MANAGEMENT</small></div></div>
     <div class="workspace-label">WORKSPACE</div>
     <nav aria-label="Manager workspace">
-        <span class="nav-item unavailable" title="Provided by another team module"><img th:src="@{/images/tv5/grid.svg}" alt="">Dashboard</span>
-        <span class="nav-item unavailable" title="Member 1 module"><img th:src="@{/images/tv5/users.svg}" alt="">Employee Management</span>
-        <span class="nav-item unavailable" title="Member 2 module"><img th:src="@{/images/tv5/table.svg}" alt="">Table Management</span>
-        <span class="nav-item unavailable" title="Member 4 module"><img th:src="@{/images/tv5/menu.svg}" alt="">Menu Management</span>
+        <a class="nav-item" href="/home"><img th:src="@{/images/tv5/grid.svg}" alt="">Dashboard</a>
+        <a class="nav-item" href="/employees"><img th:src="@{/images/tv5/users.svg}" alt="">Employee Management</a>
+        <a class="nav-item" href="/tables"><img th:src="@{/images/tv5/table.svg}" alt="">Table Management</a>
+        <a class="nav-item" href="/menu"><img th:src="@{/images/tv5/menu.svg}" alt="">Menu Management</a>
         <a class="nav-item" th:classappend="${section == 'orders'} ? 'active'" th:href="@{/manager/orders}"><img th:src="@{/images/tv5/orders.svg}" alt="">Restaurant Orders</a>
         <a class="nav-item" th:classappend="${section == 'revenue'} ? 'active'" th:href="@{/manager/reports}"><img th:src="${section == 'revenue'} ? @{/images/tv5/chart.svg} : @{/images/tv5/chart-inactive.svg}" alt="">Revenue Reports</a>
         <a class="nav-item" th:classappend="${section == 'history'} ? 'active'" th:href="@{/manager/payment-history}"><img th:src="${section == 'history'} ? @{/images/tv5/history-active.svg} : @{/images/tv5/history.svg}" alt="">Payment History</a>
+        <a class="nav-item" href="/payments">Payments &amp; invoices</a>
     </nav>
     <div class="sidebar-bottom"><div class="role-card"><small>SIGNED IN AS</small><strong>Manager</strong><img th:src="@{/images/tv5/lock.svg}" alt=""></div>
         <p>Restaurant employee workspace</p></div>
@@ -29,7 +30,7 @@
 <header th:fragment="header(title)" class="topbar">
     <strong th:text="${title}">Reports &amp; Payment History</strong>
     <div class="profile"><span class="avatar" th:text="${managerInitials}">DM</span><div><b th:text="${managerName}">Manager</b><small>Manager</small></div></div>
-    <form th:if="${demoMode}" th:action="@{/logout}" method="post"><button class="btn logout"><img th:src="@{/images/tv5/logout.svg}" alt="">Logout</button></form>
+    <form th:action="@{/logout}" method="post"><button class="btn logout"><img th:src="@{/images/tv5/logout.svg}" alt="">Logout</button></form>
 </header>
 <section th:fragment="heading(title,description)" class="page-heading">
     <div><div class="title-line"><h1 th:text="${title}">Reports &amp; Payment History</h1><span class="manager-badge">Manager access</span><span th:if="${demoMode}" class="demo-badge">DEMO</span></div><p th:text="${description}">Review restaurant revenue and retained payment records.</p></div>

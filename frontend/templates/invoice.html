@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="'Invoice #' + ${order.id} + ' | Gourmet Palace 5★'">Dining Receipt</title>
+  <link rel="stylesheet" href="/css/menu-payment.css">
+</head>
+<body class="invoice-page">
+
+<!-- TOP ACTION BAR (Hidden in print mode) -->
+<div class="invoice-top-actions no-print">
+  <div class="action-container">
+    <a href="/payments" class="btn-back">← Back to Payment Management</a>
+    <div class="action-right">
+      <a href="/dashboard" class="tiny" style="text-decoration:none; margin-right:10px;">▦ Dashboard</a>
+      <button class="primary btn-print" onclick="window.print()">
+        🖨️ Print Invoice
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICE CONTAINER (Printable) -->
+<div class="invoice-container">
+  <div class="invoice-paper">
+
+    <!-- RESTAURANT HEADER -->
+    <header class="inv-header">
+      <div class="inv-brand">
+        <div class="inv-logo-mark">G</div>
+        <div class="inv-brand-text">
+          <h1>GOURMET PALACE</h1>
+          <p class="inv-tagline">5-STAR LUXURY DINING & GASTRONOMY</p>
+        </div>
+      </div>
+      <div class="inv-contact">
+        <p>📍 70 To Ky Street, Tan Chanh Hiep Ward, District 12, Ho Chi Minh City</p>
+        <p>📞 Hotline: 1900 6868 &nbsp;|&nbsp; 🌐 www.gourmetpalace.com</p>
+      </div>
+    </header>
+
+    <div class="inv-divider"></div>
+
+    <!-- INVOICE TITLE -->
+    <div class="inv-title-section">
+      <h2>OFFICIAL DINING INVOICE</h2>
+      <span class="inv-subtitle">PAYMENT RECEIPT</span>
+      <div class="inv-badge-paid">PAID & SETTLED</div>
+    </div>
+
+    <!-- TRANSACTION META -->
+    <section class="inv-meta-grid">
+      <div class="inv-meta-col">
+        <p><span>Invoice No:</span> <b th:text="${invoiceNumber}">INV-1</b></p>
+        <p><span>Order Ref:</span> <b th:text="'#' + ${order.id}">#1</b></p>
+        <p><span>Dining Table:</span> <b th:text="${order.table_code}" style="color:var(--green); font-size:15px;">T01</b></p>
+      </div>
+      <div class="inv-meta-col">
+        <p><span>Settled At:</span> <b th:text="${payment.paid_at}">2026-11-13 14:30</b></p>
+        <p><span>Cashier:</span> <b th:text="'Not recorded'">Cashier</b></p>
+        <p><span>Server / Waiter:</span> <b th:text="${order.waiter_name}">Waiter</b></p>
+        <p><span>Payment Method:</span> <b th:text="${payment.payment_method != null ? payment.payment_method : 'Cash'}">Cash</b></p>
+      </div>
+    </section>
+
+    <!-- INVOICE ITEMS BREAKDOWN -->
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th style="width:40px; text-align:center;">No.</th>
+          <th>Dish Name</th>
+          <th style="width:70px; text-align:center;">Qty</th>
+          <th style="width:120px; text-align:right;">Unit Price</th>
+          <th style="width:130px; text-align:right;">Line Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="item, iterStat : ${items}">
+          <td style="text-align:center;" th:text="${iterStat.count}">1</td>
+          <td>
+            <b th:text="${item.item_name}">Wagyu A5 Steak</b>
+          </td>
+          <td style="text-align:center;" th:text="${item.quantity}">2</td>
+          <td style="text-align:right;" th:text="${#numbers.formatDecimal(item.unit_price,0,'COMMA',2,'POINT')} + ' USD'">1,850,000 USD</td>
+          <td style="text-align:right; font-weight:700;" th:text="${#numbers.formatDecimal(item.line_total,0,'COMMA',2,'POINT')} + ' USD'">3,700,000 USD</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- INVOICE TOTAL SUMMARY -->
+    <div class="inv-summary">
+      <div class="inv-sum-row">
+        <span>Items Subtotal:</span>
+        <b th:text="${#numbers.formatDecimal(total,0,'COMMA',2,'POINT')} + ' USD'">3,700,000 USD</b>
+      </div>
+      <div class="inv-sum-row">
+        <span>VAT & Service Charge:</span>
+        <i>(Included in listed prices)</i>
+      </div>
+      <div class="inv-sum-row inv-grand-total">
+        <span>TOTAL SETTLED:</span>
+        <strong th:text="${#numbers.formatDecimal(total,0,'COMMA',2,'POINT')} + ' USD'">3,700,000 USD</strong>
+      </div>
+    </div>
+
+    <div class="inv-divider-dashed"></div>
+
+    <!-- INVOICE FOOTER & QR CODE -->
+    <footer class="inv-footer">
+      <div class="inv-qr-mock">
+        <div class="qr-placeholder">
+          <div style="font-size:10px; color:#555; text-align:center; padding:12px 5px;">
+            QR CODE<br>VERIFY<br>INVOICE
+          </div>
+        </div>
+      </div>
+      <div class="inv-thanks">
+        <h3>Thank you for dining with us!</h3>
+        <p>We look forward to welcoming you back to Gourmet Palace soon.</p>
+        <small class="muted">Gourmet Palace · 5-Star Luxury Restaurant Management System · UC08 Invoicing</small>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+</body>
+</html>
