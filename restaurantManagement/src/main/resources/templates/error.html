@@ -1,0 +1,28 @@
+<!-- Figma frame: (chưa gán) -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lỗi - Quản lý nhà hàng</title>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+<div class="container-fluid mt-3">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">Đã xảy ra lỗi</h4>
+                <p th:text="${errorMessage}">Có lỗi xảy ra.</p>
+                <hr>
+                <a class="btn btn-primary btn-sm" href="/tables">Quay lại danh sách bàn</a>
+                <a class="btn btn-secondary btn-sm" href="/orders">Danh sách đơn</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

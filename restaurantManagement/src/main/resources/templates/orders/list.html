@@ -1,0 +1,56 @@
+<!-- Figma frame: (chưa gán) -->
+<!-- TODO: Đối chiếu Figma khi có thiết kế -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Danh sách đơn - Quản lý nhà hàng</title>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+<div class="container-fluid mt-3">
+    <h2>Đơn hàng đang mở</h2>
+
+    <table class="table table-striped table-hover">
+        <thead class="table-light">
+        <tr>
+            <th>STT</th>
+            <th>Mã đơn</th>
+            <th>Bàn</th>
+            <th>Ngày tạo</th>
+            <th>Người tạo</th>
+            <th>Số dòng món</th>
+            <th>Tổng tiền</th>
+            <th>Thao tác</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="order, iter : ${orders}">
+            <td th:text="${iter.count}"></td>
+            <td>
+                <a th:href="@{/orders/{id}(id=${order.id})}" th:text="${order.id}"></a>
+            </td>
+            <td>
+                <a th:href="@{/tables/{id}(id=${order.table.id})}"
+                   th:text="${order.table.tableName}"></a>
+            </td>
+            <td th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${order.employee != null} ? ${order.employee.fullName} : '(Không rõ)'"></td>
+            <td th:text="${#lists.size(order.details)}"></td>
+            <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td>
+                <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(orders)}">
+            <td colspan="8" class="text-center text-muted">Không có đơn hàng đang mở.</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

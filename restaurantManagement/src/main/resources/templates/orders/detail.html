@@ -1,0 +1,167 @@
+<!-- Figma frame: (chưa gán) -->
+<!-- TODO: Đối chiếu Figma khi có thiết kế -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Chi tiết đơn #<span th:text="${order != null} ? ${order.id} : ''"></span> - Quản lý nhà hàng</title>
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+<div class="container-fluid mt-3">
+    <a href="/orders" class="btn btn-outline-secondary btn-sm mb-3">&larr; Quay lại danh sách đơn</a>
+
+    <h2>Đơn hàng #<span th:text="${order.id}"></span></h2>
+
+    <!-- Order info card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Trạng thái</dt>
+                <dd class="col-sm-9">
+                    <span th:class="'status-' + ${#strings.toLowerCase(order.status.name())}"
+                          th:text="${#strings.capitalize(#strings.toLowerCase(order.status.name()))}">
+                    </span>
+                </dd>
+
+                <dt class="col-sm-3">Bàn</dt>
+                <dd class="col-sm-9">
+                    <a th:href="@{/tables/{id}(id=${order.table.id})}"
+                       th:text="${order.table.tableName}"></a>
+                </dd>
+
+                <dt class="col-sm-3">Ngày tạo</dt>
+                <dd class="col-sm-9" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></dd>
+
+                <dt class="col-sm-3">Người tạo</dt>
+                <dd class="col-sm-9" th:text="${order.employee != null} ? ${order.employee.fullName} : '(Không rõ)'"></dd>
+
+                <dt class="col-sm-3">Tổng tiền</dt>
+                <dd class="col-sm-9 fw-bold"
+                    th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></dd>
+
+                <dt class="col-sm-3">Ghi chú</dt>
+                <dd class="col-sm-9" th:text="${order.note != null and !order.note.isEmpty()} ? ${order.note} : '(Không có)'"></dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Order details table -->
+    <h5>Chi tiết món</h5>
+    <table class="table table-striped table-hover mb-4">
+        <thead class="table-light">
+        <tr>
+            <th>STT</th>
+            <th>Món</th>
+            <th>Đơn giá (lúc đặt)</th>
+            <th>Số lượng</th>
+            <th>Thành tiền</th>
+            <th>Trạng thái món</th>
+            <th th:if="${order.status.name() == 'OPEN'}">Thao tác</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="detail, iterStat : ${order.details}">
+            <td th:text="${iterStat.count}"></td>
+            <td th:text="${detail.itemNameAtOrder}"></td>
+            <td th:text="${#numbers.formatDecimal(detail.unitPriceAtOrder, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td th:text="${detail.quantity}"></td>
+            <td th:text="${#numbers.formatDecimal(detail.unitPriceAtOrder * detail.quantity, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td>
+                <span th:class="'status-' + ${#strings.toLowerCase(detail.cookingStatus.name())}"
+                      th:text="${#strings.capitalize(#strings.toLowerCase(detail.cookingStatus.name()))}">
+                </span>
+            </td>
+            <td th:if="${order.status.name() == 'OPEN' and detail.cookingStatus.name() == 'PENDING'}">
+                <!-- Reduce quantity form -->
+                <form th:action="@{/orders/{id}/items/{detailId}/quantity(id=${order.id}, detailId=${detail.id})}"
+                      method="post" class="d-inline-flex gap-1 align-items-center me-2">
+                    <input type="number" name="newQuantity" class="form-control form-control-sm"
+                           style="width: 80px;"
+                           min="1"
+                           th:max="${detail.quantity - 1}"
+                           th:value="${detail.quantity - 1}"
+                           placeholder="Số lượng">
+                    <button type="submit" class="btn btn-sm btn-outline-warning">Giảm</button>
+                </form>
+
+                <!-- Cancel line form -->
+                <form th:action="@{/orders/{id}/items/{detailId}/cancel(id=${order.id}, detailId=${detail.id})}"
+                      method="post" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Bạn có chắc muốn hủy dòng món này?')">
+                        Hủy dòng
+                    </button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(order.details)}">
+            <td colspan="7" class="text-center text-muted">Không có dòng món nào.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Add items form (only for OPEN orders) -->
+    <div class="card mb-4" th:if="${order.status.name() == 'OPEN'}">
+        <div class="card-header">Thêm món vào đơn</div>
+        <div class="card-body">
+            <form th:action="@{/orders/{id}/items(id=${order.id})}" method="post">
+                <div id="orderLinesContainer">
+                    <div class="order-line-row row g-2 align-items-end mb-2">
+                        <div class="col-md-6">
+                            <label for="addItemId" class="form-label">Món</label>
+                            <select id="addItemId" class="form-select" name="lines[0].itemId">
+                                <option value="">-- Chọn món --</option>
+                                <option th:each="item : ${availableItems}"
+                                        th:value="${item.id}"
+                                        th:text="${item.itemName} + ' - ' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="addQuantity" class="form-label">Số lượng</label>
+                            <input id="addQuantity" type="number" class="form-control"
+                                   name="lines[0].quantity" min="1" value="1" placeholder="Số lượng">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderLine(this)">
+                                Xóa dòng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="addOrderLine()">
+                        + Thêm dòng nữa
+                    </button>
+                    <button type="submit" class="btn btn-primary">Thêm vào đơn</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancel entire order form (only for OPEN orders) -->
+    <div class="card mb-4" th:if="${order.status.name() == 'OPEN'}">
+        <div class="card-header text-danger">Hủy đơn hàng</div>
+        <div class="card-body">
+            <form th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post">
+                <div class="mb-3">
+                    <label for="cancelReason" class="form-label">Lý do hủy (tùy chọn)</label>
+                    <textarea id="cancelReason" class="form-control" name="reason" rows="2"
+                              placeholder="Nhập lý do hủy đơn..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('Bạn có chắc muốn hủy toàn bộ đơn hàng này? Bàn sẽ trở về trạng thái sẵn sàng.')">
+                    Hủy đơn hàng
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
