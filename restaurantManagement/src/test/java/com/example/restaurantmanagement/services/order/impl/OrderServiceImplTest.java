@@ -580,7 +580,7 @@ class OrderServiceImplTest {
         order.getDetails().add(detail);
         order.setTotalAmount(new BigDecimal("110000"));
 
-        when(orderRepository.findByStatusWithDetails("OPEN")).thenReturn(List.of(order));
+        when(orderRepository.findByStatusWithDetails(OrderStatus.OPEN)).thenReturn(List.of(order));
 
         List<OrderSummaryView> result = orderService.listOpenOrders();
 
@@ -611,7 +611,7 @@ class OrderServiceImplTest {
         detail2.setCookingStatus(CookingStatus.CANCELLED);
         order.getDetails().add(detail2);
 
-        when(orderRepository.findByStatusWithDetails("OPEN")).thenReturn(List.of(order));
+        when(orderRepository.findByStatusWithDetails(OrderStatus.OPEN)).thenReturn(List.of(order));
 
         List<OrderSummaryView> result = orderService.listOpenOrders();
         assertEquals(1, result.get(0).itemCount());

@@ -45,7 +45,8 @@ public class TableServiceImpl implements ITableService {
     @Override
     @Transactional(readOnly = true)
     public List<TableView> listTablesByStatus(String status) {
-        return tableRepository.findByStatus(status).stream()
+        TableStatus tableStatus = TableStatus.valueOf(status.toUpperCase());
+        return tableRepository.findByStatus(tableStatus).stream()
                 .map(this::toTableView)
                 .toList();
     }

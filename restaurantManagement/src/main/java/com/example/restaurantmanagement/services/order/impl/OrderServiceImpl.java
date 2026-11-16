@@ -323,7 +323,7 @@ public class OrderServiceImpl implements IOrderService {
     @Transactional(readOnly = true)
     public List<OrderSummaryView> listOpenOrders() {
         // TODO(auth): WAITER, MANAGER
-        return orderRepository.findByStatusWithDetails("OPEN")
+        return orderRepository.findByStatusWithDetails(OrderStatus.OPEN)
                 .stream()
                 .map(this::toOrderSummaryView)
                 .toList();

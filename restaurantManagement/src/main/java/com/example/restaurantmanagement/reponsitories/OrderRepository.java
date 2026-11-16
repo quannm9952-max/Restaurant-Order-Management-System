@@ -1,6 +1,7 @@
 package com.example.restaurantmanagement.reponsitories;
 
 import com.example.restaurantmanagement.entities.Order;
+import com.example.restaurantmanagement.entities.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,7 +29,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
      * Find orders by status with JOIN FETCH to avoid N+1 for details.
      */
     @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.details WHERE o.status = :status")
-    List<Order> findByStatusWithDetails(@Param("status") String status);
+    List<Order> findByStatusWithDetails(@Param("status") OrderStatus status);
 
     /**
      * Find an order by ID with JOIN FETCH for details, table, and employee.

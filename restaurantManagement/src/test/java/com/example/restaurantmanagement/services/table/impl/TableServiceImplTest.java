@@ -64,7 +64,7 @@ class TableServiceImplTest {
 
     @Test
     void listTablesByStatus_shouldReturnFilteredTableViewList() {
-        when(tableRepository.findByStatus("AVAILABLE")).thenReturn(List.of(table));
+        when(tableRepository.findByStatus(TableStatus.AVAILABLE)).thenReturn(List.of(table));
         when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
 
         List<TableView> result = tableService.listTablesByStatus("AVAILABLE");
