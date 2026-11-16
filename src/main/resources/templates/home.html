@@ -4,14 +4,11 @@
   <meta charset="UTF-8">
   <title>Home - Restaurant Order Management System</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 40px; }
-    .card { background: white; padding: 24px; border-radius: 8px; max-width: 480px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-    .role { display: inline-block; background: #c0392b; color: white;
-            padding: 2px 10px; border-radius: 12px; font-size: 13px; }
-    a.link { display: block; margin: 12px 0; color: #c0392b; }
-    button { padding: 8px 16px; background: #555; color: white; border: none;
-             border-radius: 4px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; background: #f6f7f9; margin: 0; padding: 40px; color: #14202e; }
+    .card { background: white; padding: 24px; border-radius: 12px; max-width: 480px; border: 1px solid #e4e8ee; }
+    .role { display: inline-block; background: #e8641f; color: white; padding: 2px 10px; border-radius: 12px; font-size: 13px; }
+    a.link { display: block; margin: 12px 0; color: #e8641f; }
+    button { padding: 8px 16px; background: #14202e; color: white; border: none; border-radius: 6px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -19,8 +16,9 @@
     <h2>Welcome, <span th:text="${username}">user</span></h2>
     <p>Your role: <span class="role" th:text="${role}">ROLE</span></p>
 
-    <a class="link" th:if="${isManager}" th:href="@{/employees}">Manage employee accounts (Manager only)</a>
-    <a class="link" th:href="@{/employees}">Try opening the Manager-only page</a>
+    <a class="link" th:if="${isManager}" th:href="@{/employees}">Employee Management (Manager only)</a>
+    <!-- Demo link for non-managers: clicking it shows Access Denied (UC02) -->
+    <a class="link" th:unless="${isManager}" th:href="@{/employees}">Demo: open the Manager-only page (access denied)</a>
 
     <form th:action="@{/logout}" method="post">
       <button type="submit">Logout</button>
