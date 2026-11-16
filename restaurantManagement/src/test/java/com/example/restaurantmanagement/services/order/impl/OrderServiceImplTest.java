@@ -1,5 +1,9 @@
 package com.example.restaurantmanagement.services.order.impl;
 
+import com.example.restaurantmanagement.dto.order.OrderDetailView;
+import com.example.restaurantmanagement.dto.order.OrderLineView;
+import com.example.restaurantmanagement.dto.order.OrderSummaryView;
+import com.example.restaurantmanagement.dto.table.MenuItemOption;
 import com.example.restaurantmanagement.entities.Account;
 import com.example.restaurantmanagement.entities.Employee;
 import com.example.restaurantmanagement.entities.MenuItem;
@@ -554,11 +558,246 @@ class OrderServiceImplTest {
     // ==================== GET ORDER TESTS ====================
 
     @Test
-    void getOrderWithDetails_notFound_shouldThrowNotFoundException() {
+    void getOrderDetail_notFound_shouldThrowNotFoundException() {
         when(orderRepository.findByIdWithDetails(999)).thenReturn(Optional.empty());
 
         NotFoundException ex = assertThrows(NotFoundException.class,
-                () -> orderService.getOrderWithDetails(999));
+                () -> orderService.getOrderDetail(999));
         assertTrue(ex.getMessage().contains("Không tìm thấy đơn"));
+    }
+
+    // ==================== VIEW DTO TESTS ====================
+
+    @Test
+    void listOpenOrders_shouldReturnSummaryViews() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail);
+        order.setTotalAmount(new BigDecimal("110000"));
+
+        when(orderRepository.findByStatusWithDetails("OPEN")).thenReturn(List.of(order));
+
+        List<OrderSummaryView> result = orderService.listOpenOrders();
+
+        assertEquals(1, result.size());
+        OrderSummaryView view = result.get(0);
+        assertEquals("Bàn 1", view.tableName());
+        assertEquals("Waiter Demo", view.employeeName());
+        assertEquals(0, new BigDecimal("110000").compareTo(view.totalAmount()));
+        assertEquals(1, view.itemCount());
+    }
+
+    @Test
+    void listOpenOrders_itemCount_excludesCancelled() {
+        Order order = createOpenOrder();
+        OrderDetail detail1 = new OrderDetail();
+        detail1.setId(1);
+        detail1.setOrder(order);
+        detail1.setQuantity(2);
+        detail1.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail1.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail1);
+
+        OrderDetail detail2 = new OrderDetail();
+        detail2.setId(2);
+        detail2.setOrder(order);
+        detail2.setQuantity(1);
+        detail2.setUnitPriceAtOrder(new BigDecimal("30000"));
+        detail2.setCookingStatus(CookingStatus.CANCELLED);
+        order.getDetails().add(detail2);
+
+        when(orderRepository.findByStatusWithDetails("OPEN")).thenReturn(List.of(order));
+
+        List<OrderSummaryView> result = orderService.listOpenOrders();
+        assertEquals(1, result.get(0).itemCount());
+    }
+
+    @Test
+    void getOrderDetail_shouldReturnDetailView() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setMenuItem(menuItem);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setItemNameAtOrder("Phở bò");
+        detail.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail);
+        order.setTotalAmount(new BigDecimal("110000"));
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(false);
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+
+        assertEquals(1, view.id());
+        assertEquals("Bàn 1", view.tableName());
+        assertEquals(OrderStatus.OPEN, view.status());
+        assertEquals("Waiter Demo", view.employeeName());
+        assertTrue(view.canEdit());
+        assertTrue(view.canCancelOrder());
+        assertEquals(1, view.lines().size());
+    }
+
+    @Test
+    void getOrderDetail_canEdit_false_whenOrderNotOpen() {
+        Order order = createOpenOrder();
+        order.setStatus(OrderStatus.COMPLETED);
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+
+        assertFalse(view.canEdit());
+        assertFalse(view.canCancelOrder());
+    }
+
+    @Test
+    void getOrderDetail_canCancelOrder_false_whenHasPreparingDetail() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(1);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setCookingStatus(CookingStatus.PREPARING);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+
+        assertTrue(view.canEdit()); // order is OPEN
+        assertFalse(view.canCancelOrder());
+    }
+
+    @Test
+    void getOrderDetail_canCancelOrder_false_whenHasSuccessfulPayment() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(1);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(true);
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+
+        assertTrue(view.canEdit());
+        assertFalse(view.canCancelOrder());
+    }
+
+    @Test
+    void getOrderDetail_lineCanEdit_true_whenOpenAndPending() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setItemNameAtOrder("Phở bò");
+        detail.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(false);
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+        OrderLineView line = view.lines().get(0);
+
+        assertTrue(line.canEdit());
+        assertEquals(1, line.detailId());
+        assertEquals("Phở bò", line.itemNameAtOrder());
+        assertEquals(CookingStatus.PENDING, line.cookingStatus());
+        assertEquals(0, new BigDecimal("110000").compareTo(line.subtotal()));
+    }
+
+    @Test
+    void getOrderDetail_lineCanEdit_false_whenPreparing() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setItemNameAtOrder("Phở bò");
+        detail.setCookingStatus(CookingStatus.PREPARING);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+        assertFalse(view.lines().get(0).canEdit());
+    }
+
+    @Test
+    void getOrderDetail_lineCanEdit_false_whenReady() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setCookingStatus(CookingStatus.READY);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+
+        assertFalse(orderService.getOrderDetail(1).lines().get(0).canEdit());
+    }
+
+    @Test
+    void getOrderDetail_lineCanEdit_false_whenServed() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setCookingStatus(CookingStatus.SERVED);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+
+        assertFalse(orderService.getOrderDetail(1).lines().get(0).canEdit());
+    }
+
+    @Test
+    void getOrderDetail_lineCanEdit_false_whenCancelled() {
+        Order order = createOpenOrder();
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setCookingStatus(CookingStatus.CANCELLED);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(false);
+
+        assertFalse(orderService.getOrderDetail(1).lines().get(0).canEdit());
+    }
+
+    @Test
+    void listAvailableItems_shouldReturnMenuItemOptions() {
+        when(menuItemRepository.findByIsAvailableTrue()).thenReturn(List.of(menuItem));
+
+        List<MenuItemOption> result = orderService.listAvailableItems();
+
+        assertEquals(1, result.size());
+        MenuItemOption opt = result.get(0);
+        assertEquals(1, opt.id());
+        assertEquals("Phở bò", opt.itemName());
+        assertEquals(0, new BigDecimal("55000").compareTo(opt.price()));
     }
 }

@@ -1,5 +1,6 @@
 package com.example.restaurantmanagement.services.table.impl;
 
+import com.example.restaurantmanagement.dto.table.TableView;
 import com.example.restaurantmanagement.entities.RestaurantTable;
 import com.example.restaurantmanagement.entities.enums.TableStatus;
 import com.example.restaurantmanagement.exeptions.BusinessException;
@@ -8,6 +9,7 @@ import com.example.restaurantmanagement.reponsitories.OrderRepository;
 import com.example.restaurantmanagement.reponsitories.TableRepository;
 import com.example.restaurantmanagement.services.table.ITableService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -27,26 +29,42 @@ public class TableServiceImpl implements ITableService {
     }
 
     /**
-     * Get all tables.
+     * Get all tables as view DTOs.
      */
     @Override
-    public List<RestaurantTable> getAllTables() {
-        return tableRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<TableView> listTables() {
+        return tableRepository.findAll().stream()
+                .map(this::toTableView)
+                .toList();
     }
 
     /**
-     * Get tables filtered by status.
+     * Get tables filtered by status as view DTOs.
      */
     @Override
-    public List<RestaurantTable> getTablesByStatus(String status) {
-        return tableRepository.findByStatus(status);
+    @Transactional(readOnly = true)
+    public List<TableView> listTablesByStatus(String status) {
+        return tableRepository.findByStatus(status).stream()
+                .map(this::toTableView)
+                .toList();
     }
 
     /**
-     * Get a table by ID.
+     * Get a table by ID as a view DTO.
      */
     @Override
-    public RestaurantTable getTableById(Integer id) {
+    @Transactional(readOnly = true)
+    public TableView getTable(Integer id) {
+        RestaurantTable table = tableRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + id));
+        return toTableView(table);
+    }
+
+    /**
+     * Get a table by ID (internal use for write operations).
+     */
+    private RestaurantTable getTableById(Integer id) {
         return tableRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + id));
     }
@@ -91,5 +109,24 @@ public class TableServiceImpl implements ITableService {
     @Override
     public boolean hasOpenOrder(Integer tableId) {
         return orderRepository.existsOpenByTableId(tableId);
+    }
+
+    // ==================== Entity to View DTO mapping ====================
+
+    private TableView toTableView(RestaurantTable table) {
+        Integer currentOrderId = orderRepository.findOpenOrderIdByTableId(table.getId()).orElse(null);
+        boolean hasOpen = currentOrderId != null;
+        boolean canCreateOrder = table.getStatus() == TableStatus.AVAILABLE && !hasOpen;
+        boolean canChangeStatus = !hasOpen && table.getStatus() != TableStatus.OCCUPIED;
+
+        return new TableView(
+                table.getId(),
+                table.getTableName(),
+                table.getCapacity(),
+                table.getStatus(),
+                currentOrderId,
+                canCreateOrder,
+                canChangeStatus
+        );
     }
 }

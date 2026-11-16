@@ -54,21 +54,21 @@
                 <dt class="col-sm-3">Tổng tiền</dt>
                 <dd class="col-sm-9" th:text="${#numbers.formatDecimal(openOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></dd>
 
-                <dt class="col-sm-3">Ghi chú</dt>
-                <dd class="col-sm-9" th:text="${openOrder.note != null and !openOrder.note.isEmpty()} ? ${openOrder.note} : '(Không có)'"></dd>
+                <dt class="col-sm-3">Số dòng món</dt>
+                <dd class="col-sm-9" th:text="${openOrder.itemCount}"></dd>
             </dl>
         </div>
     </div>
 
-    <!-- Create order button (only if table is AVAILABLE and no open order) -->
-    <div class="mb-4" th:if="${openOrder == null and table.status.name() == 'AVAILABLE'}">
+    <!-- Create order button (only if canCreateOrder) -->
+    <div class="mb-4" th:if="${table.canCreateOrder}">
         <a th:href="@{/orders/new(tableId=${table.id})}" class="btn btn-success">
             Tạo đơn mới cho bàn này
         </a>
     </div>
 
-    <!-- Update status form -->
-    <div class="card">
+    <!-- Update status form (only if canChangeStatus) -->
+    <div class="card" th:if="${table.canChangeStatus}">
         <div class="card-header">Cập nhật trạng thái bàn</div>
         <div class="card-body">
             <form th:action="@{/tables/{id}/status(id=${table.id})}" method="post">

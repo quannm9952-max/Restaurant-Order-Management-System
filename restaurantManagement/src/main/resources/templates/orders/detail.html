@@ -28,15 +28,15 @@
 
                 <dt class="col-sm-3">Bàn</dt>
                 <dd class="col-sm-9">
-                    <a th:href="@{/tables/{id}(id=${order.table.id})}"
-                       th:text="${order.table.tableName}"></a>
+                    <a th:href="@{/tables/{id}(id=${order.tableId})}"
+                       th:text="${order.tableName}"></a>
                 </dd>
 
                 <dt class="col-sm-3">Ngày tạo</dt>
                 <dd class="col-sm-9" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></dd>
 
                 <dt class="col-sm-3">Người tạo</dt>
-                <dd class="col-sm-9" th:text="${order.employee != null} ? ${order.employee.fullName} : '(Không rõ)'"></dd>
+                <dd class="col-sm-9" th:text="${order.employeeName}"></dd>
 
                 <dt class="col-sm-3">Tổng tiền</dt>
                 <dd class="col-sm-9 fw-bold"
@@ -59,36 +59,36 @@
             <th>Số lượng</th>
             <th>Thành tiền</th>
             <th>Trạng thái món</th>
-            <th th:if="${order.status.name() == 'OPEN'}">Thao tác</th>
+            <th th:if="${order.canEdit}">Thao tác</th>
         </tr>
         </thead>
         <tbody>
-        <tr th:each="detail, iterStat : ${order.details}">
+        <tr th:each="line, iterStat : ${order.lines}">
             <td th:text="${iterStat.count}"></td>
-            <td th:text="${detail.itemNameAtOrder}"></td>
-            <td th:text="${#numbers.formatDecimal(detail.unitPriceAtOrder, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-            <td th:text="${detail.quantity}"></td>
-            <td th:text="${#numbers.formatDecimal(detail.unitPriceAtOrder * detail.quantity, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td th:text="${line.itemNameAtOrder}"></td>
+            <td th:text="${#numbers.formatDecimal(line.unitPriceAtOrder, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td th:text="${line.quantity}"></td>
+            <td th:text="${#numbers.formatDecimal(line.subtotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
             <td>
-                <span th:class="'status-' + ${#strings.toLowerCase(detail.cookingStatus.name())}"
-                      th:text="${#strings.capitalize(#strings.toLowerCase(detail.cookingStatus.name()))}">
+                <span th:class="'status-' + ${#strings.toLowerCase(line.cookingStatus.name())}"
+                      th:text="${#strings.capitalize(#strings.toLowerCase(line.cookingStatus.name()))}">
                 </span>
             </td>
-            <td th:if="${order.status.name() == 'OPEN' and detail.cookingStatus.name() == 'PENDING'}">
+            <td th:if="${line.canEdit}">
                 <!-- Reduce quantity form -->
-                <form th:action="@{/orders/{id}/items/{detailId}/quantity(id=${order.id}, detailId=${detail.id})}"
+                <form th:action="@{/orders/{id}/items/{detailId}/quantity(id=${order.id}, detailId=${line.detailId})}"
                       method="post" class="d-inline-flex gap-1 align-items-center me-2">
                     <input type="number" name="newQuantity" class="form-control form-control-sm"
                            style="width: 80px;"
                            min="1"
-                           th:max="${detail.quantity - 1}"
-                           th:value="${detail.quantity - 1}"
+                           th:max="${line.quantity - 1}"
+                           th:value="${line.quantity - 1}"
                            placeholder="Số lượng">
                     <button type="submit" class="btn btn-sm btn-outline-warning">Giảm</button>
                 </form>
 
                 <!-- Cancel line form -->
-                <form th:action="@{/orders/{id}/items/{detailId}/cancel(id=${order.id}, detailId=${detail.id})}"
+                <form th:action="@{/orders/{id}/items/{detailId}/cancel(id=${order.id}, detailId=${line.detailId})}"
                       method="post" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-danger"
                             onclick="return confirm('Bạn có chắc muốn hủy dòng món này?')">
@@ -97,14 +97,14 @@
                 </form>
             </td>
         </tr>
-        <tr th:if="${#lists.isEmpty(order.details)}">
+        <tr th:if="${#lists.isEmpty(order.lines)}">
             <td colspan="7" class="text-center text-muted">Không có dòng món nào.</td>
         </tr>
         </tbody>
     </table>
 
     <!-- Add items form (only for OPEN orders) -->
-    <div class="card mb-4" th:if="${order.status.name() == 'OPEN'}">
+    <div class="card mb-4" th:if="${order.canEdit}">
         <div class="card-header">Thêm món vào đơn</div>
         <div class="card-body">
             <form th:action="@{/orders/{id}/items(id=${order.id})}" method="post">
@@ -143,8 +143,8 @@
         </div>
     </div>
 
-    <!-- Cancel entire order form (only for OPEN orders) -->
-    <div class="card mb-4" th:if="${order.status.name() == 'OPEN'}">
+    <!-- Cancel entire order form (only when allowed) -->
+    <div class="card mb-4" th:if="${order.canCancelOrder}">
         <div class="card-header text-danger">Hủy đơn hàng</div>
         <div class="card-body">
             <form th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post">

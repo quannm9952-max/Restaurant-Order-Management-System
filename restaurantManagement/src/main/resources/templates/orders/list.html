@@ -32,13 +32,10 @@
             <td>
                 <a th:href="@{/orders/{id}(id=${order.id})}" th:text="${order.id}"></a>
             </td>
-            <td>
-                <a th:href="@{/tables/{id}(id=${order.table.id})}"
-                   th:text="${order.table.tableName}"></a>
-            </td>
+            <td th:text="${order.tableName}"></td>
             <td th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
-            <td th:text="${order.employee != null} ? ${order.employee.fullName} : '(Không rõ)'"></td>
-            <td th:text="${#lists.size(order.details)}"></td>
+            <td th:text="${order.employeeName}"></td>
+            <td th:text="${order.itemCount}"></td>
             <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
             <td>
                 <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-sm btn-outline-primary">Chi tiết</a>

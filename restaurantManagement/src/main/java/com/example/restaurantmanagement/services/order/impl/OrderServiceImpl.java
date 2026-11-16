@@ -1,5 +1,9 @@
 package com.example.restaurantmanagement.services.order.impl;
 
+import com.example.restaurantmanagement.dto.order.OrderDetailView;
+import com.example.restaurantmanagement.dto.order.OrderLineView;
+import com.example.restaurantmanagement.dto.order.OrderSummaryView;
+import com.example.restaurantmanagement.dto.table.MenuItemOption;
 import com.example.restaurantmanagement.entities.*;
 import com.example.restaurantmanagement.entities.enums.CookingStatus;
 import com.example.restaurantmanagement.entities.enums.OrderStatus;
@@ -313,30 +317,48 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     /**
-     * Get all OPEN orders.
+     * Get all OPEN orders as summary views.
      */
     @Override
-    public List<Order> getOpenOrders() {
+    @Transactional(readOnly = true)
+    public List<OrderSummaryView> listOpenOrders() {
         // TODO(auth): WAITER, MANAGER
-        return orderRepository.findByStatusWithDetails("OPEN");
+        return orderRepository.findByStatusWithDetails("OPEN")
+                .stream()
+                .map(this::toOrderSummaryView)
+                .toList();
     }
 
     /**
-     * Get an order by ID with details.
+     * Get an order by ID with details as a view DTO.
      */
     @Override
-    public Order getOrderWithDetails(Integer id) {
+    @Transactional(readOnly = true)
+    public OrderDetailView getOrderDetail(Integer id) {
         // TODO(auth): WAITER, MANAGER
-        return orderRepository.findByIdWithDetails(id)
+        Order order = orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn với mã: " + id));
+        return toOrderDetailView(order);
     }
 
     /**
      * Get all available menu items for order creation.
      */
     @Override
-    public List<MenuItem> getAvailableMenuItems() {
-        return menuItemRepository.findByIsAvailableTrue();
+    @Transactional(readOnly = true)
+    public List<MenuItemOption> listAvailableItems() {
+        return menuItemRepository.findByIsAvailableTrue()
+                .stream()
+                .map(this::toMenuItemOption)
+                .toList();
+    }
+
+    /**
+     * Get an order by ID with details (internal use for write operations).
+     */
+    private Order getOrderWithDetails(Integer id) {
+        return orderRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn với mã: " + id));
     }
 
     // ==================== Private helpers ====================
@@ -367,5 +389,80 @@ public class OrderServiceImpl implements IOrderService {
             }
         }
         throw new NotFoundException("Không tìm thấy dòng món với mã: " + detailId);
+    }
+
+    // ==================== Entity to View DTO mapping ====================
+
+    private OrderSummaryView toOrderSummaryView(Order order) {
+        int itemCount = (int) order.getDetails().stream()
+                .filter(d -> d.getCookingStatus() != CookingStatus.CANCELLED)
+                .count();
+        return new OrderSummaryView(
+                order.getId(),
+                order.getTable().getTableName(),
+                order.getCreatedAt(),
+                order.getEmployee() != null ? order.getEmployee().getFullName() : "(Không rõ)",
+                order.getTotalAmount(),
+                itemCount
+        );
+    }
+
+    private OrderDetailView toOrderDetailView(Order order) {
+        boolean isOpen = order.getStatus() == OrderStatus.OPEN;
+        List<OrderLineView> lines = order.getDetails().stream()
+                .map(d -> toOrderLineView(d, isOpen))
+                .toList();
+
+        // canCancelOrder: order must be OPEN, no PREPARING/READY/SERVED details, no successful payment
+        boolean canCancelOrder = isOpen && !hasInProgressDetails(order)
+                && !paymentRepository.existsSuccessfulByOrderId(order.getId());
+
+        return new OrderDetailView(
+                order.getId(),
+                order.getTable().getId(),
+                order.getTable().getTableName(),
+                order.getStatus(),
+                order.getCreatedAt(),
+                order.getEmployee() != null ? order.getEmployee().getFullName() : "(Không rõ)",
+                order.getNote(),
+                order.getTotalAmount(),
+                isOpen,
+                canCancelOrder,
+                lines
+        );
+    }
+
+    private OrderLineView toOrderLineView(OrderDetail detail, boolean orderIsOpen) {
+        boolean canEdit = orderIsOpen && detail.getCookingStatus() == CookingStatus.PENDING;
+        BigDecimal subtotal = detail.getUnitPriceAtOrder()
+                .multiply(BigDecimal.valueOf(detail.getQuantity()))
+                .setScale(2, RoundingMode.HALF_UP);
+        return new OrderLineView(
+                detail.getId(),
+                detail.getItemNameAtOrder(),
+                detail.getQuantity(),
+                detail.getUnitPriceAtOrder(),
+                subtotal,
+                detail.getCookingStatus(),
+                canEdit
+        );
+    }
+
+    private MenuItemOption toMenuItemOption(MenuItem item) {
+        return new MenuItemOption(item.getId(), item.getItemName(), item.getPrice());
+    }
+
+    /**
+     * Check if any detail line is in PREPARING, READY, or SERVED state.
+     */
+    private boolean hasInProgressDetails(Order order) {
+        for (OrderDetail detail : order.getDetails()) {
+            CookingStatus status = detail.getCookingStatus();
+            if (status == CookingStatus.PREPARING || status == CookingStatus.READY
+                    || status == CookingStatus.SERVED) {
+                return true;
+            }
+        }
+        return false;
     }
 }

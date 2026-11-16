@@ -1,5 +1,7 @@
 package com.example.restaurantmanagement.services.table;
 
+import com.example.restaurantmanagement.dto.table.MenuItemOption;
+import com.example.restaurantmanagement.dto.table.TableView;
 import com.example.restaurantmanagement.entities.RestaurantTable;
 import com.example.restaurantmanagement.entities.enums.TableStatus;
 import com.example.restaurantmanagement.exeptions.BusinessException;
@@ -14,31 +16,31 @@ import java.util.List;
 public interface ITableService {
 
     /**
-     * Get all tables.
+     * Get all tables as view DTOs.
      * // TODO(auth): WAITER, MANAGER
      *
-     * @return list of all tables
+     * @return list of all table views
      */
-    List<RestaurantTable> getAllTables();
+    List<TableView> listTables();
 
     /**
-     * Get tables filtered by status.
+     * Get tables filtered by status as view DTOs.
      * // TODO(auth): WAITER, MANAGER
      *
      * @param status the status filter string
-     * @return list of tables with the given status
+     * @return list of table views with the given status
      */
-    List<RestaurantTable> getTablesByStatus(String status);
+    List<TableView> listTablesByStatus(String status);
 
     /**
-     * Get a table by ID.
+     * Get a table by ID as a view DTO.
      * // TODO(auth): WAITER, MANAGER
      *
      * @param id the table ID
-     * @return the table
+     * @return the table view
      * @throws NotFoundException if table not found
      */
-    RestaurantTable getTableById(Integer id);
+    TableView getTable(Integer id);
 
     /**
      * Update table status manually. Only allows AVAILABLE <-> OUT_OF_SERVICE transitions.

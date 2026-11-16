@@ -1,5 +1,6 @@
 package com.example.restaurantmanagement.services.table.impl;
 
+import com.example.restaurantmanagement.dto.table.TableView;
 import com.example.restaurantmanagement.entities.RestaurantTable;
 import com.example.restaurantmanagement.entities.enums.TableStatus;
 import com.example.restaurantmanagement.exeptions.BusinessException;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,31 +48,37 @@ class TableServiceImplTest {
     // ==================== GET TABLES TESTS ====================
 
     @Test
-    void getAllTables_shouldReturnAllTables() {
+    void listTables_shouldReturnTableViewList() {
         when(tableRepository.findAll()).thenReturn(List.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
 
-        List<RestaurantTable> result = tableService.getAllTables();
+        List<TableView> result = tableService.listTables();
 
         assertEquals(1, result.size());
-        assertEquals("Bàn 1", result.get(0).getTableName());
+        TableView view = result.get(0);
+        assertEquals("Bàn 1", view.tableName());
+        assertEquals(4, view.capacity());
+        assertEquals(TableStatus.AVAILABLE, view.status());
+        assertNull(view.currentOrderId());
     }
 
     @Test
-    void getTablesByStatus_shouldReturnFilteredTables() {
+    void listTablesByStatus_shouldReturnFilteredTableViewList() {
         when(tableRepository.findByStatus("AVAILABLE")).thenReturn(List.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
 
-        List<RestaurantTable> result = tableService.getTablesByStatus("AVAILABLE");
+        List<TableView> result = tableService.listTablesByStatus("AVAILABLE");
 
         assertEquals(1, result.size());
-        assertEquals(TableStatus.AVAILABLE, result.get(0).getStatus());
+        assertEquals(TableStatus.AVAILABLE, result.get(0).status());
     }
 
     @Test
-    void getTableById_notFound_shouldThrowNotFoundException() {
+    void getTable_notFound_shouldThrowNotFoundException() {
         when(tableRepository.findById(999)).thenReturn(Optional.empty());
 
         NotFoundException ex = assertThrows(NotFoundException.class,
-                () -> tableService.getTableById(999));
+                () -> tableService.getTable(999));
         assertTrue(ex.getMessage().contains("Không tìm thấy bàn"));
     }
 
@@ -153,5 +161,93 @@ class TableServiceImplTest {
         when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
 
         assertFalse(tableService.hasOpenOrder(1));
+    }
+
+    // ==================== VIEW DTO FLAGS TESTS ====================
+
+    @Test
+    void getTable_canCreateOrder_true_whenAvailableAndNoOpenOrder() {
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+
+        TableView view = tableService.getTable(1);
+
+        assertTrue(view.canCreateOrder());
+    }
+
+    @Test
+    void getTable_canCreateOrder_false_whenOccupied() {
+        table.setStatus(TableStatus.OCCUPIED);
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+
+        TableView view = tableService.getTable(1);
+
+        assertFalse(view.canCreateOrder());
+        assertEquals(10, view.currentOrderId());
+    }
+
+    @Test
+    void getTable_canCreateOrder_false_whenOutOfService() {
+        table.setStatus(TableStatus.OUT_OF_SERVICE);
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+
+        TableView view = tableService.getTable(1);
+
+        assertFalse(view.canCreateOrder());
+    }
+
+    @Test
+    void getTable_canCreateOrder_false_whenHasOpenOrder() {
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+
+        TableView view = tableService.getTable(1);
+
+        assertFalse(view.canCreateOrder());
+        assertEquals(10, view.currentOrderId());
+    }
+
+    @Test
+    void getTable_canChangeStatus_true_whenAvailableAndNoOpenOrder() {
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+
+        TableView view = tableService.getTable(1);
+
+        assertTrue(view.canChangeStatus());
+    }
+
+    @Test
+    void getTable_canChangeStatus_true_whenOutOfServiceAndNoOpenOrder() {
+        table.setStatus(TableStatus.OUT_OF_SERVICE);
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+
+        TableView view = tableService.getTable(1);
+
+        assertTrue(view.canChangeStatus());
+    }
+
+    @Test
+    void getTable_canChangeStatus_false_whenOccupied() {
+        table.setStatus(TableStatus.OCCUPIED);
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+
+        TableView view = tableService.getTable(1);
+
+        assertFalse(view.canChangeStatus());
+    }
+
+    @Test
+    void getTable_canChangeStatus_false_whenHasOpenOrder() {
+        when(tableRepository.findById(1)).thenReturn(Optional.of(table));
+        when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+
+        TableView view = tableService.getTable(1);
+
+        assertFalse(view.canChangeStatus());
     }
 }

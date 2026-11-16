@@ -5,9 +5,9 @@ import com.example.restaurantmanagement.dto.CancelOrderForm;
 import com.example.restaurantmanagement.dto.CreateOrderForm;
 import com.example.restaurantmanagement.dto.OrderLineForm;
 import com.example.restaurantmanagement.dto.UpdateQuantityForm;
-import com.example.restaurantmanagement.entities.MenuItem;
-import com.example.restaurantmanagement.entities.Order;
-import com.example.restaurantmanagement.entities.OrderDetail;
+import com.example.restaurantmanagement.dto.order.OrderDetailView;
+import com.example.restaurantmanagement.dto.order.OrderSummaryView;
+import com.example.restaurantmanagement.dto.table.MenuItemOption;
 import com.example.restaurantmanagement.exeptions.BusinessException;
 import com.example.restaurantmanagement.exeptions.NotFoundException;
 import com.example.restaurantmanagement.services.order.IOrderService;
@@ -46,7 +46,7 @@ public class OrderController {
      */
     @GetMapping
     public String listOrders(Model model) {
-        List<Order> orders = orderService.getOpenOrders();
+        List<OrderSummaryView> orders = orderService.listOpenOrders();
         model.addAttribute("orders", orders);
         return "orders/list";
     }
@@ -62,7 +62,7 @@ public class OrderController {
         // Add one empty line by default
         form.getLines().add(new OrderLineForm());
 
-        List<MenuItem> availableItems = orderService.getAvailableMenuItems();
+        List<MenuItemOption> availableItems = orderService.listAvailableItems();
         model.addAttribute("form", form);
         model.addAttribute("availableItems", availableItems);
         return "orders/new";
@@ -111,13 +111,13 @@ public class OrderController {
                 }
             }
 
-            Order order = orderService.createOrder(form.getTableId(), form.getNote(), lines);
+            com.example.restaurantmanagement.entities.Order order = orderService.createOrder(form.getTableId(), form.getNote(), lines);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Tạo đơn #"+ order.getId() + " thành công!");
             return "redirect:/orders/" + order.getId();
         } catch (BusinessException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            List<MenuItem> availableItems = orderService.getAvailableMenuItems();
+            List<MenuItemOption> availableItems = orderService.listAvailableItems();
             redirectAttributes.addFlashAttribute("availableItems", availableItems);
             redirectAttributes.addFlashAttribute("form", form);
             return "redirect:/orders/new?tableId=" + form.getTableId();
@@ -133,9 +133,9 @@ public class OrderController {
     @GetMapping("/{id}")
     public String orderDetail(@PathVariable("id") Integer id, Model model) {
         try {
-            Order order = orderService.getOrderWithDetails(id);
+            OrderDetailView order = orderService.getOrderDetail(id);
             model.addAttribute("order", order);
-            model.addAttribute("availableItems", orderService.getAvailableMenuItems());
+            model.addAttribute("availableItems", orderService.listAvailableItems());
             return "orders/detail";
         } catch (NotFoundException e) {
             model.addAttribute("errorMessage", e.getMessage());

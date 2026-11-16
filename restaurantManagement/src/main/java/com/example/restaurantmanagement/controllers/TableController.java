@@ -1,6 +1,7 @@
 package com.example.restaurantmanagement.controllers;
 
-import com.example.restaurantmanagement.entities.RestaurantTable;
+import com.example.restaurantmanagement.dto.order.OrderSummaryView;
+import com.example.restaurantmanagement.dto.table.TableView;
 import com.example.restaurantmanagement.entities.enums.TableStatus;
 import com.example.restaurantmanagement.exeptions.BusinessException;
 import com.example.restaurantmanagement.exeptions.NotFoundException;
@@ -47,12 +48,12 @@ public class TableController {
      */
     @GetMapping
     public String listTables(@RequestParam(required = false) String status, Model model) {
-        List<RestaurantTable> tables;
+        List<TableView> tables;
         if (status != null && !status.isBlank()) {
-            tables = tableService.getTablesByStatus(status);
+            tables = tableService.listTablesByStatus(status);
             model.addAttribute("filterStatus", status);
         } else {
-            tables = tableService.getAllTables();
+            tables = tableService.listTables();
         }
         model.addAttribute("tables", tables);
         model.addAttribute("statuses", TableStatus.values());
@@ -65,22 +66,17 @@ public class TableController {
     @GetMapping("/{id}")
     public String tableDetail(@PathVariable("id") Integer id, Model model) {
         try {
-            RestaurantTable table = tableService.getTableById(id);
+            TableView table = tableService.getTable(id);
             model.addAttribute("table", table);
 
-            // Check if table has an open order
-            if (tableService.hasOpenOrder(id)) {
-                // Find the open order for this table
-                List<com.example.restaurantmanagement.entities.Order> openOrders = orderService.getOpenOrders();
-                com.example.restaurantmanagement.entities.Order openOrder = null;
-                for (com.example.restaurantmanagement.entities.Order order : openOrders) {
-                    if (order.getTable().getId().equals(id)) {
-                        openOrder = order;
+            // If table has an open order, fetch its summary
+            if (table.currentOrderId() != null) {
+                List<OrderSummaryView> openOrders = orderService.listOpenOrders();
+                for (OrderSummaryView order : openOrders) {
+                    if (order.id().equals(table.currentOrderId())) {
+                        model.addAttribute("openOrder", order);
                         break;
                     }
-                }
-                if (openOrder != null) {
-                    model.addAttribute("openOrder", openOrder);
                 }
             }
 

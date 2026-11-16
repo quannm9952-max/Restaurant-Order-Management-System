@@ -18,6 +18,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     boolean existsOpenByTableId(@Param("tableId") Integer tableId);
 
     /**
+     * Find the OPEN order for a specific table (returns just the order ID).
+     * Used by TableService to populate currentOrderId in TableView.
+     */
+    @Query("SELECT o.id FROM Order o WHERE o.table.id = :tableId AND o.status = 'OPEN'")
+    Optional<Integer> findOpenOrderIdByTableId(@Param("tableId") Integer tableId);
+
+    /**
      * Find orders by status with JOIN FETCH to avoid N+1 for details.
      */
     @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.details WHERE o.status = :status")

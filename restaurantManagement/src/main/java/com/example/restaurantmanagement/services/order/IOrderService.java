@@ -1,6 +1,8 @@
 package com.example.restaurantmanagement.services.order;
 
-import com.example.restaurantmanagement.entities.MenuItem;
+import com.example.restaurantmanagement.dto.order.OrderDetailView;
+import com.example.restaurantmanagement.dto.order.OrderSummaryView;
+import com.example.restaurantmanagement.dto.table.MenuItemOption;
 import com.example.restaurantmanagement.entities.Order;
 import com.example.restaurantmanagement.entities.OrderDetail;
 import com.example.restaurantmanagement.exeptions.BusinessException;
@@ -95,27 +97,27 @@ public interface IOrderService {
     Order cancelOrder(Integer orderId, String reason);
 
     /**
-     * Get all OPEN orders.
+     * Get all OPEN orders as summary views.
      * // TODO(auth): WAITER, MANAGER
      *
-     * @return list of open orders
+     * @return list of open order summary views
      */
-    List<Order> getOpenOrders();
+    List<OrderSummaryView> listOpenOrders();
 
     /**
-     * Get an order by ID with details.
+     * Get an order by ID with details as a view DTO.
      * // TODO(auth): WAITER, MANAGER
      *
      * @param id the order ID
-     * @return the order with details
+     * @return the order detail view
      * @throws NotFoundException if order not found
      */
-    Order getOrderWithDetails(Integer id);
+    OrderDetailView getOrderDetail(Integer id);
 
     /**
      * Get all available menu items for order creation.
      *
-     * @return list of available menu items
+     * @return list of available menu item options
      */
-    List<MenuItem> getAvailableMenuItems();
+    List<MenuItemOption> listAvailableItems();
 }
