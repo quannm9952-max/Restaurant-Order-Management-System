@@ -216,7 +216,7 @@
     <a href="/menu" class="tiny primary" style="margin-top:10px; display:inline-block;">Clear Filters</a>
   </div>
 
-  <!-- 1. CHẾ ĐỘ XEM THẺ HÌNH ẢNH SANG TRỌNG (CARDS VIEW) -->
+  <!-- 1. 5-STAR LUXURY CARDS VIEW -->
   <div id="cardsView" class="menu-cards-grid" th:if="${!#lists.isEmpty(items)}">
     <div class="menu-card" th:each="m:${items}" th:classappend="${!m.available ? ' unavailable' : ''}">
       <!-- Image & Badges -->
@@ -225,7 +225,6 @@
              th:alt="${m.name}"
              loading="lazy"
              onerror="this.src='https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'">
-        
         <span class="card-status-badge" th:classappend="${m.available ? ' available' : ' unavailable'}"
               th:text="${m.available ? '● AVAILABLE' : '○ UNAVAILABLE'}">● AVAILABLE</span>
         <span class="card-category-ribbon" th:text="${m.category}">Main Courses</span>
@@ -242,7 +241,7 @@
             <span class="menu-card-price-label">Listed Price</span>
           </div>
           <div class="menu-card-price" th:text="${#numbers.formatDecimal(m.price,0,'COMMA',0,'POINT')} + ' ₫'">
-            1.850.000 ₫
+            1,850,000 ₫
           </div>
         </div>
       </div>
@@ -276,7 +275,7 @@
     </div>
   </div>
 
-  <!-- 2. CHẾ ĐỘ XEM BẢNG QUẢN TRỊ (TABLE VIEW) -->
+  <!-- 2. ADMINISTRATIVE TABLE VIEW -->
   <section id="tableView" class="panel" style="display:none;" th:if="${!#lists.isEmpty(items)}">
     <div class="scroll">
       <table class="data-table">
@@ -309,7 +308,7 @@
             </td>
             <td style="max-width:280px; white-space:normal; font-size:12px; color:#596257;" th:text="${m.description != null and !#strings.isEmpty(m.description) ? m.description : '—'}">Description</td>
             <td>
-              <b class="price-tag" style="color:var(--green);" th:text="${#numbers.formatDecimal(m.price,0,'COMMA',0,'POINT')} + ' ₫'">1.850.000 ₫</b>
+              <b class="price-tag" style="color:var(--green);" th:text="${#numbers.formatDecimal(m.price,0,'COMMA',0,'POINT')} + ' ₫'">1,850,000 ₫</b>
             </td>
             <td>
               <span class="status" th:classappend="${m.available ? ' available' : ' off'}"
@@ -394,7 +393,6 @@
         <div class="form-group">
           <label>Image URL or Path</label>
           <input type="text" name="imageUrl" id="addImageUrl" placeholder="/images/menu/japanese-a5-wagyu-steak.jpg" oninput="previewImage('add')">
-          
           <!-- QUICK 5-STAR PRESETS -->
           <div style="margin-top:8px;">
             <small style="font-weight:700; color:var(--muted); font-size:11px; text-transform:uppercase;">Quick Image Presets (Click to select):</small>

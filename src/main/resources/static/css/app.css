@@ -876,7 +876,7 @@ button, .btn-action {
 }
 
 /* ========================================================
-   TABLE GRID (BÀN ĂN)
+   TABLE GRID LAYOUT
    ======================================================== */
 .table-grid {
   display: grid;
@@ -1226,7 +1226,7 @@ button, .btn-action {
   font-family: 'Playfair Display', Georgia, serif;
 }
 
-/* Chuyển đổi chế độ xem Thẻ (Cards) & Bảng (Table) */
+/* View Mode Toggle (Cards & Table) */
 .view-mode-bar {
   display: flex;
   justify-content: space-between;
@@ -1267,7 +1267,7 @@ button, .btn-action {
   color: var(--green);
 }
 
-/* Lưới Thẻ Món Ăn 5 Sao (Luxury Cards Grid) */
+/* 5-Star Luxury Cards Grid */
 .menu-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
@@ -1295,7 +1295,7 @@ button, .btn-action {
   filter: grayscale(0.2);
 }
 
-/* Hình ảnh món ăn với hiệu ứng zoom & overlay */
+/* Dish Image with Zoom & Overlay Effect */
 .card-img-wrap {
   position: relative;
   width: 100%;
@@ -1313,7 +1313,7 @@ button, .btn-action {
   transform: scale(1.08);
 }
 
-/* Huy hiệu sang trọng đè trên ảnh */
+/* Luxury Badge Overlay */
 .luxury-tag {
   position: absolute;
   top: 12px;
@@ -1366,7 +1366,7 @@ button, .btn-action {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-/* Thân thẻ món ăn */
+/* Card Body */
 .menu-card-body {
   padding: 20px;
   flex: 1;
@@ -1427,7 +1427,7 @@ button, .btn-action {
   letter-spacing: -0.3px;
 }
 
-/* Nút thao tác dưới thẻ */
+/* Card Action Buttons */
 .menu-card-foot {
   padding: 12px 20px 16px;
   background: #fafbfa;
@@ -1444,7 +1444,7 @@ button, .btn-action {
   font-size: 12px;
 }
 
-/* Modal Chi tiết Món ăn 5 Sao (Luxury Split View) */
+/* 5-Star Dish Detail Modal (Luxury Split View) */
 .view-card-split {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -1489,7 +1489,7 @@ button, .btn-action {
   margin-bottom: 4px;
 }
 
-/* Gợi ý ảnh 5 sao mẫu (Image Presets) */
+/* 5-Star Image Presets */
 .image-presets-box {
   display: flex;
   gap: 8px;

@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard | Gourmet Palace 5★</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">
+    <b>RMS</b><span>RESTAURANT</span>
+  </div>
+  <div class="side-label">WORKSPACE</div>
+  <a class="nav active" href="/dashboard">▦ <span>Overview</span></a>
+  <a class="nav" href="/menu" th:if="${user.role=='Manager'}">◈ <span>Menu Management</span></a>
+  <a class="nav" href="/payments" th:if="${user.role=='Cashier' or user.role=='Manager'}">＄ <span>Billing & Payment</span></a>
+  <a class="nav" href="#tables">▤ <span>Dining Tables</span></a>
+  <a class="nav" href="#orders" th:if="${user.role=='Waiter' or user.role=='Manager'}">☷ <span>Orders</span></a>
+  <a class="nav" href="#kitchen" th:if="${user.role=='Chef'}">♨ <span>Kitchen Orders</span></a>
+  <a class="nav" href="#serving" th:if="${user.role=='Waiter'}">✓ <span>Serving Station</span></a>
+  <a class="nav" href="#employees" th:if="${user.role=='Manager'}">♙ <span>Staff Accounts</span></a>
+  <a class="nav" href="/reports" th:if="${user.role=='Manager'}">▥ <span>Revenue Reports</span></a>
+  <a class="nav" href="/history" th:if="${user.role=='Manager' or user.role=='Cashier'}">◷ <span>Payment History</span></a>
+
+  <div class="side-bottom">
+    <div class="avatar" th:text="${#strings.substring(user.name,0,1)}">U</div>
+    <div>
+      <b th:text="${user.name}">User</b>
+      <small th:text="${user.role}">Role</small>
+    </div>
+    <form method="post" action="/logout">
+      <button class="logout" title="Sign Out">↪</button>
+    </form>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">RESTAURANT / WORKSPACE</p>
+      <h1>Welcome back, <span th:text="${user.name}">User</span> 👋</h1>
+      <p class="muted">Gourmet Palace Restaurant Management – Real-time Floor & Service Operations.</p>
+    </div>
+    <div class="top-right">
+      <a href="/menu" class="tiny primary" style="text-decoration:none;" th:if="${user.role=='Manager'}">◈ Menu Management</a>
+      <a href="/payments" class="tiny primary" style="text-decoration:none;" th:if="${user.role=='Cashier'}">💳 Billing Management</a>
+      <span class="live-dot"></span>
+      <span>Live System</span>
+      <span class="role-chip" th:text="${user.role}">Role</span>
+    </div>
+  </header>
+
+  <!-- ALERTS -->
+  <div th:if="${success}" class="alert success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+  <!-- STATS TILES -->
+  <section class="stats">
+    <div class="stat">
+      <span class="stat-icon">▤</span>
+      <small>Total Tables</small>
+      <strong th:text="${stats.tables}">0</strong>
+      <em>Floor Capacity</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon orange">☷</span>
+      <small>Open Orders</small>
+      <strong th:text="${stats.openOrders}">0</strong>
+      <em>Active Tables</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon green">◈</span>
+      <small>Active Menu Dishes</small>
+      <strong th:text="${stats.menu}">0</strong>
+      <em>Available Now</em>
+    </div>
+    <div class="stat">
+      <span class="stat-icon purple">＄</span>
+      <small>Today's Revenue</small>
+      <strong th:text="${#numbers.formatDecimal(stats.revenue,0,'COMMA',0,'POINT')} + ' ₫'">0 ₫</strong>
+      <em>Payment Successful</em>
+    </div>
+  </section>
+
+  <!-- QUICK ACCESS FOR MANAGER (MENU) -->
+  <section class="panel" th:if="${user.role=='Manager'}">
+    <div class="panel-head">
+      <div>
+        <h2>◈ 5-Star Menu Management (UC09)</h2>
+        <p class="muted">Comprehensive luxury menu suite: Search, category filtering, dish details, add/edit, and availability control.</p>
+      </div>
+      <div>
+        <a href="/menu" class="primary" style="text-decoration:none;">Open Menu Management →</a>
+      </div>
+    </div>
+    <div class="scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:50px;">ID</th>
+            <th style="width:70px;">Image</th>
+            <th>5-Star Dish Name</th>
+            <th>Category</th>
+            <th>Listed Price</th>
+            <th>Status</th>
+            <th style="text-align:center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="m, iterStat:${menu}" th:if="${iterStat.index < 5}">
+            <td th:text="'#'+${m.id}"></td>
+            <td>
+              <img th:src="${m.image_url != null and !#strings.isEmpty(m.image_url) ? m.image_url : 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=120&q=80'}"
+                   alt="Dish Image" class="dish-thumb" onerror="this.src='https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=120&q=80'">
+            </td>
+            <td><b th:text="${m.name}"></b></td>
+            <td><span class="category-chip" th:text="${m.category}"></span></td>
+            <td><b class="price-tag" style="color:var(--gold-dark);" th:text="${#numbers.formatDecimal(m.price,0,'COMMA',0,'POINT')}+' ₫'"></b></td>
+            <td>
+              <span class="status" th:classappend="${m.available ? ' available' : ' off'}"
+                    th:text="${m.available ? '● Available' : '○ Unavailable'}"></span>
+            </td>
+            <td style="text-align:center;">
+              <a href="/menu" class="btn-action view" style="text-decoration:none;">Manage Dish</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- QUICK ACCESS FOR CASHIER (PAYMENTS) -->
+  <section class="panel" th:if="${user.role=='Cashier'}">
+    <div class="panel-head">
+      <div>
+        <h2>💳 Billing & Invoice Management (UC08)</h2>
+        <p class="muted">Streamlined cashier interface: Verified served items, atomic transaction safety, official printed receipts.</p>
+      </div>
+      <div>
+        <a href="/payments" class="primary" style="text-decoration:none;">Open Billing Management →</a>
+      </div>
+    </div>
+    <div class="scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Table</th>
+            <th>Order Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="o:${openOrders}">
+            <td th:text="'#'+${o.id}"></td>
+            <td><b th:text="${o.table_code}"></b></td>
+            <td><span class="status occupied">Open</span></td>
+            <td>
+              <a href="/payments" class="tiny primary" style="text-decoration:none;">Checkout Order at Counter →</a>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(openOrders)}">
+            <td colspan="4" style="text-align:center; padding:15px;" class="muted">No orders currently awaiting checkout.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DINING TABLES -->
+  <section class="panel" id="tables">
+    <div class="panel-head">
+      <div>
+        <h2>Dining Table Layout</h2>
+        <p class="muted">Live table status overview (Available, Occupied, OutOfService).</p>
+      </div>
+      <form method="post" action="/tables" th:if="${user.role=='Manager'}" class="inline-form">
+        <input name="code" placeholder="New Table Code (e.g. T09)" required>
+        <button class="primary">+ Add Table</button>
+      </form>
+    </div>
+    <div class="table-grid">
+      <div class="table-tile" th:each="t:${tables}">
+        <div class="table-symbol">▤</div>
+        <b th:text="${t.table_code}">T01</b>
+        <span class="status" th:classappend="${t.status=='Available'?' available':(t.status=='Occupied'?' occupied':' off')}" th:text="${t.status}">Available</span>
+        
+        <!-- Waiter updates table status -->
+        <form method="post" th:action="@{'/tables/'+${t.id}+'/status'}" th:if="${user.role=='Waiter'}" style="margin-top:6px;">
+          <select name="status" style="font-size:11px; padding:3px 6px;">
+            <option value="Available" th:selected="${t.status=='Available'}">Available</option>
+            <option value="Occupied" th:selected="${t.status=='Occupied'}">Occupied</option>
+          </select>
+          <button class="tiny">Update</button>
+        </form>
+
+        <!-- Manager updates table status -->
+        <form method="post" th:action="@{'/tables/'+${t.id}+'/status'}" th:if="${user.role=='Manager'}" style="margin-top:6px;">
+          <select name="status" style="font-size:11px; padding:3px 6px;">
+            <option value="Available" th:selected="${t.status=='Available'}">Available</option>
+            <option value="Occupied" th:selected="${t.status=='Occupied'}">Occupied</option>
+            <option value="OutOfService" th:selected="${t.status=='OutOfService'}">OutOfService</option>
+          </select>
+          <button class="tiny">Update</button>
+        </form>
+
+        <div th:if="${t.order_id!=null}" style="margin-top:8px;">
+          <button type="button" class="tiny" style="background:var(--orange-light); color:var(--orange); border:1px solid #fed7aa; font-weight:700; width:100%; cursor:pointer;"
+                  th:onclick="'viewOrderDetail(' + ${t.order_id} + ')'"
+                  th:text="'👁 View Order #' + ${t.order_id}"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ORDERS (WAITER / MANAGER) -->
+  <section class="panel" id="orders" th:if="${user.role=='Waiter' or user.role=='Manager'}">
+    <div class="panel-head">
+      <div>
+        <h2>Dining Floor Orders</h2>
+        <p class="muted">Create guest orders, monitor kitchen line status, add additional dishes, and inspect details (UC05, UC10).</p>
+      </div>
+      <div>
+        <span class="badge-count" th:text="${#lists.size(orders)} + ' orders'"></span>
+      </div>
+    </div>
+
+    <!-- CREATE ORDER (WAITER) -->
+    <div class="create-order" th:if="${user.role=='Waiter'}">
+      <h3>+ Create New Guest Order</h3>
+      <form method="post" action="/orders">
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:700;">Select an Available Table:</label>
+          <select name="tableId" required style="width:250px; margin-left:8px;">
+            <option value="">-- Choose Table --</option>
+            <option th:each="t:${tables}" th:if="${t.status=='Available'}" th:value="${t.id}" th:text="${t.table_code} + ' (Available)'"></option>
+          </select>
+        </div>
+
+        <p class="muted" style="margin-bottom:8px;">Select active menu items (Available):</p>
+        <div class="menu-pick" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+          <label th:each="m:${menu}" th:if="${m.available}" style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px; border-radius:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <img th:src="${m.image_url != null and !#strings.isEmpty(m.image_url) ? m.image_url : 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=120&q=80'}"
+                   alt="Dish" style="width:48px; height:48px; object-fit:cover; border-radius:8px; border:1px solid var(--line); flex-shrink:0;"
+                   onerror="this.src='https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=120&q=80'">
+              <div style="max-width:160px;">
+                <b th:text="${m.name}" style="display:block; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></b>
+                <small class="price-tag" style="color:var(--gold-dark); font-size:12px;" th:text="${#numbers.formatDecimal(m.price,0,'COMMA',0,'POINT')} + ' ₫'"></small>
+              </div>
+            </div>
+            <input type="number" min="0" value="0" th:name="'item_'+${m.id}" style="width:50px; text-align:center; padding:4px; border:1px solid var(--line); border-radius:4px;">
+          </label>
+        </div>
+        <button class="primary" style="margin-top:10px;">Confirm & Create Order</button>
+      </form>
+    </div>
+
+    <!-- FILTER AND SEARCH (UC10) -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin:16px 0 12px; gap:12px; flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Status:</span>
+        <button type="button" class="pill-btn active" onclick="filterOrderRows('ALL', this)">All</button>
+        <button type="button" class="pill-btn" onclick="filterOrderRows('Open', this)">Open</button>
+        <button type="button" class="pill-btn" onclick="filterOrderRows('Completed', this)">Completed</button>
+        <button type="button" class="pill-btn" onclick="filterOrderRows('Cancelled', this)">Cancelled</button>
+      </div>
+      <div style="flex:1; max-width:320px;">
+        <input type="text" id="orderSearchInput" onkeyup="searchOrderRows()" placeholder="Search by Order ID, Table, Waiter..." style="width:100%; padding:6px 12px; font-size:12.5px; border-radius:6px; border:1px solid var(--line);">
+      </div>
+    </div>
+
+    <!-- ORDERS TABLE -->
+    <div class="scroll">
+      <table class="data-table" id="ordersTable">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Table</th>
+            <th>Server / Waiter</th>
+            <th>Created At</th>
+            <th>Subtotal</th>
+            <th>Order Status</th>
+            <th style="text-align:center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="o:${orders}" th:data-status="${o.status}" th:data-orderid="${o.id}">
+            <td><b th:text="'#'+${o.id}"></b></td>
+            <td><b style="color:var(--green);" th:text="${o.table_code}"></b></td>
+            <td th:text="${o.waiter_name}"></td>
+            <td th:text="${o.created_at}"></td>
+            <td><b class="price-tag" th:text="${#numbers.formatDecimal(o.total,0,'COMMA',0,'POINT')}+' ₫'"></b></td>
+            <td>
+              <span class="status" th:classappend="${o.status=='Open'?' occupied':(o.status=='Completed'?' available':' off')}" th:text="${o.status}"></span>
+            </td>
+            <td style="text-align:center;">
+              <button type="button" class="tiny primary" style="cursor:pointer;"
+                      th:onclick="'viewOrderDetail(' + ${o.id} + ')'">👁 Details & Actions</button>
+              <form th:if="${user.role=='Waiter' and o.status=='Open'}" method="post" th:action="@{'/orders/'+${o.id}+'/cancel'}" onsubmit="return confirm('Are you sure you want to cancel this order?')" style="display:inline; margin-left:4px;">
+                <button class="tiny danger">Cancel Order</button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- KITCHEN (CHEF) -->
+  <section class="panel" id="kitchen" th:if="${user.role=='Chef'}">
+    <div class="panel-head">
+      <div>
+        <h2>♨ Kitchen Orders – Food Preparation</h2>
+        <p class="muted">Independently update cooking progress for each item: Pending → Preparing → Ready.</p>
+      </div>
+    </div>
+    <div class="scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Dish Name</th>
+            <th>Table</th>
+            <th>Quantity</th>
+            <th>Current Status</th>
+            <th>Kitchen Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="d:${kitchen}">
+            <td><b th:text="${d.item_name}"></b></td>
+            <td><b style="color:var(--green);" th:text="${d.table_code}"></b></td>
+            <td><span class="badge-count" th:text="${d.quantity}"></span></td>
+            <td>
+              <span class="status" th:classappend="${d.status=='Pending'?' off':(d.status=='Preparing'?' occupied':' available')}" th:text="${d.status}"></span>
+            </td>
+            <td>
+              <form method="post" th:action="@{'/kitchen/'+${d.id}+'/status'}">
+                <button class="tiny primary" name="status" value="Preparing" th:if="${d.status=='Pending'}">▶ Start Cooking</button>
+                <button class="tiny" name="status" value="Ready" th:if="${d.status=='Preparing'}" style="background:#28a745; color:white;">✓ Mark Ready</button>
+              </form>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(kitchen)}">
+            <td colspan="5" style="text-align:center; padding:20px;" class="muted">No dishes currently awaiting preparation.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SERVING (WAITER) -->
+  <section class="panel" id="serving" th:if="${user.role=='Waiter'}">
+    <div class="panel-head">
+      <div>
+        <h2>✓ Serving Station – Deliver Ready Dishes</h2>
+        <p class="muted">Confirm table delivery for dishes prepared and marked as Ready by the kitchen.</p>
+      </div>
+    </div>
+    <div class="scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ready Dish</th>
+            <th>Dining Table</th>
+            <th>Quantity</th>
+            <th>Confirm Delivery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="d:${readyItems}">
+            <td><b th:text="${d.item_name}"></b></td>
+            <td><b style="color:var(--green);" th:text="${d.table_code}"></b></td>
+            <td th:text="${d.quantity}"></td>
+            <td>
+              <form method="post" th:action="@{'/serving/'+${d.id}}">
+                <button class="tiny primary">✓ Delivered to Table (Served)</button>
+              </form>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(readyItems)}">
+            <td colspan="4" style="text-align:center; padding:15px;" class="muted">No dishes currently awaiting table delivery.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- STAFF MANAGEMENT (MANAGER) -->
+  <section class="panel" id="employees" th:if="${user.role=='Manager'}">
+    <div class="panel-head">
+      <div>
+        <h2>♙ Staff Account Management</h2>
+        <p class="muted">Manage user credentials, roles, and account access permissions.</p>
+      </div>
+    </div>
+    <form class="inline-form" method="post" action="/employees" style="margin-bottom:15px;">
+      <input name="fullName" placeholder="Full Name" required>
+      <input name="username" placeholder="Username" required>
+      <input name="password" type="password" placeholder="Password (≥6 characters)" required>
+      <select name="role">
+        <option value="Waiter">Waiter</option>
+        <option value="Chef">Chef</option>
+        <option value="Cashier">Cashier</option>
+        <option value="Manager">Manager</option>
+      </select>
+      <button class="primary">+ Create Account</button>
+    </form>
+    <div class="scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Emp ID</th>
+            <th>Full Name</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="e:${employees}">
+            <td th:text="'#'+${e.id}"></td>
+            <td><b th:text="${e.full_name}"></b></td>
+            <td th:text="${e.username}"></td>
+            <td><span class="role-chip" th:text="${e.role}"></span></td>
+            <td>
+              <span class="status" th:classappend="${e.active ? ' available' : ' off'}" th:text="${e.active ? 'Active' : 'Locked'}"></span>
+            </td>
+            <td>
+              <form method="post" th:action="@{'/employees/'+${e.id}+'/update'}" style="display:inline-flex; gap:6px; align-items:center;">
+                <input type="hidden" name="fullName" th:value="${e.full_name}">
+                <input type="hidden" name="role" th:value="${e.role}">
+                <input type="hidden" name="active" th:value="${!e.active}">
+                <button class="tiny" th:classappend="${e.active ? ' danger' : ' primary'}"
+                        th:text="${e.active ? 'Lock Account' : 'Reactivate'}"></button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Gourmet Palace · 5-Star Luxury Restaurant Management System · All Rights Reserved</footer>
+</main>
+
+<!-- MODAL ORDER DETAILS & ACTIONS (UC05 & UC10) -->
+<div id="orderDetailModal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card detail-card" style="max-width:850px;">
+    <div class="modal-head">
+      <div>
+        <h3 id="modalOrderTitle">Order Details</h3>
+        <p class="muted" id="modalOrderSubtitle" style="margin:2px 0 0; font-size:12px;"></p>
+      </div>
+      <button type="button" class="modal-close" onclick="closeOrderDetailModal()">✕</button>
+    </div>
+
+    <div class="modal-body" style="padding:20px;">
+      <!-- ORDER STATS SUMMARY -->
+      <div id="modalOrderStats" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:18px;">
+        <!-- Filled by JS -->
+      </div>
+
+      <!-- DISHES & KITCHEN STATUS -->
+      <h4 style="margin:0 0 10px; font-size:14px; font-weight:800; color:var(--ink);">Ordered Dishes & Kitchen Status:</h4>
+      <div class="scroll" style="max-height:240px; border:1px solid var(--line); border-radius:8px; margin-bottom:18px;">
+        <table class="data-table" style="margin:0; font-size:12.5px;">
+          <thead>
+            <tr>
+              <th>Dish Name</th>
+              <th>Unit Price</th>
+              <th style="width:130px;">Quantity</th>
+              <th>Line Total</th>
+              <th>Item Status</th>
+              <th style="text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="modalOrderItemsBody">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ADD MORE DISHES FORM (WHEN OPEN) -->
+      <div id="modalAddItemsSection" style="display:none; background:#f9faf7; border:1px dashed var(--line); border-radius:8px; padding:16px; margin-bottom:16px;">
+        <h4 style="margin:0 0 6px; font-size:13.5px; font-weight:800; color:var(--green);">+ Add More Dishes to this Order:</h4>
+        <p class="muted" style="margin:0 0 12px; font-size:11.5px;">Newly added items will be sent to the kitchen in Pending status and billed at current menu prices.</p>
+        <form id="modalAddItemsForm" method="post" action="">
+          <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px; max-height:160px; overflow-y:auto; padding:4px;">
+            <label th:each="m:${menu}" th:if="${m.available}" style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-size:12px; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <img th:src="${m.image_url != null and !#strings.isEmpty(m.image_url) ? m.image_url : 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=120&q=80'}"
+                     alt="Dish" style="width:36px; height:36px; object-fit:cover; border-radius:4px; border:1px solid var(--line); flex-shrink:0;"
+                     onerror="this.src='https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=120&q=80'">
+                <div style="max-width:130px;">
+                  <b th:text="${m.name}" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></b>
+                  <small class="price-tag" style="color:var(--gold-dark);" th:text="${#numbers.formatDecimal(m.price,0,'COMMA',0,'POINT')} + ' ₫'"></small>
+                </div>
+              </div>
+              <input type="number" min="0" value="0" th:name="'item_'+${m.id}" style="width:50px; text-align:center; padding:3px; border:1px solid var(--line); border-radius:4px;">
+            </label>
+          </div>
+          <div style="text-align:right; margin-top:12px;">
+            <button type="submit" class="tiny primary">+ Confirm Add Items</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- CANCEL ENTIRE ORDER SECTION (BR05) -->
+      <div id="modalCancelOrderSection" style="display:none; text-align:right;">
+        <form id="modalCancelOrderForm" method="post" action="" onsubmit="return confirm('Are you sure you want to cancel this entire order?')" style="display:inline;">
+          <button type="submit" class="tiny danger">Cancel Entire Order</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button type="button" class="tiny" onclick="closeOrderDetailModal()">Close Window</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Filter Order rows in table by Status
+function filterOrderRows(status, btn) {
+  document.querySelectorAll('#orders .pill-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const rows = document.querySelectorAll('#ordersTable tbody tr');
+  rows.forEach(r => {
+    const rowStatus = r.getAttribute('data-status');
+    if (status === 'ALL' || rowStatus === status) {
+      r.style.display = '';
+    } else {
+      r.style.display = 'none';
+    }
+  });
+}
+
+// Instant search in orders table
+function searchOrderRows() {
+  const query = document.getElementById('orderSearchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('#ordersTable tbody tr');
+  rows.forEach(r => {
+    const text = r.innerText.toLowerCase();
+    r.style.display = text.includes(query) ? '' : 'none';
+  });
+}
+
+// Fetch & Display Order Detail in Modal
+async function viewOrderDetail(orderId) {
+  try {
+    const res = await fetch('/orders/' + orderId + '/details');
+    if (!res.ok) throw new Error('Could not retrieve order details.');
+    const data = await res.json();
+
+    document.getElementById('modalOrderTitle').innerText = 'Order Details #' + data.id + ' (Table: ' + data.table_code + ')';
+    document.getElementById('modalOrderSubtitle').innerText = 'Server: ' + data.waiter_name + ' | Created: ' + data.created_at + ' | Status: ' + data.status;
+
+    // Stats
+    const statsHtml = `
+      <div class="stat" style="padding:10px 14px;">
+        <small style="font-size:10px;">Dining Table</small>
+        <strong style="font-size:18px; color:var(--green);">${data.table_code}</strong>
+      </div>
+      <div class="stat" style="padding:10px 14px;">
+        <small style="font-size:10px;">Order Status</small>
+        <strong style="font-size:16px;">${data.status}</strong>
+      </div>
+      <div class="stat" style="padding:10px 14px;">
+        <small style="font-size:10px;">Active Items</small>
+        <strong style="font-size:18px;">${data.activeCount} item(s)</strong>
+      </div>
+      <div class="stat" style="padding:10px 14px;">
+        <small style="font-size:10px;">Estimated Total</small>
+        <strong style="font-size:18px; color:var(--ink);">${new Intl.NumberFormat('en-US').format(data.totalAmount)} ₫</strong>
+      </div>
+    `;
+    document.getElementById('modalOrderStats').innerHTML = statsHtml;
+
+    // Items table
+    let itemsHtml = '';
+    let canCancelOrder = (data.status === 'Open' && data.pendingCount === data.activeCount);
+
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(it => {
+        const isPending = (it.status === 'Pending' && data.status === 'Open');
+        const isCancelled = (it.status === 'Cancelled');
+        let statusBadge = '';
+        if (it.status === 'Pending') statusBadge = '<span class="status off">Pending</span>';
+        else if (it.status === 'Preparing') statusBadge = '<span class="status occupied">Preparing</span>';
+        else if (it.status === 'Ready') statusBadge = '<span class="status available">Ready</span>';
+        else if (it.status === 'Served') statusBadge = '<span class="status available" style="background:#eaf8ed; color:#27ae60;">Served</span>';
+        else statusBadge = '<span class="status off" style="text-decoration:line-through;">Cancelled</span>';
+
+        let quantityCell = '';
+        let actionCell = '';
+
+        if (isPending) {
+          quantityCell = `
+            <form method="post" action="/order-items/${it.id}/quantity" style="display:inline-flex; align-items:center; gap:4px;">
+              <input type="number" name="quantity" value="${it.quantity}" min="1" max="99" style="width:50px; text-align:center; padding:2px 4px; border:1px solid var(--line); border-radius:4px; font-size:12px;">
+              <button type="submit" class="tiny primary" style="padding:2px 6px; font-size:11px;" title="Update Quantity">Save</button>
+            </form>
+          `;
+          actionCell = `
+            <form method="post" action="/order-items/${it.id}/cancel" onsubmit="return confirm('Cancel this item from the order?')" style="display:inline;">
+              <button type="submit" class="tiny danger" style="padding:2px 8px; font-size:11px;">Cancel</button>
+            </form>
+          `;
+        } else {
+          quantityCell = `<b style="font-size:13px;">${it.quantity}</b>`;
+          actionCell = `<span class="muted" style="font-size:11px;">—</span>`;
+        }
+
+        const lineTotalStr = it.line_total ? new Intl.NumberFormat('en-US').format(it.line_total) + ' ₫' : '0 ₫';
+        const unitPriceStr = it.unit_price ? new Intl.NumberFormat('en-US').format(it.unit_price) + ' ₫' : '0 ₫';
+
+        itemsHtml += `
+          <tr style="${isCancelled ? 'opacity:0.5; text-decoration:line-through;' : ''}">
+            <td><b>${it.item_name}</b></td>
+            <td>${unitPriceStr}</td>
+            <td>${quantityCell}</td>
+            <td><b class="price-tag">${lineTotalStr}</b></td>
+            <td>${statusBadge}</td>
+            <td style="text-align:center;">${actionCell}</td>
+          </tr>
+        `;
+      });
+    } else {
+      itemsHtml = '<tr><td colspan="6" style="text-align:center; padding:15px;" class="muted">This order contains no items.</td></tr>';
+    }
+    document.getElementById('modalOrderItemsBody').innerHTML = itemsHtml;
+
+    // Add items form
+    const addSection = document.getElementById('modalAddItemsSection');
+    const cancelSection = document.getElementById('modalCancelOrderSection');
+    if (data.status === 'Open') {
+      addSection.style.display = 'block';
+      document.getElementById('modalAddItemsForm').action = '/orders/' + data.id + '/items';
+      
+      if (canCancelOrder) {
+        cancelSection.style.display = 'block';
+        document.getElementById('modalCancelOrderForm').action = '/orders/' + data.id + '/cancel';
+      } else {
+        cancelSection.style.display = 'none';
+      }
+    } else {
+      addSection.style.display = 'none';
+      cancelSection.style.display = 'none';
+    }
+
+    document.getElementById('orderDetailModal').style.display = 'flex';
+  } catch (err) {
+    alert('Failed to load order info: ' + err.message);
+  }
+}
+
+function closeOrderDetailModal() {
+  document.getElementById('orderDetailModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+  const modal = document.getElementById('orderDetailModal');
+  if (event.target === modal) {
+    modal.style.display = 'none';
+  }
+}
+</script>
+
+</body>
+</html>

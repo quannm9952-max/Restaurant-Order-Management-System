@@ -61,5 +61,5 @@ INSERT INTO menu_items(id, name, category, description, price, image_url, availa
 (48, 'French Macaron Selection', 'Desserts', 'Gift box of 6 handcrafted French macarons with crisp delicate shells and assorted gourmet ganache fillings.', 220000, '/images/menu/french-macaron-selection.jpg', 1),
 (49, 'Strawberry Mille-Feuille', 'Desserts', 'Caramelized flaky puff pastry stacked with luscious Tahitian vanilla Diplomat cream and fresh ripe strawberries.', 190000, '/images/menu/strawberry-mille-feuille.jpg', 1),
 (50, 'Premium Seasonal Fruit Platter', 'Desserts', 'Curated selection of luxury seasonal fruits: Japanese Crown melon, Korean strawberries, black seedless grapes, and golden kiwi.', 250000, '/images/menu/premium-seasonal-fruit-platter.jpg', 1)
-ON DUPLICATE KEY UPDATE 
+ON DUPLICATE KEY UPDATE
 name=VALUES(name), category=VALUES(category), description=VALUES(description), price=VALUES(price), image_url=VALUES(image_url), available=VALUES(available);

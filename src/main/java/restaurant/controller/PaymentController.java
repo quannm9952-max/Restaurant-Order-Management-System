@@ -21,7 +21,7 @@ public class PaymentController {
     }
 
     /**
-     * Màn hình chính UC08 – Manage Payments (Dành cho Cashier & Manager)
+     * Billing & Payment Management Dashboard
      */
     @GetMapping("/payments")
     public String paymentDashboard(
@@ -43,7 +43,7 @@ public class PaymentController {
     }
 
     /**
-     * API JSON lấy chi tiết đơn hàng trước khi thanh toán
+     * JSON API to retrieve order details pre-checkout
      */
     @GetMapping("/payments/orders/{orderId}/json")
     @ResponseBody
@@ -57,7 +57,7 @@ public class PaymentController {
     }
 
     /**
-     * Xác nhận thanh toán (Xử lý Transaction và chống duplicate)
+     * Confirm payment with transaction lock and duplicate protection
      */
     @PostMapping("/payments/{orderId}/confirm")
     public String confirmPayment(
@@ -67,16 +67,16 @@ public class PaymentController {
         try {
             long paymentId = service.payOrder(orderId, paymentMethod, true);
             redirectAttrs.addFlashAttribute("success", 
-                "Thanh toán thành công cho Đơn #" + orderId + " (Giao dịch #" + paymentId + ", hình thức: " + paymentMethod + ")! Đơn hàng đã hoàn tất và bàn đã được giải phóng.");
+                "Payment successfully recorded for Order #" + orderId + " (Txn #" + paymentId + ", method: " + paymentMethod + "). Order completed and table released.");
             return "redirect:/invoices/" + orderId;
         } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "Lỗi thanh toán Đơn #" + orderId + ": " + e.getMessage());
+            redirectAttrs.addFlashAttribute("error", "Payment error for Order #" + orderId + ": " + e.getMessage());
             return "redirect:/payments";
         }
     }
 
     /**
-     * Ghi nhận giao dịch thanh toán thất bại (giữ đơn Open, bàn Occupied)
+     * Record payment failure (Order remains Open, Table remains Occupied)
      */
     @PostMapping("/payments/{orderId}/fail")
     public String recordPaymentFailure(
@@ -85,16 +85,15 @@ public class PaymentController {
             RedirectAttributes redirectAttrs) {
         try {
             service.payOrder(orderId, paymentMethod, false);
-            redirectAttrs.addFlashAttribute("error", "Đã ghi nhận giao dịch thất bại cho Đơn #" + orderId + ". Đơn hàng vẫn được giữ ở trạng thái Open.");
+            redirectAttrs.addFlashAttribute("error", "Payment marked as failed for Order #" + orderId + ". Order remains in Open status.");
         } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+            redirectAttrs.addFlashAttribute("error", "Error: " + e.getMessage());
         }
         return "redirect:/payments";
     }
 
     /**
-     * Màn hình xem và in hóa đơn (Invoice)
-     * Đảm bảo bảo mật: Đơn phải Completed và có Payment Successful.
+     * View and print invoice
      */
     @GetMapping("/invoices/{orderId}")
     public String viewInvoice(
@@ -111,13 +110,13 @@ public class PaymentController {
             model.addAttribute("total", invoice.get("total"));
             return "invoice";
         } catch (Exception e) {
-            redirectAttrs.addFlashAttribute("error", "Không thể xem hóa đơn đơn #" + orderId + ": " + e.getMessage());
+            redirectAttrs.addFlashAttribute("error", "Cannot view invoice for Order #" + orderId + ": " + e.getMessage());
             return "redirect:/payments";
         }
     }
 
     /**
-     * Lịch sử thanh toán chi tiết (Payment History)
+     * Payment transactions history audit
      */
     @GetMapping("/history")
     public String paymentHistory(
@@ -142,4 +141,3 @@ public class PaymentController {
         return "history";
     }
 }
-
