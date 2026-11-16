@@ -1,0 +1,19 @@
+# Maven output
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+
+# IDE and operating system files
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+Thumbs.db
+.DS_Store
+
+# Local credentials and logs
+.env
+.env.*
+!.env.example
+*.log

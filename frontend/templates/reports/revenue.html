@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{reporting/fragments :: head('Revenue Reports')}"></head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<aside th:replace="~{reporting/fragments :: sidebar('revenue')}"></aside>
+<header th:replace="~{reporting/fragments :: header('Reports & Payment History')}"></header>
+<main id="main" class="main-content">
+    <section th:replace="~{reporting/fragments :: heading('Reports & Payment History','Review restaurant revenue and retained payment records.')}"></section>
+    <nav th:replace="~{reporting/fragments :: tabs('revenue',${range})}"></nav>
+    <form class="filter-row" method="get" th:action="@{/manager/reports}">
+        <div th:replace="~{reporting/fragments :: dateRange(${range})}"></div>
+        <label class="group-control">Group by <select class="form-select" name="group" data-auto-submit><option value="DAY" th:selected="${report.grouping.name() == 'DAY'}">Day</option><option value="WEEK" th:selected="${report.grouping.name() == 'WEEK'}">Week</option></select></label>
+        <noscript><button class="btn btn-primary" type="submit">Apply filters</button></noscript>
+    </form>
+    <div class="metrics">
+        <section class="metric metric-primary"><span>Total Revenue</span><img th:src="@{/images/tv5/cash.svg}" alt=""><strong id="total-revenue" th:text="${@money.format(report.summary.totalRevenue)}">$0.00</strong><small>Successful payments only</small></section>
+        <section class="metric"><span>Successful Payments</span><img th:src="@{/images/tv5/checkcircle.svg}" alt=""><strong th:text="${report.summary.successful}">0</strong><small>Transactions in the selected date range</small></section>
+        <section class="metric"><span>Excluded from revenue</span><img th:src="@{/images/tv5/info.svg}" alt=""><strong th:text="${report.summary.excluded()}">0</strong><small><span th:text="${report.summary.pending}">0</span> Pending · <span th:text="${report.summary.failed}">0</span> Failed<span th:if="${report.summary.inconsistentSuccessful > 0}" th:text="' · ' + ${report.summary.inconsistentSuccessful} + ' requires review'"></span></small></section>
+    </div>
+    <div class="report-grid">
+        <section class="panel chart-panel"><div class="panel-heading"><div><h2>Revenue over time</h2><p th:text="${report.grouping.name() == 'DAY' ? 'Daily revenue · USD' : 'Weekly revenue · USD'}">Daily revenue · USD</p></div><span class="chart-legend"><i></i>Successful</span></div>
+            <div th:if="${report.summary.successful == 0}" class="empty-state"><span class="empty-symbol">▥</span><h3>No successful payments</h3><p>No revenue is available for this date range.<br>Choose another range to view transactions.</p></div>
+            <div th:unless="${report.summary.successful == 0}" class="bar-chart" role="img" aria-label="Revenue from successful payments in the selected date range">
+                <div class="chart-axis" aria-hidden="true"><span th:each="tick : ${report.axisTicks()}" th:text="${@money.axis(tick)}"></span></div>
+                <div class="chart-grid" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                <div class="chart-bars"><div class="bar-column" th:each="point : ${report.points}"><div class="bar-space"><div class="revenue-bar" th:style="'height:' + ${point.heightPercent} + '%'" th:title="${point.display()} + ': ' + ${@money.format(point.amount)}"><b th:text="${@money.format(point.amount)}">$0</b></div></div><span th:text="${point.display()}">Date</span></div></div>
+            </div>
+            <p class="chart-note" th:text="${report.grouping.name() == 'WEEK' ? 'Only dates within the selected range are included.' : 'Pending and Failed transactions are excluded.'}"></p>
+            <div class="chart-data visually-hidden" th:if="${report.summary.successful > 0}"><table class="table"><caption class="visually-hidden">Revenue by reporting period</caption><thead><tr><th>Period</th><th>Successful payments</th><th>Revenue</th></tr></thead><tbody><tr th:each="point : ${report.points}"><td th:text="${point.display()}"></td><td th:text="${point.transactions}"></td><td th:text="${@money.format(point.amount)}"></td></tr></tbody></table></div>
+        </section>
+        <section class="panel recent-panel"><h2>Successful payments</h2><p>Latest transactions in this date range</p>
+            <div class="recent-list"><a class="recent-payment" th:each="payment : ${report.recentPayments}" th:href="@{/manager/payment-history/{id}(id=${payment.paymentId},from=${range.from},to=${range.to})}"><span class="check-mark"><img th:src="@{/images/tv5/check.svg}" alt=""></span><span><b th:text="${payment.code()}">PAY-0</b><small th:text="${payment.orderCode()} + ' · ' + ${#temporals.format(payment.paymentTime,'HH:mm')}">Order</small></span><strong th:text="${@money.format(payment.amount)}">$0.00</strong></a>
+                <div th:if="${#lists.isEmpty(report.recentPayments)}" class="empty-state compact"><span class="empty-symbol">▤</span><h3>No transactions available</h3><p>No Successful records in this range.</p></div></div>
+            <a class="btn button-soft" th:href="@{/manager/payment-history(from=${range.from},to=${range.to})}">View Payment History</a>
+        </section>
+    </div>
+</main>
+</body>
+</html>

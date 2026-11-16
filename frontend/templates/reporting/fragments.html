@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · Restaurant'">Restaurant</title>
+    <link rel="stylesheet" th:href="@{/css/vendor/bootstrap-5.3.8.min.css}">
+    <link rel="stylesheet" th:href="@{/css/fonts.css}">
+    <link rel="stylesheet" th:href="@{/css/reporting.css}">
+    <script defer th:src="@{/js/reporting.js}"></script>
+</head>
+<body>
+<aside th:fragment="sidebar(section)" class="sidebar">
+    <div class="brand"><span class="brand-mark"><img th:src="@{/images/tv5/utensils.svg}" alt=""></span>
+        <div><strong>Restaurant</strong><small>ORDER MANAGEMENT</small></div></div>
+    <div class="workspace-label">WORKSPACE</div>
+    <nav aria-label="Manager workspace">
+        <span class="nav-item unavailable" title="Provided by another team module"><img th:src="@{/images/tv5/grid.svg}" alt="">Dashboard</span>
+        <span class="nav-item unavailable" title="Member 1 module"><img th:src="@{/images/tv5/users.svg}" alt="">Employee Management</span>
+        <span class="nav-item unavailable" title="Member 2 module"><img th:src="@{/images/tv5/table.svg}" alt="">Table Management</span>
+        <span class="nav-item unavailable" title="Member 4 module"><img th:src="@{/images/tv5/menu.svg}" alt="">Menu Management</span>
+        <a class="nav-item" th:classappend="${section == 'orders'} ? 'active'" th:href="@{/manager/orders}"><img th:src="@{/images/tv5/orders.svg}" alt="">Restaurant Orders</a>
+        <a class="nav-item" th:classappend="${section == 'revenue'} ? 'active'" th:href="@{/manager/reports}"><img th:src="${section == 'revenue'} ? @{/images/tv5/chart.svg} : @{/images/tv5/chart-inactive.svg}" alt="">Revenue Reports</a>
+        <a class="nav-item" th:classappend="${section == 'history'} ? 'active'" th:href="@{/manager/payment-history}"><img th:src="${section == 'history'} ? @{/images/tv5/history-active.svg} : @{/images/tv5/history.svg}" alt="">Payment History</a>
+    </nav>
+    <div class="sidebar-bottom"><div class="role-card"><small>SIGNED IN AS</small><strong>Manager</strong><img th:src="@{/images/tv5/lock.svg}" alt=""></div>
+        <p>Restaurant employee workspace</p></div>
+</aside>
+<header th:fragment="header(title)" class="topbar">
+    <strong th:text="${title}">Reports &amp; Payment History</strong>
+    <div class="profile"><span class="avatar" th:text="${managerInitials}">DM</span><div><b th:text="${managerName}">Manager</b><small>Manager</small></div></div>
+    <form th:if="${demoMode}" th:action="@{/logout}" method="post"><button class="btn logout"><img th:src="@{/images/tv5/logout.svg}" alt="">Logout</button></form>
+</header>
+<section th:fragment="heading(title,description)" class="page-heading">
+    <div><div class="title-line"><h1 th:text="${title}">Reports &amp; Payment History</h1><span class="manager-badge">Manager access</span><span th:if="${demoMode}" class="demo-badge">DEMO</span></div><p th:text="${description}">Review restaurant revenue and retained payment records.</p></div>
+    <span class="read-only"><img th:src="@{/images/tv5/lock1.svg}" alt="">Read-only</span>
+</section>
+<nav th:fragment="tabs(section,range)" class="main-tabs" aria-label="Reports and history">
+    <a th:classappend="${section == 'revenue'} ? 'selected'" th:href="@{/manager/reports(from=${range.from},to=${range.to})}"><img th:src="@{/images/tv5/chart1.svg}" alt="">Revenue Reports</a>
+    <a th:classappend="${section == 'history'} ? 'selected'" th:href="@{/manager/payment-history(from=${range.from},to=${range.to})}"><img th:src="@{/images/tv5/clock.svg}" alt="">Payment History</a>
+</nav>
+<div th:fragment="dateRange(range)" class="date-control">
+    <button class="date-trigger" type="button" data-open-dates><img th:src="@{/images/tv5/calendar.svg}" alt=""><span th:text="${range.display()}">Selected date range</span><img th:src="@{/images/tv5/chevron.svg}" alt=""></button>
+    <span class="subtle">Selected date range</span>
+    <div class="date-popover panel" data-date-popover hidden>
+        <div class="popover-heading"><div><h2>Select date range</h2><p>Choose the payment dates included in the report.</p></div><button type="button" class="icon-button" data-close-dates aria-label="Close date selector"><img th:src="@{/images/tv5/close.svg}" alt=""></button></div>
+        <div class="calendar-pair" data-calendars></div>
+        <div class="date-inputs"><label>Start date<input class="form-control" name="from" type="date" required th:value="${range.from}"></label><label>End date<input class="form-control" name="to" type="date" required th:value="${range.to}"></label></div>
+        <p class="date-error" role="alert" data-date-error hidden>End date must be on or after the start date.</p>
+        <div class="popover-actions"><button type="button" class="btn btn-outline-secondary" data-close-dates>Cancel</button><button type="submit" class="btn btn-primary">Apply range</button></div>
+    </div>
+</div>
+<span th:fragment="status(value,label)" class="status-pill" th:classappend="${#strings.toLowerCase(value)}"><i></i><span th:text="${label}">Status</span></span>
+</body>
+</html>
