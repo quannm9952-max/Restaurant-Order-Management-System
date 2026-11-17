@@ -26,6 +26,7 @@ public class OrderMonitoringController {
       Model model) {
     OrderStatus selected = filters.status(status, OrderStatus.class);
     model.addAttribute("result", monitoring.orders(q, selected, page));
+    model.addAttribute("orderCounts", monitoring.orderCounts(q));
     model.addAttribute("q", q.trim());
     model.addAttribute("selectedStatus", selected == null ? "ALL" : selected.name());
     model.addAttribute("section", "orders");

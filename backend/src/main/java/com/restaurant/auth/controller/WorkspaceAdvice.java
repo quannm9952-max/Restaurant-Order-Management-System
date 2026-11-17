@@ -34,6 +34,14 @@ public class WorkspaceAdvice {
               user.put("id", a.getEmployee().getEmployeeId());
               user.put("name", a.getEmployee().getFullName());
             });
+    String name = user.get("name").toString().trim();
+    String[] words = name.split("\\s+");
+    user.put("firstName", words[0]);
+    user.put(
+        "initials",
+        (words[0].substring(0, 1)
+                + (words.length > 1 ? words[words.length - 1].substring(0, 1) : ""))
+            .toUpperCase(Locale.ROOT));
     return user;
   }
 }

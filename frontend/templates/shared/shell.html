@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:fragment="head(title)">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title th:text="${title} + ' · Restaurant'">Restaurant</title>
+    <link rel="stylesheet" href="/css/vendor/bootstrap-5.3.8.min.css" />
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/reporting.css" />
+    <link rel="stylesheet" href="/css/workspace.css" />
+    <script defer src="/js/workspace.js"></script>
+  </head>
+  <body>
+    <aside
+      th:fragment="sidebar(section)"
+      class="sidebar"
+      th:if="${user != null and !#maps.isEmpty(user)}"
+    >
+      <a class="brand" href="/home"
+        ><span class="brand-mark"
+          ><img src="/images/tv5/utensils.svg" alt=""
+        /></span>
+        <div><strong>Restaurant</strong><small>ORDER MANAGEMENT</small></div></a
+      >
+      <div class="workspace-label">WORKSPACE</div>
+      <nav aria-label="Restaurant workspace">
+        <a
+          th:replace="~{shared/shell :: navLink('/home','grid','Dashboard',${section == 'dashboard'})}"
+        ></a>
+        <a
+          th:if="${user.role == 'Manager'}"
+          th:replace="~{shared/shell :: managerEmployees(${section})}"
+        ></a>
+        <th:block th:if="${user.role == 'Manager' or user.role == 'Waiter'}"
+          ><a
+            th:replace="~{shared/shell :: navLink('/tables','table','Table Management',${section == 'tables'})}"
+          ></a
+        ></th:block>
+        <th:block th:if="${user.role == 'Manager'}"
+          ><a
+            th:replace="~{shared/shell :: navLink('/menu','menu','Menu Management',${section == 'menu'})}"
+          ></a
+          ><a
+            th:replace="~{shared/shell :: navLink('/manager/orders','orders','Restaurant Orders',${section == 'orders'})}"
+          ></a
+          ><a
+            th:replace="~{shared/shell :: navLink('/manager/reports','chart-inactive','Revenue Reports',${section == 'revenue'})}"
+          ></a
+          ><a
+            th:replace="~{shared/shell :: navLink('/manager/payment-history','history','Payment History',${section == 'history'})}"
+          ></a
+        ></th:block>
+        <th:block th:if="${user.role == 'Waiter'}"
+          ><a
+            th:replace="~{shared/shell :: navLink('/orders','orders','Order Management',${section == 'orders'})}"
+          ></a
+          ><span
+            class="nav-item unavailable"
+            aria-disabled="true"
+            title="Available after TV3 integration"
+            ><img src="/images/tv5/table.svg" alt="" />Serving Management</span
+          ></th:block
+        >
+        <th:block th:if="${user.role == 'Cashier'}"
+          ><a
+            th:replace="~{shared/shell :: navLink('/payments','cash','Payment & Invoice',${section == 'payments'})}"
+          ></a
+        ></th:block>
+        <span
+          th:if="${user.role == 'Chef'}"
+          class="nav-item unavailable"
+          aria-disabled="true"
+          title="Available after TV3 integration"
+          ><img src="/images/tv5/utensils.svg" alt="" />Kitchen Management</span
+        >
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="role-card">
+          <small>SIGNED IN AS</small
+          ><strong th:text="${user.role}">Manager</strong
+          ><img src="/images/tv5/lock.svg" alt="" />
+        </div>
+        <p>Restaurant employee workspace</p>
+      </div>
+    </aside>
+    <th:block
+      th:fragment="managerEmployees(section)"
+      th:if="${user.role == 'Manager'}"
+      ><a
+        th:replace="~{shared/shell :: navLink('/employees','users','Employee Management',${section == 'employees'})}"
+      ></a
+    ></th:block>
+    <a
+      th:fragment="navLink(url,icon,label,selected)"
+      class="nav-item"
+      th:classappend="${selected} ? 'active'"
+      th:href="${url}"
+      ><img th:src="@{'/images/tv5/' + ${icon} + '.svg'}" alt="" /><span
+        th:text="${label}"
+      ></span
+    ></a>
+    <header
+      th:fragment="header(title)"
+      class="topbar"
+      th:if="${user != null and !#maps.isEmpty(user)}"
+    >
+      <strong th:text="${title}"></strong>
+      <div class="profile">
+        <span class="avatar" th:text="${user.initials}"></span>
+        <div>
+          <b th:text="${user.name}"></b><small th:text="${user.role}"></small>
+        </div>
+      </div>
+      <form th:action="@{/logout}" method="post">
+        <button class="btn logout">
+          <img src="/images/tv5/logout.svg" alt="" />Logout
+        </button>
+      </form>
+    </header>
+    <section th:fragment="heading(title,description)" class="page-heading">
+      <div>
+        <div class="title-line">
+          <h1 th:text="${title}"></h1>
+          <span class="manager-badge" th:text="${user.role} + ' access'"></span>
+        </div>
+        <p th:text="${description}"></p>
+      </div>
+    </section>
+    <div th:fragment="flash" aria-live="polite">
+      <div
+        class="notice success"
+        role="status"
+        th:if="${successMessage != null or success != null or param.saved != null}"
+        th:text="${successMessage ?: success ?: 'Changes saved successfully.'}"
+      ></div>
+      <div
+        class="notice danger"
+        role="alert"
+        th:if="${errorMessage != null or error != null}"
+        th:text="${errorMessage ?: error}"
+      ></div>
+    </div>
+  </body>
+</html>

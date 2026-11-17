@@ -72,10 +72,28 @@ public class PaymentService {
     var p = new HashMap<String, Object>();
     String sql = ORDER + "WHERE o.status='OPEN'";
     if (search != null && !search.isBlank()) {
-      sql += " AND (CAST(o.order_id AS CHAR) LIKE :q OR LOWER(t.table_name) LIKE :q)";
+      sql += " AND (LOWER(CONCAT('ORD-',o.order_id)) LIKE :q OR LOWER(t.table_name) LIKE :q)";
       p.put("q", "%" + search.trim().toLowerCase(Locale.ROOT) + "%");
     }
     return db.rows(sql + " ORDER BY o.created_at,o.order_id", p).stream()
+        .map(m -> orderDetailForPayment(((Number) m.get("id")).longValue()))
+        .toList();
+  }
+
+  public List<Map<String, Object>> checkoutOrders(String search) {
+    var p = new HashMap<String, Object>();
+    String sql = ORDER + "WHERE 1=1";
+    if (search != null && !search.isBlank()) {
+      sql += " AND (LOWER(CONCAT('ORD-',o.order_id)) LIKE :q OR LOWER(t.table_name) LIKE :q)";
+      p.put("q", "%" + search.trim().toLowerCase(Locale.ROOT) + "%");
+    }
+    return db
+        .rows(
+            sql
+                + " ORDER BY CASE WHEN o.status='OPEN' THEN 0 ELSE 1 END,o.created_at"
+                + " DESC,o.order_id DESC LIMIT 100",
+            p)
+        .stream()
         .map(m -> orderDetailForPayment(((Number) m.get("id")).longValue()))
         .toList();
   }

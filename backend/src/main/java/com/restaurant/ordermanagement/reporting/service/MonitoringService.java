@@ -35,6 +35,10 @@ public class MonitoringService {
     return new OrderDetails(order, orders.findDetails(id), payments.findByOrder(id));
   }
 
+  public java.util.Map<String, Long> orderCounts(String query) {
+    return orders.counts(checkQuery(query));
+  }
+
   public Page<PaymentRow> payments(DateRange range, String query, PaymentStatus status, int page) {
     return payments.findPayments(range, checkQuery(query), status, checkPage(page), PAGE_SIZE);
   }

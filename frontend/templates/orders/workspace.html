@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{shared/shell :: head('Order Management')}"></head>
+  <body>
+    <aside th:replace="~{shared/shell :: sidebar('orders')}"></aside>
+    <header th:replace="~{shared/shell :: header('Order Management')}"></header>
+    <main class="main-content order-workspace">
+      <section class="page-heading">
+        <div>
+          <h1>Restaurant Order Management</h1>
+          <p>Select a table, add dishes and manage its dine-in order.</p>
+        </div>
+        <nav class="segmented">
+          <a href="/orders" class="selected">Open</a
+          ><a href="/orders?status=COMPLETED">Completed</a
+          ><a href="/orders?status=CANCELLED">Cancelled</a>
+        </nav>
+      </section>
+      <div th:replace="~{shared/shell :: flash}"></div>
+      <div class="order-columns">
+        <aside class="panel order-tables">
+          <div class="flex-row spread">
+            <h2>Tables</h2>
+            <small
+              class="muted tiny"
+              th:text="${#lists.size(tables)} + ' total'"
+            ></small>
+          </div>
+          <div class="mini-tables">
+            <th:block th:each="t : ${tables}"
+              ><a
+                class="mini-table"
+                th:classappend="${selectedTable != null and selectedTable.id == t.id} ? 'selected'"
+                th:href="${t.currentOrderId != null ? '/orders/' + t.currentOrderId : (t.canCreateOrder ? '/orders/new?tableId=' + t.id : '/tables/' + t.id)}"
+                ><span th:text="${t.tableName}"></span
+                ><small
+                  class="status-chip"
+                  th:classappend="${#strings.toLowerCase(t.status.name())}"
+                  th:text="${t.status.name() == 'OUT_OF_SERVICE' ? 'OutOfService' : #strings.capitalize(#strings.toLowerCase(t.status.name()))}"
+                ></small></a
+            ></th:block>
+          </div>
+          <div class="selected-table-summary" th:if="${selectedTable != null}">
+            <span class="eyebrow">SELECTED TABLE</span>
+            <h3 th:text="${selectedTable.tableName}"></h3>
+            <span
+              class="status-chip"
+              th:classappend="${#strings.toLowerCase(selectedTable.status.name())}"
+              th:text="${selectedTable.status}"
+            ></span>
+            <p class="eyebrow mt-3">CURRENT OPEN ORDER</p>
+            <strong
+              class="d-block mt-2"
+              th:text="${selectedTable.currentOrderId == null ? 'No Open order' : 'ORD-' + selectedTable.currentOrderId}"
+            ></strong>
+            <p class="tiny mt-2">
+              One Open order maximum.<br />Available tables are eligible for a
+              new order.
+            </p>
+          </div>
+        </aside>
+        <section class="food-catalog">
+          <div class="flex-row spread">
+            <h2>Food menu</h2>
+            <small
+              class="muted tiny"
+              th:text="${#lists.size(availableItems)} + ' items · Current prices in USD'"
+            ></small>
+          </div>
+          <div class="search-field">
+            <img src="/images/tv5/search.svg" alt="" /><input
+              class="form-control"
+              data-food-search
+              type="search"
+              placeholder="Search menu items..."
+              aria-label="Search food menu"
+            />
+          </div>
+          <div class="segmented">
+            <button class="selected" data-food-category="">All items</button
+            ><button
+              th:each="c : ${categories}"
+              th:attr="data-food-category=${c}"
+              th:text="${c}"
+            ></button>
+          </div>
+          <div class="food-grid">
+            <article
+              th:each="item : ${availableItems}"
+              class="food-card"
+              th:attr="data-id=${item.id},data-name=${item.itemName},data-price=${item.price},data-category=${item.category}"
+            >
+              <img
+                th:if="${item.imageUrl != null}"
+                th:src="${item.imageUrl}"
+                alt=""
+              />
+              <div
+                th:if="${item.imageUrl == null}"
+                class="food-image-placeholder"
+              >
+                Photo unavailable
+              </div>
+              <small
+                class="eyebrow"
+                th:text="${#strings.toUpperCase(item.category)}"
+              ></small>
+              <h3 th:text="${item.itemName}"></h3>
+              <div class="flex-row spread">
+                <strong th:text="${@money.format(item.price)}"></strong
+                ><button
+                  class="add-food"
+                  type="button"
+                  aria-label="Add item"
+                  th:disabled="${user.role != 'Waiter' or selectedTable == null or (order != null ? !order.canEdit : !selectedTable.canCreateOrder)}"
+                >
+                  +
+                </button>
+              </div>
+            </article>
+          </div>
+          <p class="empty-message" data-food-empty hidden>
+            No menu items match your search.
+          </p>
+        </section>
+        <section
+          class="panel current-order"
+          th:attr="data-can-order=${user.role == 'Waiter' and selectedTable != null and (order != null ? order.canEdit : selectedTable.canCreateOrder)},data-saved-total=${order != null ? order.totalAmount : 0}"
+        >
+          <div class="flex-row spread">
+            <h2>Current order</h2>
+            <strong
+              class="muted tiny"
+              th:if="${selectedTable != null}"
+              th:text="${selectedTable.tableName}"
+            ></strong>
+          </div>
+          <div class="flex-row spread mt-3">
+            <strong
+              class="order-id"
+              th:text="${order == null ? 'New order' : 'ORD-' + order.id}"
+            ></strong
+            ><span
+              class="status-chip"
+              th:classappend="${order == null ? '' : #strings.toLowerCase(order.status.name())}"
+              th:text="${order == null ? 'Not created' : #strings.capitalize(#strings.toLowerCase(order.status.name()))}"
+            ></span>
+          </div>
+          <p
+            class="tiny mt-2"
+            th:text="${order == null ? 'Order ID is assigned after creation' : 'Saved prices · ' + order.employeeName}"
+          ></p>
+          <div class="cart-lines">
+            <div class="eyebrow border-bottom pb-2 mt-2">
+              ITEM / SAVED OR CURRENT UNIT PRICE
+            </div>
+            <div
+              th:if="${order != null}"
+              class="cart-line"
+              th:each="line : ${order?.lines}"
+            >
+              <div class="flex-row spread">
+                <strong th:text="${line.itemNameAtOrder}"></strong
+                ><strong th:text="${@money.format(line.subtotal)}"></strong>
+              </div>
+              <small
+                th:text="'Saved ' + ${@money.format(line.unitPriceAtOrder)} + ' × ' + ${line.quantity}"
+              ></small>
+              <div class="flex-row spread">
+                <span
+                  class="status-chip"
+                  th:classappend="${#strings.toLowerCase(line.cookingStatus.name())}"
+                  th:text="${#strings.capitalize(#strings.toLowerCase(line.cookingStatus.name()))}"
+                ></span>
+                <div
+                  class="existing-line-actions"
+                  th:if="${user.role == 'Waiter' and line.canEdit}"
+                >
+                  <form
+                    th:if="${line.quantity > 1}"
+                    th:action="@{/orders/{id}/items/{detail}/quantity(id=${order.id},detail=${line.detailId})}"
+                    method="post"
+                  >
+                    <input
+                      type="number"
+                      class="form-control"
+                      name="newQuantity"
+                      min="1"
+                      th:max="${line.quantity - 1}"
+                      th:value="${line.quantity - 1}"
+                      aria-label="Reduce quantity"
+                      style="width: 54px; min-height: 28px; padding: 2px 5px"
+                    /><button class="btn btn-outline-secondary">Reduce</button>
+                  </form>
+                  <form
+                    th:action="@{/orders/{id}/items/{detail}/cancel(id=${order.id},detail=${line.detailId})}"
+                    method="post"
+                  >
+                    <button class="btn btn-danger-outline">Remove</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div data-cart-lines></div>
+            <p class="empty-message" data-cart-empty th:if="${order == null}">
+              Add dishes from the food menu to start this order.
+            </p>
+          </div>
+          <form
+            th:action="${order == null ? '/orders' : '/orders/' + order.id + '/items'}"
+            method="post"
+            data-cart-form
+          >
+            <input
+              type="hidden"
+              th:name="${_csrf.parameterName}"
+              th:value="${_csrf.token}"
+            /><input
+              th:if="${selectedTable != null}"
+              type="hidden"
+              name="tableId"
+              th:value="${selectedTable.id}"
+            />
+            <div data-cart-inputs></div>
+            <th:block th:if="${order == null and form != null}"
+              ><span
+                hidden
+                data-draft-line
+                th:each="line : ${form.lines}"
+                th:attr="data-item-id=${line.itemId},data-quantity=${line.quantity}"
+              ></span
+            ></th:block>
+            <textarea
+              th:if="${order == null}"
+              name="note"
+              class="form-control mb-3"
+              rows="2"
+              maxlength="500"
+              placeholder="Order note (optional)"
+              aria-label="Order note"
+              th:text="${form != null ? form.note : null}"
+            ></textarea>
+            <div class="notice info">
+              Prices are saved when you create or add items. Creating an order
+              sets this table to Occupied.
+            </div>
+            <div class="order-total">
+              <span>Order total</span
+              ><strong
+                data-cart-total
+                th:text="${@money.format(order != null ? order.totalAmount : 0)}"
+              ></strong>
+            </div>
+            <div class="order-buttons">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                data-cart-submit
+                disabled
+                th:text="${order == null ? 'Create Order' : 'Update Order'}"
+              ></button
+              ><button
+                class="btn btn-outline-secondary"
+                type="button"
+                data-cart-clear
+                disabled
+              >
+                Clear additions</button
+              ><button
+                class="btn btn-outline-secondary"
+                type="button"
+                data-open-dialog="cancel-order"
+                th:disabled="${user.role != 'Waiter' or order == null or !order.canCancelOrder}"
+              >
+                Cancel Order</button
+              ><button
+                class="btn btn-outline-secondary"
+                type="button"
+                data-open-dialog="order-details"
+                th:disabled="${order == null}"
+              >
+                View Details
+              </button>
+            </div>
+            <p class="tiny muted mt-2">
+              Only Pending lines can be reduced or cancelled.
+            </p>
+          </form>
+        </section>
+      </div>
+    </main>
+    <script defer src="/js/order-workspace.js"></script>
+    <th:block th:if="${order != null}"
+      ><dialog class="app-dialog" id="cancel-order">
+        <form th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post">
+          <div class="dialog-head">
+            <h2>Cancel Order</h2>
+            <button
+              class="close-dialog"
+              type="button"
+              data-close-dialog
+              aria-label="Close"
+            >
+              &#215;
+            </button>
+          </div>
+          <div class="dialog-body">
+            <p>
+              Only an Open order with Pending or Cancelled lines can be
+              cancelled. Its table will become Available.
+            </p>
+            <label class="mt-3" for="cancelReason">Reason (optional)</label
+            ><textarea
+              id="cancelReason"
+              name="reason"
+              class="form-control"
+              maxlength="200"
+            ></textarea>
+          </div>
+          <div class="dialog-footer">
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              data-close-dialog
+            >
+              Keep Order</button
+            ><button
+              class="btn btn-danger"
+              th:disabled="${!order.canCancelOrder}"
+            >
+              Cancel Order
+            </button>
+          </div>
+        </form>
+      </dialog>
+      <dialog class="app-dialog" id="order-details">
+        <div class="dialog-head">
+          <h2 th:text="'Order Details · ORD-' + ${order.id}"></h2>
+          <button
+            class="close-dialog"
+            type="button"
+            data-close-dialog
+            aria-label="Close"
+          >
+            &#215;
+          </button>
+        </div>
+        <div class="dialog-body">
+          <dl>
+            <dt>Table</dt>
+            <dd th:text="${order.tableName}"></dd>
+            <dt>Created by</dt>
+            <dd th:text="${order.employeeName}"></dd>
+            <dt>Created at</dt>
+            <dd
+              th:text="${#temporals.format(order.createdAt,'dd MMM yyyy · HH:mm')}"
+            ></dd>
+            <dt>Note</dt>
+            <dd th:text="${order.note ?: '—'}"></dd>
+          </dl>
+          <div class="cart-line" th:each="line : ${order.lines}">
+            <strong th:text="${line.itemNameAtOrder}"></strong
+            ><small
+              th:text="${line.quantity} + ' × ' + ${@money.format(line.unitPriceAtOrder)} + ' · ' + ${line.cookingStatus}"
+            ></small>
+          </div>
+          <div class="order-total mt-3">
+            <span>Saved total</span
+            ><strong th:text="${@money.format(order.totalAmount)}"></strong>
+          </div>
+        </div></dialog
+    ></th:block>
+  </body>
+</html>

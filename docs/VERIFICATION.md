@@ -4,7 +4,7 @@ Phạm vi: TV1, TV2, TV4 và TV5. TV3 chưa được tích hợp theo yêu cầu
 
 ## Kết quả
 
-Maven Wrapper `verify` hoàn tất ngày 17/11/2026: **139 test, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**.
+Maven Wrapper `test` hoàn tất ngày 17/11/2026: **145 test, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**. Sau đó chạy `clean package -DskipTests` thành công để loại tài nguyên cũ khỏi JAR; không lặp lại kiểm thử đã đạt chỉ để đóng gói.
 
 | Bộ test | Số test đạt |
 | --- | ---: |
@@ -13,7 +13,7 @@ Maven Wrapper `verify` hoàn tất ngày 17/11/2026: **139 test, 0 failure, 0 er
 | CurrentEmployeeServiceImplTest | 4 |
 | OrderServiceImplTest | 40 |
 | TableServiceImplTest | 19 |
-| SystemIntegrationTests | 41 |
+| SystemIntegrationTests | 47 |
 | HttpSecurityIntegrationTests | 2 |
 
 Smoke test HTTP/MySQL thực tế cũng đạt:
@@ -52,3 +52,13 @@ Kết quả cuối cùng của các lệnh chạy được ghi trong lịch sử
 Không có xác nhận độ khớp toàn bộ giao diện với Figma hoặc kiểm thử trực quan đầy đủ. Công cụ Windows đã tự dừng vì không xác định chắc URL Chrome. Không chuyển sang trình duyệt khác hoặc dùng automation khác để vượt chặn; các kiểm tra mã nguồn, MockMvc và HTTP/MySQL vẫn được thực hiện độc lập.
 
 Không tuyên bố luồng tạo đơn → bếp → phục vụ hoàn chỉnh khi TV3 chưa có trong bản tích hợp. Những đơn mới Pending tiếp tục bị chặn thanh toán theo đúng nghiệp vụ.
+
+
+## Đợt sửa giao diện theo PNG Figma (17/11/2026)
+
+Bổ sung kiểm thử gán vai trò/khóa tài khoản mà không đổi password và employee, chặn actor khác sửa tài khoản/danh mục, xác nhận mật khẩu, danh mục trùng/rỗng/không tồn tại, giữ snapshot lịch sử, xem bill đơn Completed không cho thanh toán lại, khôi phục draft khi tạo đơn bị từ chối. Xem `FIGMA-AUDIT.md` về các màn hình đã đối chiếu trực quan và giới hạn asset.
+
+
+Bản JAR sau sửa giao diện đã kiểm tra HTTP trên MySQL: **31 trang của 4 actor, 36 asset local đều trả thành công**, bao gồm form thêm/sửa, lọc trạng thái, đơn lịch sử, bill và hóa đơn. Các script `workspace.js`, `order-workspace.js`, `payment-workspace.js` đều qua `node --check`. Database `rom_figma_ui_check` trên MySQL demo cổng 3307 được tạo riêng cho kiểm tra trạng thái bill; database `rom_integration_demo` được giữ nguyên trong đợt kiểm tra này.
+
+Kiểm tra Chrome trên database UI riêng: Generate Bill, tiền nhận 50 USD cho bill 39 USD, tiền thừa 11 USD, bật Process Payment và mở hộp thoại Confirm Payment. Dữ liệu thử chính vẫn giữ nguyên. Đã kiểm tra JAR sạch có shell mới và không còn theme/template cũ đã loại bỏ.

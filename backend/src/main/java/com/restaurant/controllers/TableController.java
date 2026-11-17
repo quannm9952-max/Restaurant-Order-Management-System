@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Controller for managing restaurant tables (UC04). Access: WAITER, MANAGER - chỉ WAITER,
- * MANAGER được cập nhật trạng thái bàn và xem đơn/bàn.
+ * Controller for managing restaurant tables (UC04). Access: WAITER, MANAGER - chỉ WAITER, MANAGER
+ * được cập nhật trạng thái bàn và xem đơn/bàn.
  */
 @Controller
 @RequestMapping("/tables")
@@ -50,6 +50,8 @@ public class TableController {
       tables = tableService.listTables();
     }
     model.addAttribute("tables", tables);
+    model.addAttribute("allTables", tableService.listTables());
+    if (!tables.isEmpty()) model.addAttribute("table", tables.getFirst());
     model.addAttribute("statuses", TableStatus.values());
     return "tables/list";
   }
@@ -60,6 +62,8 @@ public class TableController {
     try {
       TableView table = tableService.getTable(id);
       model.addAttribute("table", table);
+      model.addAttribute("tables", tableService.listTables());
+      model.addAttribute("allTables", tableService.listTables());
 
       // If table has an open order, fetch its summary
       if (table.currentOrderId() != null) {
@@ -72,7 +76,7 @@ public class TableController {
         }
       }
 
-      return "tables/detail";
+      return "tables/list";
     } catch (NotFoundException e) {
       model.addAttribute("errorMessage", e.getMessage());
       return "error";

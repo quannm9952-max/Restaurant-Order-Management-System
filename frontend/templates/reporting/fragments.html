@@ -7,31 +7,11 @@
     <link rel="stylesheet" th:href="@{/css/vendor/bootstrap-5.3.8.min.css}">
     <link rel="stylesheet" th:href="@{/css/fonts.css}">
     <link rel="stylesheet" th:href="@{/css/reporting.css}">
-    <script defer th:src="@{/js/reporting.js}"></script>
+    <link rel="stylesheet" href="/css/workspace.css"><script defer src="/js/workspace.js"></script><script defer th:src="@{/js/reporting.js}"></script>
 </head>
 <body>
-<aside th:fragment="sidebar(section)" class="sidebar">
-    <div class="brand"><span class="brand-mark"><img th:src="@{/images/tv5/utensils.svg}" alt=""></span>
-        <div><strong>Restaurant</strong><small>ORDER MANAGEMENT</small></div></div>
-    <div class="workspace-label">WORKSPACE</div>
-    <nav aria-label="Manager workspace">
-        <a class="nav-item" href="/home"><img th:src="@{/images/tv5/grid.svg}" alt="">Dashboard</a>
-        <a class="nav-item" href="/employees"><img th:src="@{/images/tv5/users.svg}" alt="">Employee Management</a>
-        <a class="nav-item" href="/tables"><img th:src="@{/images/tv5/table.svg}" alt="">Table Management</a>
-        <a class="nav-item" href="/menu"><img th:src="@{/images/tv5/menu.svg}" alt="">Menu Management</a>
-        <a class="nav-item" th:classappend="${section == 'orders'} ? 'active'" th:href="@{/manager/orders}"><img th:src="@{/images/tv5/orders.svg}" alt="">Restaurant Orders</a>
-        <a class="nav-item" th:classappend="${section == 'revenue'} ? 'active'" th:href="@{/manager/reports}"><img th:src="${section == 'revenue'} ? @{/images/tv5/chart.svg} : @{/images/tv5/chart-inactive.svg}" alt="">Revenue Reports</a>
-        <a class="nav-item" th:classappend="${section == 'history'} ? 'active'" th:href="@{/manager/payment-history}"><img th:src="${section == 'history'} ? @{/images/tv5/history-active.svg} : @{/images/tv5/history.svg}" alt="">Payment History</a>
-        <a class="nav-item" href="/payments">Payments &amp; invoices</a>
-    </nav>
-    <div class="sidebar-bottom"><div class="role-card"><small>SIGNED IN AS</small><strong>Manager</strong><img th:src="@{/images/tv5/lock.svg}" alt=""></div>
-        <p>Restaurant employee workspace</p></div>
-</aside>
-<header th:fragment="header(title)" class="topbar">
-    <strong th:text="${title}">Reports &amp; Payment History</strong>
-    <div class="profile"><span class="avatar" th:text="${managerInitials}">DM</span><div><b th:text="${managerName}">Manager</b><small>Manager</small></div></div>
-    <form th:action="@{/logout}" method="post"><button class="btn logout"><img th:src="@{/images/tv5/logout.svg}" alt="">Logout</button></form>
-</header>
+<aside th:fragment="sidebar(section)" th:replace="~{shared/shell :: sidebar(${section})}"></aside>
+<header th:fragment="header(title)" th:replace="~{shared/shell :: header(${title})}"></header>
 <section th:fragment="heading(title,description)" class="page-heading">
     <div><div class="title-line"><h1 th:text="${title}">Reports &amp; Payment History</h1><span class="manager-badge">Manager access</span><span th:if="${demoMode}" class="demo-badge">DEMO</span></div><p th:text="${description}">Review restaurant revenue and retained payment records.</p></div>
     <span class="read-only"><img th:src="@{/images/tv5/lock1.svg}" alt="">Read-only</span>

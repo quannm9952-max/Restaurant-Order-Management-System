@@ -1,7 +1,61 @@
-<!DOCTYPE html><html xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head}"></head><body>
-<nav th:replace="~{fragments/layout :: navbar}"></nav><main class="container py-4"><h1 th:text="${table.id == null ? 'Add table' : 'Edit table'}">Table</h1>
-<form th:action="@{/tables/save}" method="post" class="card p-4"><input type="hidden" name="id" th:value="${table.id}">
-<label class="form-label" for="name">Table name</label><input class="form-control mb-3" id="name" name="name" th:value="${table.tableName}" maxlength="30" required>
-<label class="form-label" for="capacity">Capacity</label><input class="form-control mb-3" id="capacity" name="capacity" type="number" min="1" max="100" th:value="${table.capacity}" required>
-<p>Use Out of Service on the table details page to stop using a table while retaining its history.</p>
-<div><button class="btn btn-primary" type="submit">Save table</button> <a class="btn btn-secondary" href="/tables">Cancel</a></div></form></main></body></html>
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{shared/shell :: head('Table Management')}"></head>
+  <body>
+    <aside th:replace="~{shared/shell :: sidebar('tables')}"></aside>
+    <header th:replace="~{shared/shell :: header('Table Management')}"></header>
+    <main class="main-content">
+      <section
+        th:replace="~{shared/shell :: heading('Table Management','View table availability and manage dine-in service.')}"
+      ></section>
+    </main>
+    <dialog class="app-dialog" data-auto-open>
+      <form th:action="@{/tables/save}" method="post">
+        <div class="dialog-head">
+          <h2 th:text="${table.id == null ? 'Add Table' : 'Edit Table'}"></h2>
+          <a href="/tables" class="close-dialog" aria-label="Close">&#215;</a>
+        </div>
+        <div class="dialog-body">
+          <input type="hidden" name="id" th:value="${table.id}" />
+          <div class="field">
+            <label for="name">Table name</label
+            ><input
+              class="form-control"
+              id="name"
+              name="name"
+              th:value="${table.tableName}"
+              maxlength="30"
+              required
+              placeholder="e.g. Table 13"
+            />
+          </div>
+          <div class="field">
+            <label for="capacity">Seating capacity</label
+            ><input
+              class="form-control"
+              id="capacity"
+              name="capacity"
+              type="number"
+              min="1"
+              max="100"
+              th:value="${table.capacity}"
+              required
+            />
+          </div>
+          <div class="field">
+            <label>Current status</label
+            ><input class="form-control" readonly th:value="${table.status}" />
+          </div>
+          <div class="notice info">
+            Table history is retained. Use the status action to stop using a
+            table.
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <a class="btn btn-outline-secondary" href="/tables">Cancel</a
+          ><button class="btn btn-primary">Save Table</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

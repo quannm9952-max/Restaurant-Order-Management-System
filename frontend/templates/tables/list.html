@@ -1,70 +1,190 @@
-<!-- Figma frame: (chưa gán) -->
-<!-- TODO: Đối chiếu Figma khi có thiết kế -->
-<!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Danh sách bàn - Quản lý nhà hàng</title>
-    <th:block th:replace="~{fragments/layout :: head}"></th:block>
-</head>
-<body>
-<nav th:replace="~{fragments/layout :: navbar}"></nav><a class="btn btn-primary mb-3" th:if="${user.role=='Manager'}" href="/tables/new">Add table</a>
-<div th:replace="~{fragments/layout :: flashMessages}"></div>
-
-<div class="container-fluid mt-3">
-    <h2>Danh sách bàn</h2>
-
-    <!-- Filter by status -->
-    <form method="get" action="/tables" class="row g-2 align-items-end mb-3">
-        <div class="col-auto">
-            <label for="statusFilter" class="form-label">Lọc theo trạng thái</label>
-            <select id="statusFilter" name="status" class="form-select" onchange="this.form.submit()">
-                <option value="">Tất cả</option>
-                <option th:each="s : ${statuses}"
-                        th:value="${s.name()}"
-                        th:text="${s.name()}"
-                        th:selected="${filterStatus != null and filterStatus == s.name()}">
-                </option>
-            </select>
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{shared/shell :: head('Table Management')}"></head>
+  <body>
+    <aside th:replace="~{shared/shell :: sidebar('tables')}"></aside>
+    <header th:replace="~{shared/shell :: header('Table Management')}"></header>
+    <main class="main-content">
+      <section class="page-heading">
+        <div>
+          <div class="title-line">
+            <h1>Table Management</h1>
+            <span
+              class="manager-badge"
+              th:text="${user.role} + ' access'"
+            ></span>
+          </div>
+          <p>View table availability and manage dine-in service.</p>
         </div>
-        <div class="col-auto" th:if="${filterStatus != null}">
-            <a class="btn btn-outline-secondary btn-sm" href="/tables">Xóa bộ lọc</a>
+        <a
+          th:if="${user.role == 'Manager'}"
+          class="btn btn-primary"
+          href="/tables/new"
+          >+ Add Table</a
+        >
+      </section>
+      <div th:replace="~{shared/shell :: flash}"></div>
+      <section class="panel table-filter flex-row">
+        <div class="segmented">
+          <a
+            href="/tables"
+            th:classappend="${filterStatus == null} ? 'selected'"
+            >All Tables
+            <span class="count" th:text="${#lists.size(allTables)}"></span></a
+          ><a
+            th:each="s : ${T(com.restaurant.entities.enums.TableStatus).values()}"
+            th:href="@{/tables(status=${s.name()})}"
+            th:classappend="${filterStatus == s.name()} ? 'selected'"
+            ><span
+              th:text="${s.name() == 'OUT_OF_SERVICE' ? 'OutOfService' : #strings.capitalize(#strings.toLowerCase(s.name()))}"
+            ></span
+            ><span
+              class="count"
+              th:text="${#lists.size(allTables.?[status == #vars.s])}"
+            ></span
+          ></a>
         </div>
-    </form>
-
-    <!-- Tables table -->
-    <table class="table table-striped table-hover">
-        <thead class="table-light">
-        <tr>
-            <th>STT</th>
-            <th>Tên bàn</th>
-            <th>Sức chứa</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="table, iter : ${tables}">
-            <td th:text="${iter.count}"></td>
-            <td>
-                <a th:href="@{/tables/{id}(id=${table.id})}" th:text="${table.tableName}"></a>
-            </td>
-            <td th:text="${table.capacity} + ' người'"></td>
-            <td>
-                <span th:class="'status-' + ${#strings.toLowerCase(table.status.name())}"
-                      th:text="${#strings.capitalize(#strings.toLowerCase(table.status.name()))}">
-                </span>
-            </td>
-            <td>
-                <a th:href="@{/tables/{id}(id=${table.id})}" class="btn btn-sm btn-outline-primary">Chi tiết</a>
-            </td>
-        </tr>
-        <tr th:if="${#lists.isEmpty(tables)}">
-            <td colspan="5" class="text-center text-muted">Không có bàn nào.</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
-
-<footer th:replace="~{fragments/layout :: footer}"></footer>
-</body>
+        <span
+          class="table-count"
+          th:text="${#lists.size(allTables)} + ' tables'"
+        ></span>
+      </section>
+      <div class="table-layout">
+        <section>
+          <div class="flex-row spread">
+            <h2>Restaurant tables</h2>
+            <small class="muted">Select a table to view details</small>
+          </div>
+          <div class="table-cards">
+            <a
+              th:each="t : ${tables}"
+              class="table-card"
+              th:classappend="${#strings.toLowerCase(t.status.name()) + (table != null and table.id == t.id ? ' selected' : '')}"
+              th:href="@{/tables/{id}(id=${t.id})}"
+              ><h3 th:text="${t.tableName}"></h3>
+              <span
+                class="status-chip"
+                th:classappend="${#strings.toLowerCase(t.status.name())}"
+                th:text="${t.status.name() == 'OUT_OF_SERVICE' ? 'OutOfService' : #strings.capitalize(#strings.toLowerCase(t.status.name()))}"
+              ></span
+              ><span class="table-symbol"
+                ><img src="/images/tv5/table.svg" alt="" /></span
+              ><small
+                th:text="${t.currentOrderId == null ? 'No Open order' : 'Open order · ORD-' + t.currentOrderId}"
+              ></small
+            ></a>
+          </div>
+          <div class="panel empty-message" th:if="${#lists.isEmpty(tables)}">
+            No tables match this status.
+          </div>
+        </section>
+        <section class="panel table-details" th:if="${table != null}">
+          <span class="eyebrow">TABLE DETAILS</span>
+          <div class="flex-row spread">
+            <h2 th:text="${table.tableName}"></h2>
+            <span
+              class="status-chip"
+              th:classappend="${#strings.toLowerCase(table.status.name())}"
+              th:text="${table.status.name() == 'OUT_OF_SERVICE' ? 'OutOfService' : #strings.capitalize(#strings.toLowerCase(table.status.name()))}"
+            ></span>
+          </div>
+          <hr />
+          <div class="flex-row spread">
+            <span class="muted tiny">Seating capacity</span
+            ><span th:text="${table.capacity} + ' seats'"></span>
+          </div>
+          <div class="order-summary-box">
+            <span class="muted tiny">Open order</span
+            ><strong
+              th:text="${table.currentOrderId == null ? 'None' : 'ORD-' + table.currentOrderId}"
+            ></strong>
+          </div>
+          <div
+            class="notice"
+            th:classappend="${table.currentOrderId == null ? 'success' : 'warning'}"
+          >
+            <strong
+              th:text="${table.currentOrderId == null ? 'No Open order linked' : 'This table has an Open order'}"
+            ></strong>
+            <p
+              th:text="${table.currentOrderId == null ? 'Only one Open order is allowed per table at a time.' : 'Status changes are restricted while an order is Open.'}"
+            ></p>
+          </div>
+          <th:block th:if="${user.role == 'Waiter'}"
+            ><a
+              th:if="${table.currentOrderId != null}"
+              class="btn btn-primary"
+              th:href="@{/orders/{id}(id=${table.currentOrderId})}"
+              >Open Order Management</a
+            ><a
+              th:if="${table.canCreateOrder}"
+              class="btn btn-primary"
+              th:href="@{/orders/new(tableId=${table.id})}"
+              >Open Order Management</a
+            ></th:block
+          ><button
+            class="btn btn-outline-secondary"
+            type="button"
+            data-open-dialog="table-status"
+            th:disabled="${!table.canChangeStatus}"
+            th:text="${user.role == 'Manager' ? (table.status.name() == 'OUT_OF_SERVICE' ? 'Set Available' : 'Set OutOfService') : 'Update Status'}"
+          ></button
+          ><a
+            th:if="${user.role == 'Manager'}"
+            class="btn btn-outline-secondary"
+            th:href="@{/tables/{id}/edit(id=${table.id})}"
+            >Edit Table</a
+          >
+          <p class="tiny muted mt-3">
+            Creating an order automatically sets this table to Occupied.
+          </p>
+        </section>
+      </div>
+      <p class="footnote">
+        Max. one Open order per table. Order creation sets Occupied; successful
+        payment or valid cancellation sets Available.
+      </p>
+    </main>
+    <dialog class="app-dialog" id="table-status" th:if="${table != null}">
+      <form th:action="@{/tables/{id}/status(id=${table.id})}" method="post">
+        <div class="dialog-head">
+          <h2>Update Table Status</h2>
+          <button
+            type="button"
+            class="close-dialog"
+            data-close-dialog
+            aria-label="Close"
+          >
+            &#215;
+          </button>
+        </div>
+        <div class="dialog-body">
+          <h3 th:text="${table.tableName}"></h3>
+          <p class="mb-3" th:text="'Current status: ' + ${table.status}"></p>
+          <label for="newStatus">New status</label
+          ><select class="form-select" id="newStatus" name="newStatus">
+            <option value="AVAILABLE">Available</option>
+            <option value="OUT_OF_SERVICE">OutOfService</option>
+          </select>
+          <div class="notice info mt-3">
+            A table with an Open order cannot change status.
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            data-close-dialog
+          >
+            Cancel</button
+          ><button
+            class="btn btn-primary"
+            th:disabled="${!table.canChangeStatus}"
+          >
+            Confirm Status
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </body>
 </html>

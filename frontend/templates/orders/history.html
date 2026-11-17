@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{shared/shell :: head('Order Management')}"></head>
+  <body>
+    <aside th:replace="~{shared/shell :: sidebar('orders')}"></aside>
+    <header th:replace="~{shared/shell :: header('Order Management')}"></header>
+    <main class="main-content">
+      <section class="page-heading">
+        <div>
+          <h1>Restaurant Order Management</h1>
+          <p>Inspect retained orders and saved prices.</p>
+        </div>
+        <nav class="segmented">
+          <a href="/orders">Open</a
+          ><a
+            href="/orders?status=COMPLETED"
+            th:classappend="${selectedStatus == 'COMPLETED'} ? 'selected'"
+            >Completed</a
+          ><a
+            href="/orders?status=CANCELLED"
+            th:classappend="${selectedStatus == 'CANCELLED'} ? 'selected'"
+            >Cancelled</a
+          >
+        </nav>
+      </section>
+      <div class="panel table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ORDER ID</th>
+              <th>TABLE</th>
+              <th>CREATED AT</th>
+              <th>STATUS</th>
+              <th>TOTAL</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="o : ${orders}">
+              <td th:text="'ORD-' + ${o.id}"></td>
+              <td th:text="${o.tableName}"></td>
+              <td
+                th:text="${#temporals.format(o.createdAt,'dd MMM yyyy · HH:mm')}"
+              ></td>
+              <td th:text="${selectedStatus}"></td>
+              <td th:text="${@money.format(o.totalAmount)}"></td>
+              <td>
+                <a class="btn button-soft" th:href="@{/orders/{id}(id=${o.id})}"
+                  >View Details &#8594;</a
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p th:if="${#lists.isEmpty(orders)}" class="empty-message">
+          No orders in this status.
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

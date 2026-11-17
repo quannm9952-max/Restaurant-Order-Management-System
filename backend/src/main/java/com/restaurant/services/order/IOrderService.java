@@ -10,8 +10,8 @@ import com.restaurant.exceptions.NotFoundException;
 import java.util.List;
 
 /**
- * Service interface for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được
- * tạo/sửa/hủy đơn.
+ * Service interface for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được tạo/sửa/hủy
+ * đơn.
  */
 public interface IOrderService {
 
@@ -110,4 +110,6 @@ public interface IOrderService {
    * @return list of available menu item options
    */
   List<MenuItemOption> listAvailableItems();
+
+  List<OrderSummaryView> listOrdersByStatus(com.restaurant.entities.enums.OrderStatus status);
 }

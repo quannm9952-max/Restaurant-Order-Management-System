@@ -56,6 +56,21 @@ public class OrderReportingRepository {
         .findFirst();
   }
 
+  public java.util.Map<String, Long> counts(String query) {
+    var result = new java.util.LinkedHashMap<String, Long>();
+    for (String status : List.of("ALL", "OPEN", "COMPLETED", "CANCELLED")) result.put(status, 0L);
+    var parameters =
+        new MapSqlParameterSource("query", QuerySupport.literalSearch(query))
+            .addValue("status", null, java.sql.Types.VARCHAR);
+    jdbc.query(
+        "SELECT o.status,COUNT(*) AS total" + FROM + FILTER + " GROUP BY o.status",
+        parameters,
+        (org.springframework.jdbc.core.RowCallbackHandler)
+            rs -> result.put(rs.getString("status"), rs.getLong("total")));
+    result.put("ALL", result.get("OPEN") + result.get("COMPLETED") + result.get("CANCELLED"));
+    return result;
+  }
+
   public List<OrderLine> findDetails(int orderId) {
     return jdbc.query(
         """

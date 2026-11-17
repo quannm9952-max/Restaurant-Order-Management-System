@@ -38,6 +38,17 @@ public class EmployeeService {
         .orElseThrow(() -> new IllegalArgumentException("Account not found."));
   }
 
+  @Transactional
+  public void assignRole(Integer id, Role role) {
+    if (role == null) throw new IllegalArgumentException("Choose a valid role.");
+    getAccount(id).setRole(role);
+  }
+
+  @Transactional
+  public void lockAccount(Integer id) {
+    getAccount(id).setActive(false);
+  }
+
   /**
    * Creates a new employee account (id == null) or updates an existing one (UC03). Empty password
    * on update means "keep the current password".

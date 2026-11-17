@@ -1,85 +1,66 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login - Restaurant Order Management System</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; display: flex; min-height: 100vh; background: #fff; }
-    .left { flex: 1; background: linear-gradient(160deg, #22344a 0%, #0f1b2b 100%); color: white;
-            padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 12px; letter-spacing: 2px; font-size: 13px; }
-    .logo { width: 44px; height: 44px; border-radius: 10px; background: #e8641f; display: flex;
-            align-items: center; justify-content: center; font-size: 22px; }
-    .left h1 { font-size: 38px; line-height: 1.2; margin: 0 0 12px; }
-    .left p { color: #c7cfda; margin: 0; line-height: 1.5; }
-    .accent { width: 40px; height: 3px; background: #e8641f; margin-bottom: 16px; }
-    .tag { font-size: 12px; letter-spacing: 2px; color: #8b97a8; }
-    .right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
-    .form { width: 100%; max-width: 380px; }
-    .form h2 { font-size: 34px; margin: 0 0 8px; color: #14202e; }
-    .sub { color: #6b7685; margin: 0 0 28px; }
-    label { display: block; font-size: 14px; font-weight: bold; margin: 18px 0 6px; color: #14202e; }
-    .field { position: relative; }
-    input { width: 100%; padding: 14px 16px; border: 1px solid #dde2e8; border-radius: 8px; font-size: 15px; }
-    input:focus { outline: 2px solid #e8641f33; border-color: #e8641f; }
-    .eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none;
-           border: none; cursor: pointer; font-size: 13px; color: #6b7685; width: auto; margin: 0; padding: 4px; }
-    .login-btn { width: 100%; margin-top: 24px; padding: 14px; background: #e8641f; color: white;
-                 border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-    .login-btn:hover { background: #d1561a; }
-    .note { text-align: center; color: #6b7685; font-size: 13px; margin-top: 28px; }
-    .error { background: #fdecea; color: #b3261e; padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-top: 16px; }
-    .success { background: #e8f5ee; color: #1e7a46; padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-top: 16px; }
-    @media (max-width: 800px) { .left { display: none; } }
-  </style>
-</head>
-<body>
-  <div class="left">
-    <div class="brand"><div class="logo">&#127860;</div> EMPLOYEE WORKSPACE</div>
-    <div>
-      <div class="accent"></div>
-      <h1>Restaurant Order<br>Management System</h1>
-      <p>Welcome to your daily service workspace.<br>Sign in to keep every order running smoothly.</p>
-    </div>
-    <div class="tag">ONE TEAM. SEAMLESS SERVICE.</div>
-  </div>
-
-  <div class="right">
-    <form class="form" th:action="@{/login}" method="post">
-      <h2>Welcome Back</h2>
-      <p class="sub">Sign in to access your role-based workspace.</p>
-
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
-
-      <label for="password">Password</label>
-      <div class="field">
-        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-        <button type="button" class="eye" onclick="togglePw()">Show</button>
-      </div>
-
-      <button type="submit" class="login-btn">Login</button>
-
-      <div class="error" th:if="${param.error}">
-        Wrong username or password, or the account is locked.
-      </div>
-      <div class="success" th:if="${param.logout}">
-        You have been logged out.
-      </div>
-
-      <div class="note">For authorized restaurant employees only.</div>
-    </form>
-  </div>
-
-  <script>
-    function togglePw() {
-      var p = document.getElementById('password');
-      var b = document.querySelector('.eye');
-      if (p.type === 'password') { p.type = 'text'; b.textContent = 'Hide'; }
-      else { p.type = 'password'; b.textContent = 'Show'; }
-    }
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Login &#183; Restaurant</title>
+    <link rel="stylesheet" href="/css/fonts.css" />
+    <link rel="stylesheet" href="/css/login.css" />
+    <script defer src="/js/workspace.js"></script>
+  </head>
+  <body>
+    <aside class="login-brand">
+      <img
+        src="/images/login/brand-panel.png"
+        alt="Restaurant Order Management System. Welcome to your daily service workspace. One team. Seamless service."
+      />
+    </aside>
+    <main class="login-main">
+      <form class="login-form" th:action="@{/login}" method="post">
+        <h1>Welcome Back</h1>
+        <p>Sign in to access your role-based workspace.</p>
+        <div class="login-alert" role="alert" th:if="${param.error}">
+          <strong>Unable to sign in</strong
+          ><span>Wrong username or password, or the account is locked.</span>
+        </div>
+        <div class="login-success" role="status" th:if="${param.logout}">
+          You have been logged out.
+        </div>
+        <label for="username">Username</label
+        ><input
+          id="username"
+          name="username"
+          placeholder="Enter your username"
+          autocomplete="username"
+          required
+          maxlength="50"
+          autofocus
+        /><label for="password">Password</label>
+        <div class="password-field">
+          <input
+            id="password"
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          /><button
+            type="button"
+            data-password-toggle="password"
+            aria-label="Show or hide password"
+            aria-pressed="false"
+          >
+            Show
+          </button>
+        </div>
+        <button class="login-button" type="submit">
+          Login <span>&#8594;</span>
+        </button>
+        <div class="login-note">
+          <img src="/images/tv5/lock1.svg" alt="" />For authorized restaurant
+          employees only.
+        </div>
+      </form>
+    </main>
+  </body>
 </html>

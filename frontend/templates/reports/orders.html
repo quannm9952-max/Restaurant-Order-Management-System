@@ -1,10 +1,116 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{reporting/fragments :: head('Restaurant Orders')}"></head><body>
-<a class="skip-link" href="#main">Skip to content</a><aside th:replace="~{reporting/fragments :: sidebar('orders')}"></aside><header th:replace="~{reporting/fragments :: header('Restaurant Orders')}"></header>
-<main id="main" class="main-content"><section th:replace="~{reporting/fragments :: heading('Restaurant Orders','Monitor restaurant orders and inspect retained order details.')}"></section>
-    <section class="panel history-panel"><form class="order-filters" method="get" th:action="@{/manager/orders}"><label>Status<select class="form-select" name="status"><option value="ALL">All orders</option><option th:each="status : ${T(com.restaurant.ordermanagement.reporting.dto.ReportingModels.OrderStatus).values()}" th:value="${status.name()}" th:text="${status.name()}" th:selected="${selectedStatus == status.name()}"></option></select></label><label>Search order or table<input class="form-control" name="q" type="search" maxlength="100" placeholder="Order ID or table name" th:value="${q}"></label><button class="btn btn-primary">Search orders</button><a class="btn btn-outline-secondary" th:href="@{/manager/orders}">Reset</a></form>
-    <div class="table-responsive"><table class="table records-table"><thead><tr><th>ORDER ID</th><th>TABLE</th><th>CREATED AT</th><th>CREATED BY</th><th>STATUS</th><th class="text-end">TOTAL</th><th>ACTIONS</th></tr></thead><tbody><tr th:each="order : ${result.content}"><td><strong th:text="${order.code()}"></strong></td><td th:text="${order.tableName}"></td><td th:text="${#temporals.format(order.createdAt,'dd MMM yyyy · HH:mm')}"></td><td th:text="${order.employeeName}"></td><td><span th:replace="~{reporting/fragments :: status(${order.status.name()},${order.statusLabel()})}"></span></td><td class="text-end" th:text="${@money.format(order.totalAmount)}"></td><td><a class="btn button-soft" th:href="@{/manager/orders/{id}(id=${order.orderId})}">View Order Details</a></td></tr></tbody></table></div>
-    <div class="empty-state history-empty" th:if="${#lists.isEmpty(result.content)}"><h3>No orders found</h3><p>No orders match your search and status.</p></div>
-    <footer class="pagination-footer"><span th:text="'Showing ' + ${result.first()} + '–' + ${result.last()} + ' of ' + ${result.total} + ' orders'"></span><nav aria-label="Order pages"><a class="btn btn-outline-secondary" th:classappend="${!result.hasPrevious()} ? 'disabled'" th:href="@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number - 1})}">Previous</a><span th:text="${result.number + 1} + ' of ' + ${result.pages()}"></span><a class="btn btn-outline-secondary" th:classappend="${!result.hasNext()} ? 'disabled'" th:href="@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number + 1})}">Next</a></nav></footer>
-    </section></main></body></html>
+  <head th:replace="~{reporting/fragments :: head('Restaurant Orders')}"></head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <aside th:replace="~{reporting/fragments :: sidebar('orders')}"></aside>
+    <header
+      th:replace="~{reporting/fragments :: header('Restaurant Orders')}"
+    ></header>
+    <main id="main" class="main-content">
+      <section
+        th:replace="~{reporting/fragments :: heading('Restaurant Orders','Monitor restaurant orders and inspect retained order details.')}"
+      ></section>
+      <section class="panel history-panel">
+        <div class="monitoring-toolbar">
+          <nav class="segmented" aria-label="Order status">
+            <a
+              th:each="s : ${ {'ALL','OPEN','COMPLETED','CANCELLED'} }"
+              th:href="@{/manager/orders(status=${s},q=${q})}"
+              th:classappend="${selectedStatus == s} ? 'selected'"
+              ><span
+                th:text="${s == 'ALL' ? 'All Orders' : #strings.capitalize(#strings.toLowerCase(s))}"
+              ></span
+              ><span class="count" th:text="${orderCounts[s]}"></span
+            ></a>
+          </nav>
+          <form method="get" action="/manager/orders" class="search-field">
+            <input
+              type="hidden"
+              name="status"
+              th:value="${selectedStatus}"
+            /><img src="/images/tv5/search.svg" alt="" /><input
+              class="form-control"
+              name="q"
+              type="search"
+              maxlength="100"
+              placeholder="Search order ID or table..."
+              aria-label="Search orders"
+              th:value="${q}"
+            />
+          </form>
+        </div>
+        <div class="table-responsive">
+          <table class="table records-table">
+            <thead>
+              <tr>
+                <th>ORDER ID</th>
+                <th>TABLE</th>
+                <th>CREATED AT</th>
+                <th>STATUS</th>
+                <th class="text-end">TOTAL</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="order : ${result.content}">
+                <td><strong th:text="${order.code()}"></strong></td>
+                <td th:text="${order.tableName}"></td>
+                <td
+                  th:text="${#temporals.format(order.createdAt,'dd MMM yyyy · HH:mm')}"
+                ></td>
+                <td>
+                  <span
+                    th:replace="~{reporting/fragments :: status(${order.status.name()},${order.statusLabel()})}"
+                  ></span>
+                </td>
+                <td
+                  class="text-end"
+                  th:text="${@money.format(order.totalAmount)}"
+                ></td>
+                <td>
+                  <a
+                    class="btn button-soft"
+                    th:href="@{/manager/orders/{id}(id=${order.orderId})}"
+                    >View Details →</a
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div
+          class="empty-state history-empty"
+          th:if="${#lists.isEmpty(result.content)}"
+        >
+          <h3>No orders found</h3>
+          <p>No orders match your search and status.</p>
+        </div>
+        <footer class="pagination-footer">
+          <span
+            th:text="'Showing ' + ${result.first()} + '–' + ${result.last()} + ' of ' + ${result.total} + ' orders'"
+          ></span>
+          <nav aria-label="Order pages">
+            <a
+              class="btn btn-outline-secondary"
+              th:classappend="${!result.hasPrevious()} ? 'disabled'"
+              th:href="@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number - 1})}"
+              >Previous</a
+            ><span
+              th:text="${result.number + 1} + ' of ' + ${result.pages()}"
+            ></span
+            ><a
+              class="btn btn-outline-secondary"
+              th:classappend="${!result.hasNext()} ? 'disabled'"
+              th:href="@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number + 1})}"
+              >Next</a
+            >
+          </nav>
+        </footer>
+      </section>
+      <p class="footnote">
+        Order history is retained. This page is read-only for Managers.
+      </p>
+    </main>
+  </body>
+</html>

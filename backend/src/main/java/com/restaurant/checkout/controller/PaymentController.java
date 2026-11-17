@@ -20,7 +20,10 @@ public class PaymentController {
 
   /** Billing & Payment Management Dashboard */
   @GetMapping("/payments")
-  public String paymentDashboard(@RequestParam(required = false) String search, Model model) {
+  public String paymentDashboard(
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false) Long orderId,
+      Model model) {
 
     Map<String, Object> stats = service.paymentStats();
     List<Map<String, Object>> pendingList = service.pendingOrders(search);
@@ -30,6 +33,12 @@ public class PaymentController {
     model.addAttribute("pendingOrders", pendingList);
     model.addAttribute("recentPayments", recentPayments);
     model.addAttribute("currentSearch", search != null ? search : "");
+    var checkoutOrders = service.checkoutOrders(search);
+    model.addAttribute("checkoutOrders", checkoutOrders);
+    if (orderId != null)
+      model.addAttribute("selectedOrder", service.orderDetailForPayment(orderId));
+    else if (!checkoutOrders.isEmpty())
+      model.addAttribute("selectedOrder", checkoutOrders.getFirst());
 
     return "payments";
   }

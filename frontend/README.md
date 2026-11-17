@@ -8,3 +8,5 @@ Server-rendered HTML, Thymeleaf, CSS, JavaScript and Bootstrap. Maven packages t
 - static: local CSS, JavaScript, Bootstrap, fonts and menu images.
 
 Read the root README for startup and docs/INTEGRATION.md for the deferred member 3 module.
+
+The supplied Figma PNG references are documented in `docs/FIGMA-AUDIT.md`. `templates/shared/shell.html` owns navigation, header, alerts and shared document assets. `workspace.css` styles the integrated modules; the existing reporting styles cover report-specific content. Role-specific interactions live in separate local scripts, with no frontend build or CDN dependency.

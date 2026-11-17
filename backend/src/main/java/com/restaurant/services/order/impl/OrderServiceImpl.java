@@ -331,6 +331,14 @@ public class OrderServiceImpl implements IOrderService {
         .toList();
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public List<OrderSummaryView> listOrdersByStatus(OrderStatus status) {
+    return orderRepository.findByStatusWithDetails(status).stream()
+        .map(this::toOrderSummaryView)
+        .toList();
+  }
+
   /** Get an order by ID with details as a view DTO. */
   @Override
   @Transactional(readOnly = true)
@@ -445,7 +453,12 @@ public class OrderServiceImpl implements IOrderService {
   }
 
   private MenuItemOption toMenuItemOption(MenuItem item) {
-    return new MenuItemOption(item.getId(), item.getItemName(), item.getPrice());
+    return new MenuItemOption(
+        item.getId(),
+        item.getItemName(),
+        item.getPrice(),
+        item.getMenuCategory() == null ? "Other" : item.getMenuCategory().getCategoryName(),
+        com.restaurant.web.MenuImages.forItemName(item.getItemName()));
   }
 
   /** Check if any detail line is in PREPARING, READY, or SERVED state. */

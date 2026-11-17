@@ -45,6 +45,7 @@ public class MenuController {
     model.addAttribute("items", items);
     model.addAttribute("stats", stats);
     model.addAttribute("categories", categories);
+    model.addAttribute("categoryRows", service.categoryRows());
     model.addAttribute("currentSearch", search != null ? search : "");
     model.addAttribute("currentCategory", category != null ? category : "All");
     model.addAttribute("currentAvailability", availability != null ? availability : "all");
@@ -52,6 +53,20 @@ public class MenuController {
     model.addAttribute("currentSort", sortBy);
 
     return "menu";
+  }
+
+  @PostMapping("/categories/save")
+  public String saveCategory(
+      @RequestParam(required = false) Long id,
+      @RequestParam String name,
+      RedirectAttributes flash) {
+    try {
+      service.saveCategory(id, name);
+      flash.addFlashAttribute("success", "Category saved.");
+    } catch (IllegalArgumentException ex) {
+      flash.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/menu";
   }
 
   /** JSON API to retrieve item details for Edit / View Modal */

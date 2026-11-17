@@ -12,6 +12,7 @@ import com.restaurant.exceptions.BusinessException;
 import com.restaurant.exceptions.NotFoundException;
 import com.restaurant.services.order.IOrderService;
 import com.restaurant.services.order.OrderLine;
+import com.restaurant.services.table.ITableService;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,41 +27,66 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Controller for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được tạo/sửa/hủy
- * đơn.
- */
+/** Controller for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được tạo/sửa/hủy đơn. */
 @Controller
 @RequestMapping("/orders")
 public class OrderController {
 
   private final IOrderService orderService;
+  private final ITableService tableService;
 
-  public OrderController(IOrderService orderService) {
+  public OrderController(IOrderService orderService, ITableService tableService) {
     this.orderService = orderService;
+    this.tableService = tableService;
+  }
+
+  @ModelAttribute
+  public void workspace(Model model) {
+    model.addAttribute("tables", tableService.listTables());
+    var items = orderService.listAvailableItems();
+    model.addAttribute("availableItems", items);
+    model.addAttribute(
+        "categories", items.stream().map(MenuItemOption::category).distinct().sorted().toList());
   }
 
   /** List all OPEN orders. */
   @GetMapping
-  public String listOrders(Model model) {
+  public String listOrders(
+      @RequestParam(defaultValue = "OPEN") com.restaurant.entities.enums.OrderStatus status,
+      Model model) {
+    model.addAttribute("selectedStatus", status.name());
+    if (status != com.restaurant.entities.enums.OrderStatus.OPEN) {
+      model.addAttribute("orders", orderService.listOrdersByStatus(status));
+      return "orders/history";
+    }
     List<OrderSummaryView> orders = orderService.listOpenOrders();
     model.addAttribute("orders", orders);
-    return "orders/list";
+    var tables = tableService.listTables();
+    var selected =
+        tables.stream().filter(t -> t.canCreateOrder() || t.currentOrderId() != null).findFirst();
+    if (selected.isPresent()) {
+      model.addAttribute("selectedTable", selected.get());
+      if (selected.get().currentOrderId() != null)
+        model.addAttribute("order", orderService.getOrderDetail(selected.get().currentOrderId()));
+    }
+    return "orders/workspace";
   }
 
   /** Show the create order form. */
   @GetMapping("/new")
   public String showCreateForm(@RequestParam("tableId") Integer tableId, Model model) {
-    CreateOrderForm form = new CreateOrderForm();
+    CreateOrderForm form =
+        model.containsAttribute("form")
+            ? (CreateOrderForm) model.getAttribute("form")
+            : new CreateOrderForm();
     form.setTableId(tableId);
-    form.setLines(new ArrayList<>());
-    // Add one empty line by default
-    form.getLines().add(new OrderLineForm());
+    if (form.getLines() == null) form.setLines(new ArrayList<>());
 
     List<MenuItemOption> availableItems = orderService.listAvailableItems();
     model.addAttribute("form", form);
     model.addAttribute("availableItems", availableItems);
-    return "orders/new";
+    model.addAttribute("selectedTable", tableService.getTable(tableId));
+    return "orders/workspace";
   }
 
   /** Create a new order (POST). */
@@ -72,6 +98,7 @@ public class OrderController {
       Model model) {
     // Handle validation errors
     if (bindingResult.hasErrors()) {
+      redirectAttributes.addFlashAttribute("form", form);
       // For validation errors, redirect back with messages
       String errors =
           bindingResult.getFieldErrors().stream()
@@ -91,6 +118,7 @@ public class OrderController {
       }
     }
     if (!hasValidLine) {
+      redirectAttributes.addFlashAttribute("form", form);
       redirectAttributes.addFlashAttribute(
           "errorMessage", "Đơn phải có ít nhất 1 dòng món hợp lệ.");
       return "redirect:/orders/new?tableId=" + form.getTableId();
@@ -130,8 +158,9 @@ public class OrderController {
     try {
       OrderDetailView order = orderService.getOrderDetail(id);
       model.addAttribute("order", order);
+      model.addAttribute("selectedTable", tableService.getTable(order.tableId()));
       model.addAttribute("availableItems", orderService.listAvailableItems());
-      return "orders/detail";
+      return "orders/workspace";
     } catch (NotFoundException e) {
       model.addAttribute("errorMessage", e.getMessage());
       return "error";

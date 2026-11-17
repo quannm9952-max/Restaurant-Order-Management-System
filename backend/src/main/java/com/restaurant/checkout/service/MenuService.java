@@ -3,7 +3,6 @@ package com.restaurant.checkout.service;
 import com.restaurant.checkout.repository.MenuRepository;
 import java.math.BigDecimal;
 import java.util.*;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +40,37 @@ public class MenuService {
         .stream()
         .map(m -> m.get("category_name").toString())
         .toList();
+  }
+
+  public List<Map<String, Object>> categoryRows() {
+    return db.rows(
+        "SELECT c.category_id AS id,c.category_name AS name,COUNT(m.item_id) AS item_count FROM"
+            + " Menu_category c LEFT JOIN Menu_item m ON m.category_id=c.category_id AND"
+            + " m.is_active=true WHERE c.is_active=true GROUP BY c.category_id,c.category_name"
+            + " ORDER BY c.category_name",
+        Map.of());
+  }
+
+  @Transactional
+  public void saveCategory(Long id, String name) {
+    if (name == null || name.isBlank() || name.trim().length() > 100)
+      throw new IllegalArgumentException(
+          "Category name is required and must not exceed 100 characters.");
+    var p = new HashMap<String, Object>();
+    p.put("name", name.trim());
+    p.put("id", id == null ? -1L : id);
+    if (db.count(
+            "SELECT COUNT(*) FROM Menu_category WHERE LOWER(category_name)=LOWER(:name) AND"
+                + " category_id<>:id",
+            p)
+        > 0) throw new IllegalArgumentException("Category name already exists.");
+    if (id == null)
+      db.update("INSERT INTO Menu_category(category_name,is_active) VALUES(:name,true)", p);
+    else {
+      if (db.count("SELECT COUNT(*) FROM Menu_category WHERE category_id=:id AND is_active=true", p)
+          == 0) throw new IllegalArgumentException("Category not found.");
+      db.update("UPDATE Menu_category SET category_name=:name WHERE category_id=:id", p);
+    }
   }
 
   public List<Map<String, Object>> searchMenu(
@@ -84,19 +114,7 @@ public class MenuService {
   }
 
   private Map<String, Object> decorate(Map<String, Object> m) {
-    String slug =
-        m.get("name")
-            .toString()
-            .toLowerCase(Locale.ROOT)
-            .replaceAll("[^a-z0-9]+", "-")
-            .replaceAll("^-|-$", "")
-            .replaceFirst("^demo-", "");
-    String path = "images/menu/" + slug + ".jpg";
-    m.put(
-        "image_url",
-        new ClassPathResource("static/" + path).exists()
-            ? "/" + path
-            : "/images/menu/pan-seared-salmon-with-dill-sauce.jpg");
+    m.put("image_url", com.restaurant.web.MenuImages.forItemName(m.get("name").toString()));
     m.put("created_at", "");
     return m;
   }
@@ -115,6 +133,8 @@ public class MenuService {
         || price.compareTo(new BigDecimal("9999999999.99")) > 0)
       throw new IllegalArgumentException(
           "Enter a positive USD price with at most two decimal places.");
+    if (description != null && description.trim().length() > 255)
+      throw new IllegalArgumentException("Description must not exceed 255 characters.");
     var p = new HashMap<String, Object>();
     p.put("name", name.trim());
     p.put("category", category.trim());

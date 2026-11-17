@@ -347,6 +347,118 @@ class SystemIntegrationTests {
     mvc.perform(get("/home").with(user("test_chef").roles("CHEF")))
         .andExpect(status().isOk())
         .andExpect(
-            content().string(org.hamcrest.Matchers.containsString("kitchen module is integrated")));
+            result ->
+                assertThat(result.getResponse().getContentAsString().replaceAll("\\s+", " "))
+                    .contains("kitchen module is integrated"));
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void roleAndLockActionsPreserveEmployeeAndPassword() throws Exception {
+    var original = accounts.findById(9702).orElseThrow();
+    var password = original.getPasswordHash();
+    var name = original.getEmployee().getFullName();
+    mvc.perform(post("/employees/9702/role").with(csrf()).param("role", "CASHIER"))
+        .andExpect(redirectedUrl("/employees"));
+    mvc.perform(post("/employees/9702/lock").with(csrf())).andExpect(redirectedUrl("/employees"));
+    entityManager.flush();
+    entityManager.clear();
+    var changed = accounts.findById(9702).orElseThrow();
+    assertThat(changed.getRole()).isEqualTo(com.restaurant.entities.enums.Role.CASHIER);
+    assertThat(changed.isActive()).isFalse();
+    assertThat(changed.getPasswordHash()).isEqualTo(password);
+    assertThat(changed.getEmployee().getFullName()).isEqualTo(name);
+  }
+
+  @Test
+  @WithMockUser(username = "test_waiter", roles = "WAITER")
+  void waiterCannotChangeAccountsOrMenuCategories() throws Exception {
+    mvc.perform(post("/employees/9703/lock").with(csrf())).andExpect(status().isForbidden());
+    mvc.perform(post("/employees/9703/role").with(csrf()).param("role", "MANAGER"))
+        .andExpect(status().isForbidden());
+    mvc.perform(post("/menu/categories/save").with(csrf()).param("name", "Forbidden"))
+        .andExpect(status().isForbidden());
+    for (String path :
+        List.of("/orders?status=COMPLETED", "/orders?status=CANCELLED", "/orders/1042"))
+      mvc.perform(get(path)).andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void categoryEditorValidatesNamesAndRetainsOrderSnapshots() {
+    var snapshot =
+        jdbc.queryForList(
+            "SELECT item_name_at_order,unit_price_at_order FROM Order_Detail ORDER BY"
+                + " order_detail_id");
+    menu.saveCategory(null, "TEST category");
+    long id =
+        jdbc.queryForObject(
+            "SELECT category_id FROM Menu_category WHERE category_name='TEST category'",
+            Long.class);
+    menu.saveCategory(id, "TEST renamed category");
+    assertThat(menu.categories()).contains("TEST renamed category").doesNotContain("TEST category");
+    assertThatThrownBy(() -> menu.saveCategory(null, "test renamed category"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> menu.saveCategory(null, " "))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> menu.saveCategory(999999L, "Missing"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(
+            jdbc.queryForList(
+                "SELECT item_name_at_order,unit_price_at_order FROM Order_Detail ORDER BY"
+                    + " order_detail_id"))
+        .isEqualTo(snapshot);
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void mismatchedPasswordConfirmationDoesNotCreateAnAccount() throws Exception {
+    mvc.perform(
+            post("/employees/save")
+                .with(csrf())
+                .param("fullName", "TEST mismatch")
+                .param("username", "test_mismatch")
+                .param("role", "WAITER")
+                .param("active", "on")
+                .param("password", "Password_2026")
+                .param("confirmPassword", "Different_2026"))
+        .andExpect(status().isOk())
+        .andExpect(
+            content().string(org.hamcrest.Matchers.containsString("Passwords do not match.")));
+    assertThat(accounts.findByUsername("test_mismatch")).isEmpty();
+  }
+
+  @Test
+  @WithMockUser(username = "test_cashier", roles = "CASHIER")
+  void checkoutIncludesClosedOrdersWithoutMakingThemPayable() throws Exception {
+    var order = payments.checkoutOrders("1042").getFirst();
+    assertThat(order.get("status")).isEqualTo("COMPLETED");
+    assertThat(order.get("readyToPay")).isEqualTo(false);
+    assertThat(payments.checkoutOrders("%' OR 1=1 --")).isEmpty();
+    mvc.perform(get("/payments?orderId=1042"))
+        .andExpect(status().isOk())
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("INV-1042")));
+  }
+
+  @Test
+  @WithMockUser(username = "test_waiter", roles = "WAITER")
+  void rejectedOrderRetainsDraftForCorrection() throws Exception {
+    int itemId = orders.listAvailableItems().getFirst().id();
+    var response =
+        mvc.perform(
+                post("/orders")
+                    .with(csrf())
+                    .param("tableId", "9001")
+                    .param("lines[0].itemId", Integer.toString(itemId))
+                    .param("lines[0].quantity", "2")
+                    .param("note", "TEST draft on occupied table"))
+            .andExpect(redirectedUrl("/orders/new?tableId=9001"))
+            .andExpect(flash().attributeExists("form"))
+            .andReturn();
+    mvc.perform(get("/orders/new?tableId=9001").flashAttrs(response.getFlashMap()))
+        .andExpect(status().isOk())
+        .andExpect(content().string(org.hamcrest.Matchers.containsString("data-quantity=\"2\"")))
+        .andExpect(
+            content().string(org.hamcrest.Matchers.containsString("TEST draft on occupied table")));
   }
 }

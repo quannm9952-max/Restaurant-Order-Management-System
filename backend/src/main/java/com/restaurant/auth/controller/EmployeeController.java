@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/employees")
@@ -57,6 +58,7 @@ public class EmployeeController {
       @RequestParam(required = false) String position,
       @RequestParam(required = false) String username,
       @RequestParam(required = false) String password,
+      @RequestParam(required = false) String confirmPassword,
       @RequestParam(required = false) String role,
       @RequestParam(required = false) String active,
       Model model) {
@@ -67,7 +69,8 @@ public class EmployeeController {
     form.put("position", position);
     form.put("username", username);
     form.put("role", role);
-    form.put("active", active != null);
+    boolean activeState = active != null && !active.isBlank();
+    form.put("active", activeState);
 
     Role parsedRole;
     try {
@@ -78,8 +81,11 @@ public class EmployeeController {
     }
 
     try {
+      if (confirmPassword != null && !confirmPassword.equals(password)) {
+        throw new IllegalArgumentException("Passwords do not match.");
+      }
       employeeService.saveAccount(
-          id, fullName, position, username, password, parsedRole, active != null);
+          id, fullName, position, username, password, parsedRole, activeState);
     } catch (IllegalArgumentException ex) {
       model.addAttribute("error", ex.getMessage());
       return renderForm(model, form, id != null);
@@ -89,9 +95,35 @@ public class EmployeeController {
   }
 
   private String renderForm(Model model, Map<String, Object> form, boolean editing) {
+    for (String key : new String[] {"id", "fullName", "position", "username"})
+      form.putIfAbsent(key, null);
+    model.addAttribute("accounts", employeeService.listAccounts());
     model.addAttribute("form", form);
     model.addAttribute("roles", Role.values());
     model.addAttribute("editing", editing);
     return "employees/form";
+  }
+
+  @PostMapping("/{id}/role")
+  public String role(
+      @PathVariable Integer id, @RequestParam String role, RedirectAttributes flash) {
+    try {
+      employeeService.assignRole(id, Role.valueOf(role));
+      flash.addFlashAttribute("successMessage", "Employee role updated.");
+    } catch (IllegalArgumentException ex) {
+      flash.addFlashAttribute("errorMessage", ex.getMessage());
+    }
+    return "redirect:/employees";
+  }
+
+  @PostMapping("/{id}/lock")
+  public String lock(@PathVariable Integer id, RedirectAttributes flash) {
+    try {
+      employeeService.lockAccount(id);
+      flash.addFlashAttribute("successMessage", "Employee account locked.");
+    } catch (IllegalArgumentException ex) {
+      flash.addFlashAttribute("errorMessage", ex.getMessage());
+    }
+    return "redirect:/employees";
   }
 }

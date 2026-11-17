@@ -1,10 +1,142 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Restaurant workspace</title><link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/workspace.css"><link rel="stylesheet" href="/css/vendor/bootstrap-5.3.8.min.css"></head><body style="background:#f6f7f9">
-<div th:replace="~{shared/navigation :: navigation}"></div><main class="workspace"><p th:text="${user.role} + ' workspace'"></p><h1 th:text="'Welcome, ' + ${user.name}">Welcome</h1><p>Manage today's restaurant activity.</p><div class="workspace-grid">
-<a class="workspace-card" th:if="${user.role=='Manager' or user.role=='Waiter'}" href="/tables"><h2>Tables &amp; orders</h2><p>Check tables, create orders and update pending items.</p></a>
-<a class="workspace-card" th:if="${user.role=='Manager'}" href="/employees"><h2>Employee accounts</h2><p>Create, update and deactivate employee accounts.</p></a>
-<a class="workspace-card" th:if="${user.role=='Manager'}" href="/menu"><h2>Menu management</h2><p>Manage dishes, prices and availability.</p></a>
-<a class="workspace-card" th:if="${user.role=='Manager' or user.role=='Cashier'}" href="/payments"><h2>Payments &amp; invoices</h2><p>Review eligible orders and retained invoices.</p></a>
-<a class="workspace-card" th:if="${user.role=='Manager'}" href="/manager/orders"><h2>Order monitoring</h2><p>Search current and historical orders.</p></a>
-<a class="workspace-card" th:if="${user.role=='Manager'}" href="/manager/reports"><h2>Revenue reports</h2><p>Review successful transactions and revenue.</p></a>
-<a class="workspace-card" th:if="${user.role=='Manager'}" href="/manager/payment-history"><h2>Payment history</h2><p>Search transactions and view payment details.</p></a></div>
-<p th:if="${user.role=='Chef'}" class="workspace-note">The kitchen workspace will be available after the kitchen module is integrated.</p></main></body></html>
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{shared/shell :: head('Dashboard')}"></head>
+  <body>
+    <aside th:replace="~{shared/shell :: sidebar('dashboard')}"></aside>
+    <header th:replace="~{shared/shell :: header('Dashboard')}"></header>
+    <main class="main-content">
+      <section class="welcome-banner">
+        <div>
+          <small th:text="${#strings.toUpperCase(user.role)} + ' WORKSPACE'"
+            >WORKSPACE</small
+          >
+          <h1 th:text="'Welcome back, ' + ${user.firstName} + '.'">
+            Welcome back.
+          </h1>
+          <p>Your role-based workspace for smooth restaurant service.</p>
+        </div>
+        <div class="welcome-emblem">
+          <img src="/images/tv5/utensils.svg" alt="" />
+        </div>
+      </section>
+      <section class="workspace-section">
+        <div class="flex-row spread">
+          <div>
+            <h2>Your workspace</h2>
+            <p>Choose a module to get started.</p>
+          </div>
+          <small
+            class="muted"
+            th:text="${user.role == 'Manager' ? '6 modules' : (user.role == 'Waiter' ? '3 modules' : '1 module')}"
+          ></small>
+        </div>
+        <div class="workspace-cards" th:if="${user.role == 'Manager'}">
+          <a class="workspace-card" href="/employees"
+            ><span class="module-icon"
+              ><img src="/images/tv5/users.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Employee Management</h3>
+            <p>Manage employee accounts, roles and sign-in access.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          ><a class="workspace-card" href="/tables"
+            ><span class="module-icon"
+              ><img src="/images/tv5/table.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Table Management</h3>
+            <p>View table availability and manage dine-in service.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          ><a class="workspace-card" href="/menu"
+            ><span class="module-icon"
+              ><img src="/images/tv5/menu.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Menu Management</h3>
+            <p>Manage categories, prices and items available for new orders.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          ><a class="workspace-card" href="/manager/orders"
+            ><span class="module-icon"
+              ><img src="/images/tv5/orders.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Restaurant Orders</h3>
+            <p>Monitor restaurant orders and inspect saved order details.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          ><a class="workspace-card" href="/manager/reports"
+            ><span class="module-icon"
+              ><img src="/images/tv5/chart-inactive.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Revenue Reports</h3>
+            <p>Review successful payments and restaurant revenue.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          ><a class="workspace-card" href="/manager/payment-history"
+            ><span class="module-icon"
+              ><img src="/images/tv5/history.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Payment History</h3>
+            <p>Search retained transactions and view payment details.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          >
+        </div>
+        <div class="workspace-cards" th:if="${user.role == 'Waiter'}">
+          <a class="workspace-card" href="/tables"
+            ><span class="module-icon"
+              ><img src="/images/tv5/table.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Table Management</h3>
+            <p>View table availability and manage dine-in service.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          ><a class="workspace-card" href="/orders"
+            ><span class="module-icon"
+              ><img src="/images/tv5/orders.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Order Management</h3>
+            <p>Create orders, add dishes and manage dine-in orders.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          >
+          <article class="workspace-card pending" aria-disabled="true">
+            <span class="module-icon"
+              ><img src="/images/tv5/table.svg" alt=""
+            /></span>
+            <h3>Serving Management</h3>
+            <p>
+              The serving workspace will be available after the kitchen module
+              is integrated.
+            </p>
+            <span class="muted tiny">Pending TV3 integration</span>
+          </article>
+        </div>
+        <div class="workspace-cards single" th:if="${user.role == 'Cashier'}">
+          <a class="workspace-card" href="/payments"
+            ><span class="module-icon"
+              ><img src="/images/tv5/cash.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
+            <h3>Payment & Invoice</h3>
+            <p>
+              Review saved order prices, collect payment and print invoices.
+            </p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          >
+        </div>
+        <div class="workspace-cards single" th:if="${user.role == 'Chef'}">
+          <article class="workspace-card pending" aria-disabled="true">
+            <span class="module-icon"
+              ><img src="/images/tv5/table.svg" alt=""
+            /></span>
+            <h3>Kitchen Management</h3>
+            <p>
+              The kitchen workspace will be available after the kitchen module
+              is integrated.
+            </p>
+            <span class="muted tiny">Pending TV3 integration</span>
+          </article>
+        </div>
+        <div class="footnote">
+          <span
+            th:text="'Access is based on your assigned role: ' + ${user.role}"
+          ></span
+          ><a th:if="${user.role == 'Manager'}" href="/payments"
+            >View payments &amp; invoices &#8594;</a
+          >
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

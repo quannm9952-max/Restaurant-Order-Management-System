@@ -1,53 +1,30 @@
-# Rà soát giao diện với Figma ngày 17/11/2026
+# Đối chiếu giao diện Figma
 
-## Kết luận
+Nguồn: bộ 13 PNG trong `Restaurant Order Management · Role Dashboards.zip` do người dùng cung cấp ngày 17/11/2026. Các bảng ảnh chứa nhiều frame 1440 × 900 và trạng thái hộp thoại. Đợt sửa này chỉ triển khai TV1, TV2, TV4 và TV5; Kitchen/Serving của TV3 tiếp tục chờ tích hợp.
 
-Bản tích hợp hiện tại chưa được nghiệm thu độ khớp giao diện với Figma. Các phần của thành viên vẫn dùng nhiều hệ bố cục và stylesheet khác nhau. Kiểm thử nghiệp vụ/render Thymeleaf thành công không chứng minh thiết kế hiển thị giống Figma.
+## Các phần đã sửa
 
-Đã yêu cầu lại design context và screenshot từ file `wxeNfF4bp5NJLf0F6t4zgE`. Figma MCP trả về lỗi hết hạn mức Starter cho design context, screenshot và metadata từng trang. Chỉ lấy được danh sách trang cấp cao; chưa lấy được ảnh hoặc thông số chi tiết mới để đánh giá độ khớp từng frame. Khung Figma nhúng cũng chưa đọc được vì browser access host không khả dụng.
+| Phần | Kết quả |
+| --- | --- |
+| Khung chung | Sidebar 256px xanh đậm; header 88px; Inter/Manrope local; tài khoản thật, role, logout; nút cam và trạng thái vô hiệu hóa xám. |
+| Login | Brand panel riêng từ ZIP và form HTML thật; hiện/ẩn mật khẩu, lỗi đăng nhập, CSRF. |
+| Dashboard | Banner, thẻ module theo actor, sáu module Manager; TV3 hiển thị đang chờ. |
+| Nhân viên | Tìm/lọc role và trạng thái; phân trang 8 dòng; hộp thoại thêm/sửa, gán role, khóa; kiểm tra xác nhận mật khẩu. |
+| Bàn | Bộ lọc có số lượng thật; lưới thẻ và chi tiết; thêm/sửa bàn, xác nhận trạng thái; giữ chốt Open order. |
+| Gọi món | Ba cột bàn/menu/đơn; lọc tìm món, giỏ số lượng, tổng; thêm món và giữ draft khi tạo lỗi; thao tác chỉ trên Pending. |
+| Thực đơn | Danh mục bên trái, bảng món bên phải; thêm/sửa danh mục và món; xác nhận ngừng bán; giữ snapshot giá cũ. |
+| Thanh toán | Danh sách đơn và bill; Open/Completed/Cancelled, lọc đủ điều kiện; Generate Bill, phương thức, tiền nhận/tiền thừa, xác nhận payment, hóa đơn in. |
+| TV5 | Dùng shell chung; danh sách đơn có tab trạng thái và số lượng; giữ báo cáo, lịch ngày và lịch sử thanh toán đã có. |
 
-## Những vấn đề xác nhận từ mã hiện tại
+Các màn hình dùng dữ liệu MySQL hiện có; không ghi đè tên nhân viên, số bàn, giá hay trạng thái bằng dữ liệu minh họa trong Figma. Biểu mẫu dùng endpoint thật và phân quyền server. Theme xanh lá/Gourmet Palace và template cũ không còn được sử dụng đã được bỏ.
 
-| Phần | Mã nguồn hiện tại | Cần đối chiếu và sửa theo frame |
-| --- | --- | --- |
-| Dashboard theo vai trò | `home.html` là một lưới thẻ liên kết, dùng chung cho nhiều vai trò | Dựng đúng dashboard của từng actor, thành phần và thứ tự dữ liệu trong thiết kế |
-| Điều hướng chung | Tài khoản/bàn/đơn dùng thanh ngang `shared/navigation`; báo cáo dùng sidebar riêng; menu/thanh toán dùng sidebar khác | Đối chiếu shared components và role dashboard, thống nhất shell theo đúng từng thiết kế |
-| Quản lý nhân viên | Bảng và form cơ bản, font Arial và CSS inline riêng | Đối chiếu danh sách, form/modal, bộ lọc và trạng thái tài khoản |
-| Bàn và đơn | Bố cục Bootstrap cơ bản; các template còn ghi rõ chưa gán frame/chưa đối chiếu Figma | Dựng lại danh sách bàn, chi tiết bàn, tạo/sửa/xem đơn từ đúng frame |
-| Menu/thanh toán/hóa đơn | Theme xanh lá, sidebar trắng, thương hiệu `Gourmet Palace 5★`, hero banner và nhiều emoji | Chưa có căn cứ xác nhận các chi tiết này thuộc Figma cuối; cần đối chiếu trực tiếp, không chỉ đổi màu theo theme báo cáo |
-| Tra cứu đơn UC10 | Dùng shell Manager chung nhưng chưa đọc đầy đủ frame chi tiết ở lần triển khai trước | Đối chiếu danh sách, bộ lọc, chi tiết và các trạng thái |
-| Báo cáo/lịch sử TV5 | Trước đây đã đọc ba frame chi tiết, nhưng chưa nghiệm thu toàn bộ biến thể | Kiểm tra lại trạng thái rỗng, lỗi, Pending/Failed, modal, lịch ngày và responsive |
-| Typography và biểu tượng | Arial ở TV1, Bootstrap ở TV2, DM Sans/Playfair ở TV4, Inter/Manrope ở TV5; có cả emoji và SVG | Chọn đúng font, icon và kích thước từ từng frame/component, dùng tài nguyên local đúng vị trí |
+## Kiểm chứng và giới hạn
 
-Đây là kết quả rà soát cấu trúc mã, không phải kết quả đo pixel so với ảnh Figma mới.
+- Đã quan sát trực tiếp trên Chrome: Login, Dashboard, bảng nhân viên, hộp thoại gán vai trò, thẻ bàn, danh sách thực đơn, hộp thoại thêm món và màn hình gọi món và màn hình thanh toán; đã thêm món vào giỏ và đối chiếu tổng tiền.
+- Các kiểm thử JUnit kiểm tra render Thymeleaf, phân quyền/CSRF, giá snapshot, checkout, danh mục, role/khóa tài khoản, xác nhận mật khẩu và khôi phục draft. Kết quả build cuối ghi trong `VERIFICATION.md`.
+- ZIP gồm ảnh tổng các màn hình, không có bộ icon và minh họa món xuất riêng. Các SVG local phù hợp được tái sử dụng; ảnh menu dùng catalog đã rà soát, món chưa có ảnh dùng placeholder. Vì vậy chưa tuyên bố khớp từng pixel hoặc toàn bộ hình minh họa. Cần asset SVG/PNG riêng từ Figma để hoàn tất phần này.
+- Brand panel là tài nguyên riêng do người dùng cung cấp; không dùng ảnh nguyên màn hình làm giao diện tương tác.
+- Chi tiết đơn Manager vẫn có URL riêng để xem/lưu liên kết; hộp thoại chi tiết trong workspace Waiter không thay đổi phân quyền.
+- Không thêm luồng bếp/phục vụ hoặc tự chuyển món sang Served.
 
-## Lỗi CSS đã sửa độc lập với thiết kế
-
-Đầu `frontend/static/css/menu-payment.css` còn một phần URL Google Fonts bị cắt dở sau lệnh import local:
-
-```css
-@import url('/css/fonts.css');0,500;0,600;...
-```
-
-Đã bỏ phần dư, giữ lại lệnh import local hợp lệ. Phần dư có thể khiến rule biến màu `:root` kế tiếp bị phân tích thành selector không hợp lệ. Bản sửa này khôi phục cú pháp stylesheet hiện có; không có nghĩa theme xanh lá/5★ đã được xác nhận giống Figma.
-
-## Ánh xạ trang cần lấy mẫu
-
-| Trang Figma | Node trang | View liên quan |
-| --- | --- | --- |
-| 01 · Login | 0:1 | login.html |
-| 03 · Role Dashboards | 16:526 | home.html |
-| 02 · Shared Components | 11:2 | navigation và các layout/fragment |
-| 04 · Employee Management | 16:1847 | employees/* |
-| 05 · Table Management | 16:8114 | tables/* |
-| 06 · Order Management | 16:14857 | orders/* |
-| 09 · Payment & Invoice | 32:31991 | payments.html, invoice.html |
-| 10 · Menu Management | 32:39141 | menu.html |
-| 11 · Restaurant Orders | 32:53215 | reports/orders.html, reports/order-details.html |
-| 12 · Reports & Payment History | 32:59163 | reports/revenue.html, payment-history/list.html |
-
-Các node trên là trang cấp cao, chưa phải frame cụ thể để nghiệm thu. TV3 tiếp tục để tích hợp sau; chưa sửa hoặc thêm luồng bếp/phục vụ trong đợt này.
-
-## Cần có để sửa chính xác
-
-Bản xuất `.fig` hoặc PDF/PNG các màn hình Figma, hoặc quyền truy xuất design context hoạt động trở lại. Khi có tham chiếu, chọn đúng frame chuẩn và các trạng thái, lấy font/asset/thông số, sửa component/layout dùng chung, rồi kiểm tra từng màn hình thực tế. Không tự dựng thêm một bộ giao diện theo phỏng đoán.
+- Trên database UI riêng: bill `ORD-1100` là 39 USD; Generate Bill bật trường thanh toán, nhập 50 USD cho tiền thừa 11 USD và bật Process Payment; hộp thoại xác nhận hiển thị đúng đơn/phương thức/tổng. Đóng hộp thoại sau kiểm tra, không ghi giao dịch vào database demo chính.
