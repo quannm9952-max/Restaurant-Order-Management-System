@@ -3,8 +3,11 @@ package com.restaurant.repository;
 import com.restaurant.repository.support.JdbcRepositorySupport;
 
 import com.restaurant.dto.menu.MenuItemValues;
+import com.restaurant.exception.NotFoundException;
 import java.util.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
 /** Persistence for menu items and categories in the shared database. */
@@ -62,6 +65,41 @@ public class MenuRepository extends JdbcRepositorySupport {
         + "WHERE category_id=:id AND is_active=true", Map.of("id", id)) > 0;
   }
 
+  public boolean lockActiveCategory(long id) {
+    return !rows("SELECT category_id FROM Menu_category WHERE category_id=:id "
+        + "AND is_active=true FOR UPDATE", Map.of("id", id)).isEmpty();
+  }
+
+  public long activeItemCount(long categoryId) {
+    return count(
+        "SELECT COUNT(*) FROM Menu_item WHERE category_id=:id AND is_active=true",
+        Map.of("id", categoryId));
+  }
+
+  public void deactivateCategory(long id) {
+    update("UPDATE Menu_category SET is_active=false WHERE category_id=:id",
+        Map.of("id", id));
+  }
+
+  public boolean restoreCategory(String name) {
+    var params = Map.of("name", name);
+    if (count(
+        "SELECT COUNT(*) FROM Menu_category WHERE LOWER(category_name)=LOWER(:name) "
+            + "AND is_active=true",
+        params) > 0)
+      return false;
+    var found = rows(
+        "SELECT category_id FROM Menu_category WHERE LOWER(category_name)=LOWER(:name) "
+            + "AND is_active=false FOR UPDATE",
+        params);
+    if (found.isEmpty())
+      return false;
+    update(
+        "UPDATE Menu_category SET category_name=:name,is_active=true WHERE category_id=:id",
+        Map.of("name", name, "id", found.getFirst().get("category_id")));
+    return true;
+  }
+
   public void saveCategory(Long id, String name) {
     if (id == null) {
       update("INSERT INTO Menu_category(category_name,is_active) "
@@ -73,7 +111,8 @@ public class MenuRepository extends JdbcRepositorySupport {
   }
 
   public Map<String, Object> findItem(long id) {
-    return one(SELECT + " WHERE m.item_id=:id", Map.of("id", id));
+    return one(SELECT + " WHERE m.item_id=:id AND m.is_active=true",
+        Map.of("id", id));
   }
 
   public boolean itemNameExists(String name, long exceptId) {
@@ -86,8 +125,14 @@ public class MenuRepository extends JdbcRepositorySupport {
   private long categoryId(String name) {
     var params = Map.of("category", name);
     var found = rows("SELECT category_id FROM Menu_category "
-        + "WHERE category_name=:category", params);
+        + "WHERE LOWER(category_name)=LOWER(:category) AND is_active=true FOR UPDATE",
+        params);
     if (found.isEmpty()) {
+      if (count(
+          "SELECT COUNT(*) FROM Menu_category WHERE LOWER(category_name)=LOWER(:category)",
+          params) > 0)
+        throw new NotFoundException(
+            "This category has been deleted. Choose an active category.");
       update("INSERT INTO Menu_category(category_name,is_active) "
           + "VALUES(:category,true)", params);
       found = rows("SELECT category_id FROM Menu_category "
@@ -105,12 +150,15 @@ public class MenuRepository extends JdbcRepositorySupport {
     return params;
   }
 
-  public void insertItem(MenuItemValues values) {
-    update(
+  public long insertItem(MenuItemValues values) {
+    var key = new GeneratedKeyHolder();
+    jdbc.update(
         "INSERT INTO Menu_item(category_id,item_name,description,"
             + "unit_price,is_active,is_available) "
             + "VALUES(:categoryId,:name,:description,:price,true,true)",
-        parameters(values));
+        new MapSqlParameterSource(parameters(values)), key,
+        new String[]{"item_id"});
+    return key.getKey().longValue();
   }
 
   public void updateItem(long id, MenuItemValues values, boolean available) {

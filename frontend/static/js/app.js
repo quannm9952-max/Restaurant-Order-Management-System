@@ -5,8 +5,42 @@ document.addEventListener("DOMContentLoaded", () => {
   initPasswordToggles();
   initUsernameInputs();
   initLoginValidation();
+  initMenuImages();
   initEmployeeFilters();
 });
+
+function initMenuImages() {
+  document.querySelectorAll("[data-menu-image]").forEach((input) => {
+    const preview = input.form.querySelector("[data-menu-image-preview]");
+    const hint = input.form.querySelector("[data-menu-image-hint]");
+    const original = preview.getAttribute("src");
+    const defaultHint = hint.textContent.trim();
+    let objectUrl;
+    input.addEventListener("change", () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      const file = input.files[0];
+      const invalid =
+        file &&
+        (file.size === 0 ||
+          file.size > 5 * 1024 * 1024 ||
+          (file.type && !["image/jpeg", "image/png"].includes(file.type)));
+      const message = invalid ? "Choose a JPG or PNG image up to 5 MB." : "";
+      input.setCustomValidity(message);
+      hint.textContent = message || defaultHint;
+      hint.classList.toggle("image-error", Boolean(invalid));
+      if (file && !invalid) {
+        objectUrl = URL.createObjectURL(file);
+        preview.src = objectUrl;
+        preview.hidden = false;
+      } else {
+        if (original) preview.src = original;
+        else preview.removeAttribute("src");
+        preview.hidden = !original;
+      }
+      if (invalid) input.reportValidity();
+    });
+  });
+}
 
 function initLoginValidation() {
   const form = document.querySelector(".login-form");
@@ -32,7 +66,9 @@ function initLoginValidation() {
 function initUsernameInputs() {
   const allowed = /^[A-Za-z0-9_]{1,50}$/;
   document.querySelectorAll("[data-username]").forEach((input) => {
-    const hint = document.getElementById(input.getAttribute("aria-describedby"));
+    const hint = document.getElementById(
+      input.getAttribute("aria-describedby"),
+    );
     const defaultHint = hint?.textContent.trim();
     const validate = () => {
       const invalid = input.value !== "" && !allowed.test(input.value);

@@ -11,3 +11,4 @@
 .env.*
 **/backups
 backend/docs
+uploads

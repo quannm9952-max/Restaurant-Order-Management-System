@@ -8,15 +8,18 @@ import java.util.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional(readOnly = true)
 @PreAuthorize("hasRole('MANAGER')")
 public class MenuService {
   private final MenuRepository menuRepository;
+  private final MenuImageService images;
 
-  public MenuService(MenuRepository menuRepository) {
+  public MenuService(MenuRepository menuRepository, MenuImageService images) {
     this.menuRepository = menuRepository;
+    this.images = images;
   }
 
   public Map<String, Object> menuStats() {
@@ -41,6 +44,8 @@ public class MenuService {
           "Category name is required and must not exceed 100 characters.");
     }
     name = name.trim();
+    if (id == null && menuRepository.restoreCategory(name))
+      return;
     if (menuRepository.categoryNameExists(name, id)) {
       throw new IllegalArgumentException("Category name already exists.");
     }
@@ -48,6 +53,16 @@ public class MenuService {
       throw new IllegalArgumentException("Category not found.");
     }
     menuRepository.saveCategory(id, name);
+  }
+
+  @Transactional
+  public void deleteCategory(long id) {
+    if (!menuRepository.lockActiveCategory(id))
+      throw new IllegalArgumentException("Category not found.");
+    if (menuRepository.activeItemCount(id) > 0)
+      throw new BusinessException(
+          "Move or delete all items in this category before deleting it.");
+    menuRepository.deactivateCategory(id);
   }
 
   public List<Map<String, Object>> searchMenu(String search, String category,
@@ -62,8 +77,8 @@ public class MenuService {
   }
 
   private Map<String, Object> withPhoto(Map<String, Object> item) {
-    item.put("image_url", com.restaurant.support.MenuImages
-        .forItemName(item.get("name").toString()));
+    item.put("image_url", images.url(((Number) item.get("id")).longValue(),
+        item.get("name").toString()));
     item.put("created_at", "");
     return item;
   }
@@ -91,18 +106,36 @@ public class MenuService {
   @Transactional
   public void addMenu(String name, String category, String description,
       BigDecimal price) {
+    addMenu(name, category, description, price, null);
+  }
+
+  @Transactional
+  public long addMenu(String name, String category, String description,
+      BigDecimal price, MultipartFile image) {
     var values = validateItem(name, category, description, price);
     checkDuplicateName(values.name(), -1L);
-    menuRepository.insertItem(values);
+    byte[] photo = images.validate(image);
+    long id = menuRepository.insertItem(values);
+    images.save(id, photo);
+    return id;
   }
 
   @Transactional
   public void updateMenu(long id, String name, String category,
       String description, BigDecimal price, boolean available) {
+    updateMenu(id, name, category, description, price, available, null);
+  }
+
+  @Transactional
+  public void updateMenu(long id, String name, String category,
+      String description, BigDecimal price, boolean available,
+      MultipartFile image) {
     getMenuItem(id);
     var values = validateItem(name, category, description, price);
     checkDuplicateName(values.name(), id);
+    byte[] photo = images.validate(image);
     menuRepository.updateItem(id, values, available);
+    images.save(id, photo);
   }
 
   private void checkDuplicateName(String name, long exceptId) {
@@ -120,7 +153,7 @@ public class MenuService {
   }
 
   @Transactional
-  public void deleteMenu(long id, boolean force) {
+  public void deleteMenu(long id) {
     getMenuItem(id);
     menuRepository.deactivate(id);
   }

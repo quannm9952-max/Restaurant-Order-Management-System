@@ -19,6 +19,7 @@ RUN --mount=type=cache,target=/root/.m2 \
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app/backend
+RUN mkdir -p /app/uploads/menu && chown -R 10001:10001 /app/uploads
 COPY --from=build --chown=10001:10001 /workspace/backend/target/*.jar app.jar
 COPY --from=build --chown=10001:10001 /workspace/database/schema.sql /app/database/schema.sql
 COPY --from=build --chown=10001:10001 /workspace/database/demo-data.sql /app/database/demo-data.sql

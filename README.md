@@ -36,8 +36,9 @@ docker compose logs -f app
 docker compose down
 ```
 
-`down` giữ dữ liệu trong volume `mysql-data`. Không dùng `down -v` khi cần giữ
-lại dữ liệu. Đổi mật khẩu DB trong `.env` không tự đổi mật khẩu của volume đã có.
+`down` giữ database trong volume `mysql-data` và ảnh món tải lên trong
+`menu-images`. Không dùng `down -v` khi cần giữ dữ liệu. Đổi mật khẩu DB trong
+`.env` không tự đổi mật khẩu của volume đã có.
 
 | Actor | Username | Mật khẩu |
 | --- | --- | --- |
@@ -59,6 +60,11 @@ Trường trống được nhắc bằng tiếng Anh ở giao diện và backend
 
 Thanh toán và xem/in hóa đơn thuộc Cashier. Manager theo dõi doanh thu,
 đơn hàng và lịch sử thanh toán qua các module báo cáo của Manager.
+
+Menu Management cho Manager thêm/sửa món và tải ảnh JPG/PNG tối đa 5 MB.
+Khi sửa, không chọn ảnh mới sẽ giữ ảnh hiện tại. Nút Delete xóa món khỏi thực
+đơn và danh sách đặt món mới, giữ nguyên dữ liệu trong các đơn trước đó.
+Chỉ xóa danh mục khi đã chuyển hoặc xóa hết món, kể cả món đang Stop Selling.
 
 Container app dùng profile demo để tạo schema/dữ liệu còn thiếu; khởi động
 lại giữ các thay đổi và mật khẩu đã lưu. `.env` chứa cấu hình local và được

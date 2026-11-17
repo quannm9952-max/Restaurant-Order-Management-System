@@ -51,7 +51,15 @@
               th:attr="data-open-dialog='category-' + ${c.id}"
               aria-label="Edit category"
             >
-              &#9998;
+              &#9998;</button
+            ><button
+              type="button"
+              class="icon-action"
+              th:attr="data-open-dialog='delete-category-' + ${c.id}"
+              aria-label="Delete category"
+              title="Delete category"
+            >
+              <img src="/images/icons/trash.svg" alt="" />
             </button>
           </div>
           <div class="category-footer">
@@ -153,7 +161,7 @@
                     ></button>
                   </td>
                   <td>
-                    <div class="flex-row" style="gap: 10px">
+                    <div class="flex-row menu-actions">
                       <button
                         class="btn btn-outline-secondary"
                         th:attr="data-open-dialog='edit-' + ${item.id}"
@@ -164,7 +172,12 @@
                         th:disabled="${!item.available}"
                         th:attr="data-open-dialog='status-' + ${item.id}"
                       >
-                        Stop Selling
+                        Stop Selling</button
+                      ><button
+                        class="btn btn-danger-outline"
+                        th:attr="data-open-dialog='delete-' + ${item.id}"
+                      >
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -196,7 +209,9 @@
       id="add-menu"
       th:attr="data-auto-open=${menuDraft != null and menuDraft.id == null ? 'true' : null}"
     >
-      <th:block th:replace="~{menu :: itemForm(${menuDraft})}"></th:block>
+      <th:block
+        th:replace="~{menu :: itemForm(${menuDraft != null and menuDraft.id == null ? menuDraft : null})}"
+      ></th:block>
     </dialog>
     <th:block th:each="item : ${items}"
       ><dialog
@@ -246,23 +261,107 @@
               th:text="${item.available ? 'Stop Selling' : 'Confirm Availability'}"
             ></button>
           </div>
-        </form></dialog
-    ></th:block>
+        </form>
+      </dialog>
+      <dialog
+        class="app-dialog"
+        th:id="'delete-' + ${item.id}"
+        th:attr="data-auto-open=${autoOpenDeleteId == item.id ? 'true' : null}"
+      >
+        <form th:action="@{/menu/{id}/delete(id=${item.id})}" method="post">
+          <div class="dialog-head">
+            <h2>Delete Menu Item</h2>
+            <button
+              type="button"
+              class="close-dialog"
+              data-close-dialog
+              aria-label="Close"
+            >
+              &#215;
+            </button>
+          </div>
+          <div class="dialog-body">
+            <h3 th:text="${item.name}"></h3>
+            <p class="mt-3">
+              This item will be removed from the menu and new orders. Previous
+              order records will be retained.
+            </p>
+          </div>
+          <div class="dialog-footer">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              data-close-dialog
+            >
+              Cancel
+            </button>
+            <button class="btn btn-danger">Delete Item</button>
+          </div>
+        </form>
+      </dialog>
+    </th:block>
     <dialog class="app-dialog" id="add-category">
       <th:block th:replace="~{menu :: categoryForm(null)}"></th:block>
     </dialog>
-    <dialog
-      class="app-dialog"
-      th:each="c : ${categoryRows}"
-      th:id="'category-' + ${c.id}"
-    >
-      <th:block th:replace="~{menu :: categoryForm(${c})}"></th:block>
-    </dialog>
+    <th:block th:each="c : ${categoryRows}">
+      <dialog class="app-dialog" th:id="'category-' + ${c.id}">
+        <th:block th:replace="~{menu :: categoryForm(${c})}"></th:block>
+      </dialog>
+      <dialog class="app-dialog" th:id="'delete-category-' + ${c.id}">
+        <form
+          th:action="@{/menu/categories/{id}/delete(id=${c.id})}"
+          method="post"
+        >
+          <div class="dialog-head">
+            <h2>Delete Category</h2>
+            <button
+              type="button"
+              class="close-dialog"
+              data-close-dialog
+              aria-label="Close"
+            >
+              &#215;
+            </button>
+          </div>
+          <div class="dialog-body">
+            <h3 th:text="${c.name}"></h3>
+            <p
+              class="mt-3"
+              th:if="${c.item_count > 0}"
+              th:text="'This category contains ' + ${c.item_count} + ' menu items. Move or delete all items before deleting the category.'"
+            ></p>
+            <p class="mt-3" th:if="${c.item_count == 0}">
+              Delete this empty category? Previous order records will be
+              retained.
+            </p>
+          </div>
+          <div class="dialog-footer">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              data-close-dialog
+            >
+              Cancel
+            </button>
+            <a
+              class="btn btn-outline-secondary"
+              th:if="${c.item_count > 0}"
+              th:href="@{/menu(category=${c.name})}"
+              >View Items</a
+            >
+            <button class="btn btn-danger" th:disabled="${c.item_count > 0}">
+              Delete Category
+            </button>
+          </div>
+        </form>
+      </dialog>
+    </th:block>
     <th:block th:if="${false}"
       ><form
         th:fragment="itemForm(item)"
         th:action="${item == null or item.id == null ? '/menu' : '/menu/' + item.id + '/update'}"
         method="post"
+        enctype="multipart/form-data"
       >
         <input
           type="hidden"
@@ -345,6 +444,31 @@
               maxlength="255"
               th:text="${item?.description}"
             ></textarea>
+          </div>
+          <div class="field">
+            <label
+              th:for="${'food-image-' + (item == null or item.id == null ? 'new' : item.id)}"
+              >Menu image (optional)</label
+            >
+            <img
+              class="menu-image-preview"
+              data-menu-image-preview
+              th:src="${item != null ? item['image_url'] : null}"
+              th:hidden="${item == null or item['image_url'] == null}"
+              alt="Menu item image preview"
+            />
+            <input
+              class="form-control"
+              type="file"
+              name="image"
+              data-menu-image
+              accept="image/jpeg,image/png"
+              th:id="${'food-image-' + (item == null or item.id == null ? 'new' : item.id)}"
+            />
+            <small data-menu-image-hint role="status"
+              >JPG or PNG, up to 5 MB. Leave blank to keep the current
+              image.</small
+            >
           </div>
           <div class="field">
             <label

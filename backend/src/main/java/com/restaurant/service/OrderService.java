@@ -30,16 +30,18 @@ public class OrderService {
   private final MenuItemRepository menuItemRepository;
   private final PaymentRepository paymentRepository;
   private final CurrentEmployeeService currentEmployeeService;
+  private final MenuImageService images;
 
   public OrderService(OrderRepository orderRepository,
       TableRepository tableRepository, MenuItemRepository menuItemRepository,
       PaymentRepository paymentRepository,
-      CurrentEmployeeService currentEmployeeService) {
+      CurrentEmployeeService currentEmployeeService, MenuImageService images) {
     this.orderRepository = orderRepository;
     this.tableRepository = tableRepository;
     this.menuItemRepository = menuItemRepository;
     this.paymentRepository = paymentRepository;
     this.currentEmployeeService = currentEmployeeService;
+    this.images = images;
   }
 
   @Transactional
@@ -280,7 +282,7 @@ public class OrderService {
         item.getMenuCategory() == null
             ? "Other"
             : item.getMenuCategory().getCategoryName(),
-        com.restaurant.support.MenuImages.forItemName(item.getItemName()));
+        images.url(item.getId(), item.getItemName()));
   }
 
 }

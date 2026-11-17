@@ -463,6 +463,26 @@ dialog.app-dialog h2 {
   color: #8794a7;
   font-size: 11px;
 }
+.dialog-body small.image-error {
+  color: #b82b20;
+}
+.menu-image-preview {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f5f6f8;
+}
+.menu-image-preview[hidden] {
+  display: none;
+}
+.menu-actions {
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .username-hint.username-error {
   color: #b82b20;
 }

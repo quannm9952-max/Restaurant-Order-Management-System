@@ -45,6 +45,8 @@ services:
       PORT: "8080"
       TZ: Asia/Ho_Chi_Minh
       JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+    volumes:
+      - menu-images:/app/uploads
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:8080"
     depends_on:
@@ -54,3 +56,4 @@ services:
 
 volumes:
   mysql-data:
+  menu-images:

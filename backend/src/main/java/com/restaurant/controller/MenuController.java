@@ -1,7 +1,9 @@
 package com.restaurant.controller;
 
 import com.restaurant.exception.NotFoundException;
+import com.restaurant.config.UploadConfig;
 import com.restaurant.service.MenuService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping("/menu")
@@ -33,7 +36,15 @@ public class MenuController {
       @RequestParam(required = false) String availability,
       @RequestParam(required = false, defaultValue = "all") String priceRange,
       @RequestParam(required = false, defaultValue = "default") String sortBy,
-      Model model) {
+      Model model, HttpServletRequest request) {
+
+    var session = request.getSession(false);
+    if (session != null
+        && session.getAttribute(UploadConfig.ERROR_ATTRIBUTE) != null) {
+      model.addAttribute("error",
+          session.getAttribute(UploadConfig.ERROR_ATTRIBUTE));
+      session.removeAttribute(UploadConfig.ERROR_ATTRIBUTE);
+    }
 
     Boolean availableFilter = null;
     if ("available".equalsIgnoreCase(availability)) {
@@ -49,7 +60,7 @@ public class MenuController {
       items = items.stream()
           .map(item -> item.get("id").toString()
               .equals(submitted.get("id").toString())
-                  ? (Map<String, Object>) draft
+                  ? mergedDraft(item, (Map<String, Object>) draft)
                   : item)
           .toList();
     }
@@ -83,6 +94,19 @@ public class MenuController {
     return "redirect:/menu";
   }
 
+  @PostMapping("/categories/{id}/delete")
+  public String deleteCategory(@PathVariable long id,
+      RedirectAttributes flash) {
+    try {
+      service.deleteCategory(id);
+      flash.addFlashAttribute("success", "Category deleted.");
+    } catch (IllegalArgumentException
+        | com.restaurant.exception.BusinessException ex) {
+      flash.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/menu";
+  }
+
   /** JSON API to retrieve item details for Edit / View Modal */
   @GetMapping("/{id}/json")
   @ResponseBody
@@ -106,10 +130,12 @@ public class MenuController {
       @RequestParam String category,
       @RequestParam(required = false) String customCategory,
       @RequestParam(required = false) String description,
-      @RequestParam BigDecimal price, RedirectAttributes redirectAttrs) {
+      @RequestParam BigDecimal price,
+      @RequestParam(required = false) MultipartFile image,
+      RedirectAttributes redirectAttrs) {
     try {
       String selectedCategory = selectedCategory(category, customCategory);
-      service.addMenu(name, selectedCategory, description, price);
+      service.addMenu(name, selectedCategory, description, price, image);
       redirectAttrs.addFlashAttribute("success",
           "Successfully added new dish '" + name.trim() + "' to menu!");
     } catch (IllegalArgumentException
@@ -146,11 +172,12 @@ public class MenuController {
       @RequestParam(required = false) String description,
       @RequestParam BigDecimal price,
       @RequestParam(defaultValue = "false") boolean available,
+      @RequestParam(required = false) MultipartFile image,
       RedirectAttributes redirectAttrs) {
     try {
       String selectedCategory = selectedCategory(category, customCategory);
       service.updateMenu(id, name, selectedCategory, description, price,
-          available);
+          available, image);
       redirectAttrs.addFlashAttribute("success",
           "Successfully updated dish #" + id + " ('" + name.trim() + "')!");
     } catch (IllegalArgumentException
@@ -184,12 +211,11 @@ public class MenuController {
   /** Delete menu item */
   @PostMapping({"/{id}/delete", "/{id}/remove"})
   public String deleteMenuItem(@PathVariable long id,
-      @RequestParam(defaultValue = "false") boolean force,
       RedirectAttributes redirectAttrs) {
     try {
-      service.deleteMenu(id, force);
+      service.deleteMenu(id);
       redirectAttrs.addFlashAttribute("success",
-          "Successfully deactivated dish #" + id + " from menu!");
+          "Menu item deleted. Previous order records have been retained.");
     } catch (IllegalStateException e) {
       redirectAttrs.addFlashAttribute("error", e.getMessage());
     } catch (IllegalArgumentException
@@ -204,6 +230,7 @@ public class MenuController {
   @GetMapping("/{id}/delete")
   public String deleteMenuItemGet(@PathVariable long id,
       RedirectAttributes redirectAttrs) {
+    service.getMenuItem(id);
     redirectAttrs.addFlashAttribute("autoOpenDeleteId", id);
     return "redirect:/menu";
   }
@@ -219,6 +246,8 @@ public class MenuController {
     draft.put("description", description);
     draft.put("price", price);
     draft.put("available", available);
+    if (id == null)
+      draft.put("image_url", null);
     flash.addFlashAttribute("menuDraft", draft);
     if (id != null)
       flash.addFlashAttribute("autoOpenEditId", id);
@@ -228,5 +257,12 @@ public class MenuController {
     return category == null || category.isBlank() || "__new__".equals(category)
         ? customCategory
         : category;
+  }
+
+  private Map<String, Object> mergedDraft(Map<String, Object> item,
+      Map<String, Object> draft) {
+    var merged = new java.util.HashMap<>(item);
+    merged.putAll(draft);
+    return merged;
   }
 }

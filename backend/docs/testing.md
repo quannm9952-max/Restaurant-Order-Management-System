@@ -1,4 +1,32 @@
-# Kiểm chứng bản sắp xếp lại, 17/11/2026
+# Kiểm chứng hệ thống, 17/11/2026
+
+## Menu Management: xóa danh mục, xóa món và tải ảnh
+
+Docker build stage `verify`: **263 test đạt, 0 failure, 0 error, 0 skipped;
+BUILD SUCCESS**. Bổ sung 17 ca MenuManagementIntegrationTest và 2 ca HTTP
+multipart thật; không thêm dependency hoặc thay đổi schema.
+
+Kiểm tra danh mục rỗng được xóa/khôi phục cùng tên, danh mục có món (kể cả
+ngừng bán) bị chặn xóa, không thêm món vào danh mục đã xóa. Món xóa khỏi
+thực đơn và danh sách đặt món mới nhưng giữ các dòng Order_Detail cũ.
+
+Ảnh kiểm tra định dạng thực JPG/PNG, kích thước byte/pixel, từ chối SVG/GIF,
+file giả, rỗng hoặc quá lớn; không dùng filename người gửi làm đường dẫn.
+Thêm/sửa ảnh, giữ ảnh khi không tải lại và rollback database/ảnh đều có test.
+HTTP thật xác nhận multipart đọc CSRF trong body, thiếu CSRF trả 403,
+file quá 5 MB hiện lỗi và không tạo món. Waiter không được sửa/xóa menu.
+
+Chrome headless trên Docker/MySQL riêng đã thao tác thêm/sửa/chuyển/xóa món,
+xóa danh mục rỗng, chặn danh mục còn món, xem trước và thay ảnh. Tạo lại
+container app vẫn giữ ảnh và metadata. Xóa món mẫu đã được đặt trước đó giữ
+nguyên 27 dòng lịch sử; checksum Orders, Order_Detail, Payment, Invoice,
+Employee và Account không đổi. Cơ sở dữ liệu thử tách riêng bản đang sử dụng.
+`node --check` và `git diff --check` đạt.
+
+Bản đang dùng trên Docker và Cloudflare đã đăng nhập Manager, render các
+nút xóa/trường tải ảnh, tải CSS/JS/icon thành công; ảnh không tồn tại trả 404.
+Waiter/Chef/Cashier truy cập Menu Management trả 403. Checksum đủ 9 bảng
+database chính trước/sau cập nhật giống nhau; không tạo dữ liệu thử ở bản chính.
 
 ## Kết quả
 

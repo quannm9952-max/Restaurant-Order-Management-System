@@ -49,6 +49,8 @@ class OrderServiceTest {
 
   @Mock
   private CurrentEmployeeService currentEmployeeService;
+  @Mock
+  private MenuImageService images;
 
   @InjectMocks
   private OrderService orderService;

@@ -22,3 +22,9 @@ bếp/phục vụ dùng Orders/Order_Detail, báo cáo đọc Payment/Orders.
 
 Môi trường Docker Compose dùng MySQL 8.4.13 tại localhost:3308. Dữ liệu
 lưu trong named volume; xem `backend/docs/docker.md` để chuyển dữ liệu cũ.
+
+Xóa món/danh mục là cập nhật `is_active`; món bị xóa cũng có
+`is_available=false`. Giữ các bản ghi và khóa ngoại của đơn hàng cũ. Chỉ xóa
+danh mục khi không còn món có `is_active=true`, kể cả món ngừng bán.
+Ảnh tải lên được lưu theo item_id trong volume `menu-images`, không thêm
+bảng/cột vào schema 9 bảng. Khi sao lưu hệ thống cần giữ cả database và ảnh.

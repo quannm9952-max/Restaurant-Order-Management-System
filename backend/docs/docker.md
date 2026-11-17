@@ -11,6 +11,14 @@ ngôn ngữ, framework, web server hoặc dịch vụ ứng dụng mới.
 - `db`: MySQL Community 8.4.13; dữ liệu lưu trong named volume mysql-data.
 - `app`: build từ backend/Dockerfile; Maven Wrapper cũ tạo cùng một JAR.
 
+App lưu ảnh món được tải lên trong named volume `menu-images`, mount tại
+`/app/uploads`; ảnh nằm ở `/app/uploads/menu/<item_id>.image`. Ảnh JPG/PNG được
+kiểm tra nội dung, giới hạn 5 MB, 8000 pixel mỗi chiều và tổng 12 megapixel.
+Tạo lại hoặc build lại container giữ ảnh khi dùng cùng project/volume.
+Sao lưu cả `mysql-data` và `menu-images` khi chuyển máy; Git chỉ chứa ảnh mẫu.
+Khi chạy Java trực tiếp, thư mục mặc định là `../uploads/menu` tính từ backend;
+có thể đặt `MENU_IMAGE_DIRECTORY` để chọn đường dẫn lưu khác.
+
 Dockerfile có stage verify để chạy kiểm thử, stage build tạo JAR và stage
 runtime dùng JRE 21. Runtime chạy UID 10001, không dùng root. Frontend được
 Maven đóng gói theo POM hiện có; vị trí SQL tương thích profile demo hiện có.
@@ -82,8 +90,7 @@ bản dump vì có thể chứa dữ liệu và hash mật khẩu của người
 ```
 
 GitHub Actions còn kiểm tra Compose trên Linux, build/chạy app + DB, đăng nhập
-bốn actor và kiểm tra 9 bảng. Kết quả cụ thể nằm trong testing.md. Trên máy
-chưa có Docker/WSL2, cấu hình này chưa thể khởi động container local.
+bốn actor và kiểm tra 9 bảng. Kết quả cụ thể nằm trong testing.md.
 
 ## Link online bằng Cloudflare Tunnel
 

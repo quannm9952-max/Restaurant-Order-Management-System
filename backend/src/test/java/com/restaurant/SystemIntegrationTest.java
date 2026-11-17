@@ -556,7 +556,7 @@ class SystemIntegrationTest {
   void menuChangesAndDeactivationPreserveOrderHistory() {
     menu.updateMenu(9001, "TEST renamed dish", "TEST category",
         "TEST description", new BigDecimal("29.50"), true);
-    menu.deleteMenu(9001, true);
+    menu.deleteMenu(9001);
     assertThat(jdbc.queryForObject(
         "SELECT is_active FROM Menu_item WHERE item_id=9001", Boolean.class))
         .isFalse();
