@@ -15,3 +15,7 @@ Restaurant Order Management System Project
 ## Project Documentation
 
 [View and Edit Project Document](https://docs.google.com/document/d/1vRZHwOJ2bODHx7DynGO5eAYw5ZaRvFG2yhMB57XTNM8/edit?usp=sharing)
+
+echo "" >> README.md
+echo "## Live Demo" >> README.md
+echo "https://martin-vocabulary-cinema-multimedia.trycloudflare.com/login" >> README.md
