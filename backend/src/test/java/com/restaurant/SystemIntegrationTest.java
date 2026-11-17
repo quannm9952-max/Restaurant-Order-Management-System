@@ -351,11 +351,70 @@ class SystemIntegrationTest {
   @ValueSource(strings = {"/home", "/employees", "/employees/new",
       "/employees/9702/edit", "/tables", "/tables/new", "/tables/9004/edit",
       "/tables/9001", "/orders", "/orders/new?tableId=9004", "/orders/1042",
-      "/menu", "/payments", "/invoices/1042", "/manager/orders",
-      "/manager/reports", "/manager/payment-history"})
+      "/menu", "/manager/orders", "/manager/reports",
+      "/manager/payment-history"})
   @WithMockUser(username = "test_manager", roles = "MANAGER")
   void screensRenderAgainstOneSharedSchema(String path) throws Exception {
     mvc.perform(get(path)).andExpect(status().isOk());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/payments", "/payments?orderId=1042",
+      "/payments/orders/1042/json", "/invoices/1042"})
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void managerCannotOpenCashierPaymentAndInvoiceRoutes(String path)
+      throws Exception {
+    mvc.perform(get(path)).andExpect(status().isForbidden());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/payments", "/payments?orderId=1042",
+      "/payments/orders/1042/json", "/invoices/1042"})
+  @WithMockUser(username = "test_cashier", roles = "CASHIER")
+  void cashierCanOpenPaymentAndInvoiceRoutes(String path) throws Exception {
+    mvc.perform(get(path)).andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void managerDashboardOffersReportsWithoutCashierLinks() throws Exception {
+    var page = mvc.perform(get("/home")).andExpect(status().isOk()).andReturn()
+        .getResponse().getContentAsString();
+    assertThat(page).contains("href=\"/manager/reports\"",
+        "href=\"/manager/payment-history\"").doesNotContain("href=\"/payments",
+            "href=\"/invoices/", "View payments");
+  }
+
+  @Test
+  @WithMockUser(username = "test_cashier", roles = "CASHIER")
+  void cashierDashboardStillOffersPaymentAndInvoice() throws Exception {
+    var page = mvc.perform(get("/home")).andExpect(status().isOk()).andReturn()
+        .getResponse().getContentAsString();
+    assertThat(page).contains("href=\"/payments\"", "Payment &amp; Invoice");
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void managerCannotCallCashierServicesDirectly() {
+    assertThatThrownBy(() -> payments.checkoutOrders("")).isInstanceOf(
+        org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> payments.orderDetailForPayment(1042)).isInstanceOf(
+        org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> payments.invoiceData(1042)).isInstanceOf(
+        org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> payments.payOrder(1100, "Cash", true))
+        .isInstanceOf(
+            org.springframework.security.access.AccessDeniedException.class);
+  }
+
+  @Test
+  @WithMockUser(username = "test_cashier", roles = "CASHIER")
+  void cashierPaymentErrorsKeepTheirExpectedHttpStatus() throws Exception {
+    mvc.perform(get("/payments?orderId=abc"))
+        .andExpect(status().isBadRequest());
+    mvc.perform(get("/payments/orders/999999/json"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.error").value("Record not found."));
   }
 
   @Test
@@ -691,8 +750,7 @@ class SystemIntegrationTest {
   com.restaurant.repository.CheckoutRepository checkoutRepository;
 
   @ParameterizedTest
-  @ValueSource(strings = {"/payments?orderId=abc", "/tables/abc", "/orders/abc",
-      "/menu/abc/json"})
+  @ValueSource(strings = {"/tables/abc", "/orders/abc", "/menu/abc/json"})
   @WithMockUser(username = "test_manager", roles = "MANAGER")
   void malformedRequestIs400InsteadOf500(String path) throws Exception {
     mvc.perform(get(path)).andExpect(status().isBadRequest());
@@ -708,7 +766,7 @@ class SystemIntegrationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"/menu/999999/json", "/payments/orders/999999/json"})
+  @ValueSource(strings = {"/menu/999999/json"})
   @WithMockUser(username = "test_manager", roles = "MANAGER")
   void missingJsonRecordIs404(String path) throws Exception {
     mvc.perform(get(path)).andExpect(status().isNotFound())
@@ -716,7 +774,7 @@ class SystemIntegrationTest {
   }
 
   @Test
-  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  @WithMockUser(username = "test_cashier", roles = "CASHIER")
   void databaseFailureIsLoggedWithoutExposingSqlOrCredentials()
       throws Exception {
     org.mockito.Mockito

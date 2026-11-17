@@ -39,8 +39,8 @@ public class SecurityConfig {
             .hasRole("MANAGER").requestMatchers("/manager/**").denyAll()
             .requestMatchers(HttpMethod.GET, "/payments", "/payments/**",
                 "/invoices/**")
-            .hasAnyRole("CASHIER", "MANAGER")
-            .requestMatchers(HttpMethod.POST, "/payments/**").hasRole("CASHIER")
+            .hasRole("CASHIER").requestMatchers(HttpMethod.POST, "/payments/**")
+            .hasRole("CASHIER")
             .requestMatchers(HttpMethod.GET, "/orders", "/orders/**", "/tables",
                 "/tables/**")
             .hasAnyRole("WAITER", "MANAGER")

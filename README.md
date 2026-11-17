@@ -57,6 +57,9 @@ Sai thông tin báo `Incorrect username or password.`; chỉ khi đúng username
 và mật khẩu của tài khoản khóa mới báo `Your account has been locked.`
 Trường trống được nhắc bằng tiếng Anh ở giao diện và backend.
 
+Thanh toán và xem/in hóa đơn thuộc Cashier. Manager theo dõi doanh thu,
+đơn hàng và lịch sử thanh toán qua các module báo cáo của Manager.
+
 Container app dùng profile demo để tạo schema/dữ liệu còn thiếu; khởi động
 lại giữ các thay đổi và mật khẩu đã lưu. `.env` chứa cấu hình local và được
 Git bỏ qua. Xem `.env.example` để biết cổng và tài khoản MySQL mẫu.

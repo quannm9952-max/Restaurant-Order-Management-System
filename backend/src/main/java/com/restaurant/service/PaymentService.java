@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
-@PreAuthorize("hasAnyRole('CASHIER','MANAGER')")
+@PreAuthorize("hasRole('CASHIER')")
 public class PaymentService {
   private final CheckoutRepository checkoutRepository;
 
@@ -68,7 +68,6 @@ public class PaymentService {
   }
 
   @Transactional
-  @PreAuthorize("hasRole('CASHIER')")
   public long payOrder(long id, String paymentMethod, boolean success) {
     var locked = checkoutRepository.lockOrder(id);
     if (!"OPEN".equals(locked.get("status")))

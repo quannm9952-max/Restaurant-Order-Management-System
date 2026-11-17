@@ -138,3 +138,16 @@ paste và composition giữ nội dung/vị trí con trỏ. Sửa thành usernam
 xóa cảnh báo, bỏ trạng thái aria-invalid và cho qua kiểm tra form.
 Ba tình huống trường trống vẫn nhắc bằng tiếng Anh, sửa đúng đăng nhập được
 và sai mật khẩu vẫn chỉ có một dòng thông báo. `node --check` và Docker build đạt.
+
+## Quyền thanh toán và hóa đơn của Cashier (17/11/2026)
+
+Maven `verify`: **244 test đạt, 0 failure, 0 error, 0 skipped**;
+SystemIntegrationTest có 98 ca. Bỏ shortcut View payments & invoices của
+Manager. SecurityFilterChain và PaymentService chỉ cho Cashier truy cập
+trang thanh toán, API chi tiết thanh toán, hóa đơn và xác nhận thanh toán.
+Kiểm thử Manager gọi trực tiếp service cũng bị từ chối.
+
+Docker/MySQL và Cloudflare: Manager bị 403 ở /payments, API và /invoices;
+Cashier nhận 200. Waiter/Chef cũng bị từ chối. Dashboard Manager giữ liên kết
+báo cáo doanh thu và lịch sử thanh toán; các trang này vẫn trả 200 cho Manager.
+Cashier không được vào báo cáo Manager. Checksum cả 9 bảng trước/sau không đổi.
