@@ -37,7 +37,12 @@ public class TableServiceImpl implements ITableService {
   @Override
   @Transactional(readOnly = true)
   public List<TableView> listTablesByStatus(String status) {
-    return tableRepository.findByStatus(status).stream().map(this::toTableView).toList();
+    try {
+      var tableStatus = TableStatus.valueOf(status.toUpperCase(java.util.Locale.ROOT));
+      return tableRepository.findByStatus(tableStatus).stream().map(this::toTableView).toList();
+    } catch (IllegalArgumentException exception) {
+      throw new BusinessException("Trạng thái bàn không hợp lệ.");
+    }
   }
 
   /** Get a table by ID as a view DTO. */
