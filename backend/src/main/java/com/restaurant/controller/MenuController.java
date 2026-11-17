@@ -173,6 +173,7 @@ public class MenuController {
       @RequestParam BigDecimal price,
       @RequestParam(defaultValue = "false") boolean available,
       @RequestParam(required = false) MultipartFile image,
+      @RequestParam Map<String, String> filters,
       RedirectAttributes redirectAttrs) {
     try {
       String selectedCategory = selectedCategory(category, customCategory);
@@ -187,13 +188,16 @@ public class MenuController {
       retainDraft(redirectAttrs, id, name, category, customCategory,
           description, price, available);
     }
+    retainFilters(filters, "filter_", redirectAttrs);
     return "redirect:/menu";
   }
 
   /** Toggle dish availability */
   @PostMapping({"/{id}/toggle-status", "/{id}/status"})
   public String toggleStatus(@PathVariable long id,
-      @RequestParam boolean available, RedirectAttributes redirectAttrs) {
+      @RequestParam boolean available,
+      @RequestParam Map<String, String> filters,
+      RedirectAttributes redirectAttrs) {
     try {
       service.toggleMenuAvailability(id, available);
       String msg = available
@@ -205,6 +209,7 @@ public class MenuController {
       redirectAttrs.addFlashAttribute("error",
           "Error changing dish #" + id + " status: " + e.getMessage());
     }
+    retainFilters(filters, "filter_", redirectAttrs);
     return "redirect:/menu";
   }
 
@@ -224,12 +229,7 @@ public class MenuController {
       redirectAttrs.addFlashAttribute("error",
           "Error deleting dish #" + id + ": " + e.getMessage());
     }
-    for (String name : List.of("search", "category", "availability",
-        "priceRange", "sortBy")) {
-      String value = filters.get(name);
-      if (value != null && !value.isBlank())
-        redirectAttrs.addAttribute(name, value);
-    }
+    retainFilters(filters, "", redirectAttrs);
     return "redirect:/menu";
   }
 
@@ -258,6 +258,16 @@ public class MenuController {
     flash.addFlashAttribute("menuDraft", draft);
     if (id != null)
       flash.addFlashAttribute("autoOpenEditId", id);
+  }
+
+  private void retainFilters(Map<String, String> filters, String prefix,
+      RedirectAttributes redirectAttrs) {
+    for (String name : List.of("search", "category", "availability",
+        "priceRange", "sortBy")) {
+      String value = filters.get(prefix + name);
+      if (value != null && !value.isBlank())
+        redirectAttrs.addAttribute(name, value);
+    }
   }
 
   private String selectedCategory(String category, String customCategory) {

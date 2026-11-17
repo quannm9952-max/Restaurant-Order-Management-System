@@ -65,7 +65,8 @@ Menu Management cho Manager thêm/sửa món và tải ảnh JPG/PNG tối đa 5
 Khi sửa, không chọn ảnh mới sẽ giữ ảnh hiện tại. Nút Delete xóa món khỏi thực
 đơn và danh sách đặt món mới, giữ nguyên dữ liệu trong các đơn trước đó.
 Chỉ xóa danh mục khi đã chuyển hoặc xóa hết món, kể cả món đang Stop Selling.
-Xóa món giữ nguyên danh mục, từ khóa và bộ lọc của danh sách đang xem.
+Xóa, cập nhật và đổi trạng thái món giữ nguyên danh mục, từ khóa và bộ lọc
+của danh sách đang xem, kể cả khi chuyển món sang danh mục khác.
 
 Container app dùng profile demo để tạo schema/dữ liệu còn thiếu; khởi động
 lại giữ các thay đổi và mật khẩu đã lưu. `.env` chứa cấu hình local và được

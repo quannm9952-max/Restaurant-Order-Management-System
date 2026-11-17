@@ -213,11 +213,23 @@ class MenuManagementIntegrationTest {
     var original = photo("png");
     long id = menu.addMenu("TEST Keep Photo", "TEST Photo Category", "",
         BigDecimal.TEN, original);
-    menu.updateMenu(id, "TEST Renamed Photo", "TEST Photo Category", "",
-        BigDecimal.ONE, true);
+    mvc.perform(multipart("/menu/" + id + "/update").with(csrf())
+        .param("name", "TEST Renamed Photo")
+        .param("category", "TEST Destination Category").param("price", "1.00")
+        .param("available", "true").param("filter_search", "TEST Keep Photo")
+        .param("filter_category", "TEST Photo Category")
+        .param("filter_availability", "available")
+        .param("filter_priceRange", "all").param("filter_sortBy", "name_asc"))
+        .andExpect(redirectedUrl("/menu?search=TEST+Keep+Photo"
+            + "&category=TEST+Photo+Category&availability=available"
+            + "&priceRange=all&sortBy=name_asc"))
+        .andExpect(flash().attributeExists("success"));
+    restoreAuthentication();
+    assertThat(menu.getMenuItem(id)).containsEntry("name", "TEST Renamed Photo")
+        .containsEntry("category", "TEST Destination Category");
     assertThat(images.read(id).bytes()).isEqualTo(original.getBytes());
     var replacement = photo("jpeg");
-    menu.updateMenu(id, "TEST Renamed Photo", "TEST Photo Category", "",
+    menu.updateMenu(id, "TEST Renamed Photo", "TEST Destination Category", "",
         BigDecimal.ONE, true, replacement);
     assertThat(images.read(id).bytes()).isEqualTo(replacement.getBytes());
     assertThat(images.read(id).contentType()).isEqualTo("image/jpeg");
@@ -306,10 +318,16 @@ class MenuManagementIntegrationTest {
             .with(csrf()).param("name", "TEST Retained Draft")
             .param("category", "TEST Photo Category")
             .param("description", "Draft description").param("price", "2.00")
-            .param("available", "true"))
-        .andExpect(redirectedUrl("/menu"))
+            .param("available", "true")
+            .param("filter_search", "TEST Existing Photo")
+            .param("filter_category", "TEST Photo Category"))
+        .andExpect(redirectedUrl("/menu?search=TEST+Existing+Photo"
+            + "&category=TEST+Photo+Category"))
         .andExpect(flash().attributeExists("menuDraft", "error")).andReturn();
-    var body = mvc.perform(get("/menu").flashAttrs(failure.getFlashMap()))
+    var body = mvc
+        .perform(get("/menu").param("search", "TEST Existing Photo")
+            .param("category", "TEST Photo Category")
+            .flashAttrs(failure.getFlashMap()))
         .andExpect(status().isOk()).andReturn().getResponse()
         .getContentAsString();
     assertThat(body).contains("TEST Retained Draft", url.replace("&", "&amp;"));

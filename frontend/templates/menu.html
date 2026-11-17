@@ -223,6 +223,7 @@
       </dialog>
       <dialog class="app-dialog" th:id="'status-' + ${item.id}">
         <form th:action="@{/menu/{id}/status(id=${item.id})}" method="post">
+          <th:block th:replace="~{menu :: listFilters('filter_')}"></th:block>
           <div class="dialog-head">
             <h2
               th:text="${item.available ? 'Stop Selling Item' : 'Make Item Available'}"
@@ -269,19 +270,7 @@
         th:attr="data-auto-open=${autoOpenDeleteId == item.id ? 'true' : null}"
       >
         <form th:action="@{/menu/{id}/delete(id=${item.id})}" method="post">
-          <input type="hidden" name="search" th:value="${currentSearch}" />
-          <input type="hidden" name="category" th:value="${currentCategory}" />
-          <input
-            type="hidden"
-            name="availability"
-            th:value="${currentAvailability}"
-          />
-          <input
-            type="hidden"
-            name="priceRange"
-            th:value="${currentPriceRange}"
-          />
-          <input type="hidden" name="sortBy" th:value="${currentSort}" />
+          <th:block th:replace="~{menu :: listFilters('')}"></th:block>
           <div class="dialog-head">
             <h2>Delete Menu Item</h2>
             <button
@@ -381,6 +370,9 @@
           th:name="${_csrf.parameterName}"
           th:value="${_csrf.token}"
         />
+        <th:block th:if="${item != null and item.id != null}">
+          <th:block th:replace="~{menu :: listFilters('filter_')}"></th:block>
+        </th:block>
         <div class="dialog-head">
           <h2
             th:text="${item == null or item.id == null ? 'Add Menu Item' : 'Edit Menu Item'}"
@@ -524,6 +516,33 @@
           ></button>
         </div>
       </form>
+      <th:block th:fragment="listFilters(prefix)">
+        <input
+          type="hidden"
+          th:name="${prefix + 'search'}"
+          th:value="${currentSearch}"
+        />
+        <input
+          type="hidden"
+          th:name="${prefix + 'category'}"
+          th:value="${currentCategory}"
+        />
+        <input
+          type="hidden"
+          th:name="${prefix + 'availability'}"
+          th:value="${currentAvailability}"
+        />
+        <input
+          type="hidden"
+          th:name="${prefix + 'priceRange'}"
+          th:value="${currentPriceRange}"
+        />
+        <input
+          type="hidden"
+          th:name="${prefix + 'sortBy'}"
+          th:value="${currentSort}"
+        />
+      </th:block>
       <form
         th:fragment="categoryForm(category)"
         th:action="@{/menu/categories/save}"

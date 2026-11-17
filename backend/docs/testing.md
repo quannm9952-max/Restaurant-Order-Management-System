@@ -20,6 +20,14 @@ trạng thái, khoảng giá và sắp xếp; nếu món đã bị xóa trước
 vẫn giữ danh mục. Docker/Cloudflare đã kiểm tra form và chuyển hướng giữ đủ
 bộ lọc; checksum 9 bảng chính trước/sau cập nhật không đổi.
 
+Lưu chỉnh sửa và đổi trạng thái món dùng chung cơ chế giữ bộ lọc với xóa món.
+Danh mục trong form sửa món được tách khỏi danh mục của danh sách: ca chỉnh
+sửa chuyển món sang danh mục khác vẫn redirect về danh mục đang xem ban đầu,
+giữ từ khóa/trạng thái/khoảng giá/sắp xếp và ảnh cũ. Ca ảnh không hợp lệ giữ
+bộ lọc và mở lại form có nội dung nháp. Docker verify vẫn đạt **263/263**.
+Localhost và Cloudflare đã kiểm tra form/chuyển hướng của cập nhật, đổi
+trạng thái và xóa; checksum 9 bảng chính trước/sau cập nhật không đổi.
+
 Chrome headless trên Docker/MySQL riêng đã thao tác thêm/sửa/chuyển/xóa món,
 xóa danh mục rỗng, chặn danh mục còn món, xem trước và thay ảnh. Tạo lại
 container app vẫn giữ ảnh và metadata. Xóa món mẫu đã được đặt trước đó giữ
