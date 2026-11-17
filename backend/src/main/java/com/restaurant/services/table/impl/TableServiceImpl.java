@@ -71,7 +71,7 @@ public class TableServiceImpl implements ITableService {
     RestaurantTable table =
         tableRepository
             .findByIdWithPessimisticLock(tableId)
-            .orElseThrow(() -> new NotFoundException("Table not found."));
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + tableId));
 
     // Cannot manually set OCCUPIED
     if (newStatus == TableStatus.OCCUPIED) {

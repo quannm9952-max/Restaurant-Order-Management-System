@@ -278,7 +278,6 @@
             </td>
             <td>
               <b style="font-size:14px; color:var(--ink);" th:text="${m.name}">Dish Name</b>
-              <small class="muted" style="display:block;" th:if="${m.created_at!=null}" th:text="'Created: '+${#strings.substring(m.created_at,0,10)}"></small>
             </td>
             <td>
               <span class="category-chip" th:text="${m.category}">Main Courses</span>
