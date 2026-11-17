@@ -110,3 +110,17 @@ tài khoản. Đăng nhập hợp lệ/không hợp lệ qua Cloudflare cũng đ
 Chrome headless kiểm tra gõ, dán, composition của IME và HTML pattern tại
 login, thêm nhân viên và sửa nhân viên. Mobile 320×568 không tràn nội dung.
 Checksum của cả 9 bảng trước/sau cập nhật không đổi.
+
+## Thông báo đăng nhập (17/11/2026)
+
+Maven `verify`: **236 test đạt, 0 failure, 0 error, 0 skipped**;
+SystemIntegrationTest 90 ca, HttpSecurityTest 4 ca. Sai username/mật khẩu,
+kể cả mật khẩu sai của tài khoản khóa, chỉ nhận thông báo sai thông tin.
+Chỉ đúng cả username và mật khẩu của tài khoản khóa mới hiện trạng thái khóa.
+Có kiểm thử trường trống, mật khẩu quá dài, query giả trạng thái và xóa thông
+báo sau khi hiển thị. Hai ca HTTP thật xác nhận thông báo qua servlet/redirect.
+
+Chrome headless với locale vi xác nhận nhắc username/password trống vẫn bằng
+tiếng Anh, focus đúng trường, sửa lại cho phép đăng nhập và lỗi sai thông tin
+chỉ có một dòng. Docker/Cloudflare kiểm tra 7 trường hợp sai/trống; cả 8
+tài khoản hiện có vẫn đăng nhập. Checksum cả 9 bảng trước/sau không đổi.

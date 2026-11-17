@@ -135,10 +135,6 @@ input:focus {
   line-height: 1.7;
   margin-bottom: 22px;
 }
-.login-alert strong,
-.login-alert span {
-  display: block;
-}
 .login-success {
   color: #267948;
   background: #ebf8f0;

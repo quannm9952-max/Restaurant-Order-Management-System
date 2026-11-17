@@ -13,6 +13,7 @@ import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
 import com.restaurant.repository.EmployeeRepository;
 import com.restaurant.security.AccountUserDetailsService;
+import com.restaurant.security.LoginFailureHandler;
 import com.restaurant.support.Usernames;
 import com.restaurant.service.EmployeeService;
 import com.restaurant.service.MenuService;
@@ -287,6 +288,63 @@ class SystemIntegrationTest {
         "UPDATE Account SET is_active=false WHERE username='test_waiter'");
     mvc.perform(formLogin().user("test_waiter").password("TEST_ONLY_2026"))
         .andExpect(unauthenticated());
+  }
+
+  @Test
+  void loginMessagesDistinguishCredentialsLockAndMissingFields()
+      throws Exception {
+    jdbc.update(
+        "UPDATE Account SET is_active=false WHERE username='test_waiter'");
+    for (String[] scenario : List.of(
+        new String[]{"test_unknown", "TEST_ONLY_2026",
+            LoginFailureHandler.INCORRECT_CREDENTIALS},
+        new String[]{"test_manager", "wrong",
+            LoginFailureHandler.INCORRECT_CREDENTIALS},
+        new String[]{"test_waiter", "wrong",
+            LoginFailureHandler.INCORRECT_CREDENTIALS},
+        new String[]{"test_waiter", "TEST_ONLY_2026",
+            LoginFailureHandler.LOCKED_ACCOUNT},
+        new String[]{" test_waiter", "TEST_ONLY_2026",
+            LoginFailureHandler.INCORRECT_CREDENTIALS},
+        new String[]{"test_manager", "x".repeat(73),
+            LoginFailureHandler.INCORRECT_CREDENTIALS},
+        new String[]{"test_waiter", "x".repeat(73),
+            LoginFailureHandler.INCORRECT_CREDENTIALS},
+        new String[]{"", "TEST_ONLY_2026", "Please enter your username."},
+        new String[]{"test_manager", "", "Please enter your password."},
+        new String[]{"test_waiter", "", "Please enter your password."},
+        new String[]{"", "", "Please enter your username and password."})) {
+      var session = new MockHttpSession();
+      mvc.perform(post("/login").session(session).with(csrf())
+          .param("username", scenario[0]).param("password", scenario[1]))
+          .andExpect(unauthenticated())
+          .andExpect(redirectedUrl("/login?error"));
+      var body = mvc.perform(get("/login?error").session(session))
+          .andExpect(status().isOk())
+          .andExpect(model().attribute("loginError", scenario[2])).andReturn()
+          .getResponse().getContentAsString();
+      assertThat(body).contains(scenario[2]).doesNotContain("Unable to sign in",
+          "Wrong username or password, or the account is locked.");
+      if (!scenario[2].equals(LoginFailureHandler.LOCKED_ACCOUNT))
+        assertThat(body).doesNotContain(LoginFailureHandler.LOCKED_ACCOUNT);
+    }
+  }
+
+  @Test
+  void loginStatusComesFromAFailedAttemptRatherThanUrlParameters()
+      throws Exception {
+    jdbc.update(
+        "UPDATE Account SET is_active=false WHERE username='test_waiter'");
+    var session = new MockHttpSession();
+    mvc.perform(post("/login").session(session).with(csrf())
+        .param("username", "test_waiter").param("password", "TEST_ONLY_2026"))
+        .andExpect(redirectedUrl("/login?error"));
+    mvc.perform(get("/login?error").session(session)).andExpect(
+        model().attribute("loginError", LoginFailureHandler.LOCKED_ACCOUNT));
+    mvc.perform(get("/login?error=locked").session(session)).andExpect(model()
+        .attribute("loginError", LoginFailureHandler.INCORRECT_CREDENTIALS));
+    mvc.perform(get("/login").session(session))
+        .andExpect(model().attributeDoesNotExist("loginError"));
   }
 
   @ParameterizedTest

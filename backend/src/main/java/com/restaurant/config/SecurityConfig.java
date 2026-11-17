@@ -1,6 +1,8 @@
 package com.restaurant.config;
 
+import com.restaurant.security.LoginFailureHandler;
 import com.restaurant.support.Usernames;
+import java.nio.charset.StandardCharsets;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -20,7 +22,8 @@ public class SecurityConfig {
   }
 
   @Bean
-  SecurityFilterChain applicationSecurity(HttpSecurity http) throws Exception {
+  SecurityFilterChain applicationSecurity(HttpSecurity http,
+      LoginFailureHandler loginFailureHandler) throws Exception {
     return http
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/login", "/error", "/access-denied", "/css/**",
@@ -53,8 +56,13 @@ public class SecurityConfig {
                   // Check the raw value as the login filter trims usernames.
                   if (!Usernames.isValid(request.getParameter("username")))
                     throw new BadCredentialsException("Invalid username.");
+                  String password = request.getParameter("password");
+                  if (password == null || password.isEmpty()
+                      || password.getBytes(StandardCharsets.UTF_8).length > 72)
+                    throw new BadCredentialsException("Invalid credentials.");
                   return new WebAuthenticationDetails(request);
-                }).defaultSuccessUrl("/home", true).permitAll())
+                }).failureHandler(loginFailureHandler)
+                .defaultSuccessUrl("/home", true).permitAll())
         .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
         .exceptionHandling(errors -> errors.accessDeniedPage("/access-denied"))
         .build();

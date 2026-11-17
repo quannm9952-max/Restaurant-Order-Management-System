@@ -4,8 +4,32 @@ document.addEventListener("DOMContentLoaded", () => {
   initDialogs();
   initPasswordToggles();
   initUsernameInputs();
+  initLoginValidation();
   initEmployeeFilters();
 });
+
+function initLoginValidation() {
+  const form = document.querySelector(".login-form");
+  if (!form) return;
+  const username = form.querySelector("#username");
+  const password = form.querySelector("#password");
+  [username, password].forEach((input) =>
+    input.addEventListener("input", () => input.setCustomValidity("")),
+  );
+  form.addEventListener("submit", (event) => {
+    username.setCustomValidity(
+      !username.value
+        ? "Please enter your username."
+        : username.validity.patternMismatch
+          ? username.title
+          : "",
+    );
+    password.setCustomValidity(
+      password.value ? "" : "Please enter your password.",
+    );
+    if (!form.reportValidity()) event.preventDefault();
+  });
+}
 
 function initUsernameInputs() {
   const allowed = /^[A-Za-z0-9_]*$/;

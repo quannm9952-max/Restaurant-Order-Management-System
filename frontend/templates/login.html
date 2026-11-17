@@ -16,12 +16,16 @@
       />
     </aside>
     <main class="login-main">
-      <form class="login-form" th:action="@{/login}" method="post">
+      <form class="login-form" th:action="@{/login}" method="post" novalidate>
         <h1>Welcome Back</h1>
         <p>Sign in to access your role-based workspace.</p>
-        <div class="login-alert" role="alert" th:if="${param.error}">
-          <strong>Unable to sign in</strong
-          ><span>Wrong username or password, or the account is locked.</span>
+        <div
+          class="login-alert"
+          role="alert"
+          th:if="${loginError != null}"
+          th:text="${loginError}"
+        >
+          Incorrect username or password.
         </div>
         <div class="login-success" role="status" th:if="${param.logout}">
           You have been logged out.

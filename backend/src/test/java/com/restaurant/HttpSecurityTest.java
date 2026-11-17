@@ -56,6 +56,12 @@ class HttpSecurityTest {
         "INSERT INTO Account(employee_id,username,password_hash,role,is_active)"
             + " VALUES(9801,'TEST_HTTP_WAITER',?,'WAITER',true)",
         encoder.encode("TEST_ONLY_HTTP_2026"));
+    jdbc.update("INSERT INTO Employee(employee_id,full_name,position)"
+        + " VALUES(9802,'TEST HTTP Locked Chef','CHEF')");
+    jdbc.update(
+        "INSERT INTO Account(employee_id,username,password_hash,role,is_active)"
+            + " VALUES(9802,'TEST_HTTP_LOCKED',?,'CHEF',false)",
+        encoder.encode("TEST_ONLY_HTTP_2026"));
     base = "http://127.0.0.1:"
         + environment.getRequiredProperty("local.server.port");
   }
@@ -111,6 +117,42 @@ class HttpSecurityTest {
     try (var client = client()) {
       var denied = post(client, "/menu", "name=TEST_CSRF_REJECTED");
       assertThat(denied.statusCode()).isEqualTo(403);
+    }
+  }
+
+  @Test
+  void realHttpOnlyShowsLockedAfterVerifyingThePassword() throws Exception {
+    for (String password : new String[]{"wrong", "TEST_ONLY_HTTP_2026"}) {
+      try (var client = client()) {
+        var login = get(client, "/login");
+        var failed = post(client, "/login", csrf(login.body())
+            + "&username=TEST_HTTP_LOCKED&password=" + password);
+        assertThat(failed.uri().getPath()).isEqualTo("/login");
+        assertThat(failed.statusCode()).isEqualTo(200);
+        if (password.equals("wrong"))
+          assertThat(failed.body()).contains("Incorrect username or password.")
+              .doesNotContain("Your account has been locked.");
+        else
+          assertThat(failed.body()).contains("Your account has been locked.")
+              .doesNotContain("Incorrect username or password.");
+      }
+    }
+  }
+
+  @Test
+  void realHttpMissingFieldsUseEnglishMessages() throws Exception {
+    for (String[] scenario : new String[][]{
+        {"", "", "Please enter your username and password."},
+        {"", "TEST_ONLY_HTTP_2026", "Please enter your username."},
+        {"TEST_HTTP_LOCKED", "", "Please enter your password."}}) {
+      try (var client = client()) {
+        var login = get(client, "/login");
+        var failed = post(client, "/login", csrf(login.body()) + "&username="
+            + scenario[0] + "&password=" + scenario[1]);
+        assertThat(failed.statusCode()).isEqualTo(200);
+        assertThat(failed.body()).contains(scenario[2])
+            .doesNotContain("Your account has been locked.");
+      }
     }
   }
 }

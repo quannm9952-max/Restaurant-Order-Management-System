@@ -51,6 +51,9 @@ Username dài 1–50 ký tự, chỉ gồm A–Z, a–z, 0–9 và dấu gạch 
 không nhận chữ có dấu, khoảng trắng hoặc ký tự đặc biệt. Quy tắc áp dụng
 cho đăng nhập và tạo/sửa tài khoản; họ tên nhân viên vẫn dùng tiếng Việt.
 Trang chủ chào **Welcome, [họ tên nhân viên]** theo tên hiện tại đã lưu.
+Sai thông tin báo `Incorrect username or password.`; chỉ khi đúng username
+và mật khẩu của tài khoản khóa mới báo `Your account has been locked.`
+Trường trống được nhắc bằng tiếng Anh ở giao diện và backend.
 
 Container app dùng profile demo để tạo schema/dữ liệu còn thiếu; khởi động
 lại giữ các thay đổi và mật khẩu đã lưu. `.env` chứa cấu hình local và được
