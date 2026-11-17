@@ -10,30 +10,10 @@
   </head>
   <body>
     <aside class="login-brand">
-      <!-- Frame the illustration separately from the text baked into the source image. -->
-      <svg
-        class="login-art"
-        viewBox="0 135 720 455"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <image href="/images/login/brand-panel.png" width="720" height="900" />
-      </svg>
-      <div class="login-brand-header">
-        <span class="login-brand-icon">
-          <img src="/images/icons/utensils.svg" alt="" />
-        </span>
-        <span>Employee workspace</span>
-      </div>
-      <div class="login-brand-copy">
-        <h2>Restaurant Order<br />Management System</h2>
-        <p>
-          Welcome to your daily service workspace.<br />
-          Sign in to keep every order running smoothly.
-        </p>
-      </div>
-      <p class="login-brand-footer">One team. Seamless service.</p>
+      <img
+        src="/images/login/brand-panel.png"
+        alt="Restaurant Order Management System. Welcome to your daily service workspace. One team. Seamless service."
+      />
     </aside>
     <main class="login-main">
       <form class="login-form" th:action="@{/login}" method="post">
