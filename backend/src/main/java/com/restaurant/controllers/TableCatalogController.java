@@ -30,18 +30,21 @@ public class TableCatalogController {
   }
 
   @PostMapping("/tables/save")
-  public String save(
-      @RequestParam(required = false) Integer id,
-      @RequestParam String name,
-      @RequestParam int capacity,
-      RedirectAttributes flash) {
+  public String save(@RequestParam(required = false) Integer id,
+      @RequestParam String name, @RequestParam int capacity,
+      RedirectAttributes flash, Model model) {
     try {
       var table = catalog.save(id, name, capacity);
       flash.addFlashAttribute("successMessage", "Table saved.");
       return "redirect:/tables/" + table.getId();
     } catch (com.restaurant.exceptions.BusinessException e) {
-      flash.addFlashAttribute("errorMessage", e.getMessage());
-      return "redirect:/tables";
+      var draft = new RestaurantTable();
+      draft.setId(id);
+      draft.setTableName(name);
+      draft.setCapacity(capacity);
+      model.addAttribute("table", draft);
+      model.addAttribute("errorMessage", e.getMessage());
+      return "tables/form";
     }
   }
 }

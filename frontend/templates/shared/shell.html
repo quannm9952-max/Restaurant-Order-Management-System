@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="/css/reporting.css" />
     <link rel="stylesheet" href="/css/workspace.css" />
     <script defer src="/js/workspace.js"></script>
+    <link rel="stylesheet" href="/css/preparation.css" />
+    <script defer src="/js/preparation.js"></script>
   </head>
   <body>
     <aside
@@ -53,26 +55,27 @@
         <th:block th:if="${user.role == 'Waiter'}"
           ><a
             th:replace="~{shared/shell :: navLink('/orders','orders','Order Management',${section == 'orders'})}"
-          ></a
-          ><span
-            class="nav-item unavailable"
-            aria-disabled="true"
-            title="Available after TV3 integration"
-            ><img src="/images/tv5/table.svg" alt="" />Serving Management</span
-          ></th:block
-        >
+          ></a>
+          <a
+            class="nav-item"
+            href="/serving"
+            th:classappend="${section == 'serving'} ? 'active'"
+            ><img src="/images/tv5/table.svg" alt="" />Serving Management<span
+              class="ready-count"
+              data-ready-count
+              hidden
+            ></span></a
+        ></th:block>
         <th:block th:if="${user.role == 'Cashier'}"
           ><a
             th:replace="~{shared/shell :: navLink('/payments','cash','Payment & Invoice',${section == 'payments'})}"
           ></a
         ></th:block>
-        <span
-          th:if="${user.role == 'Chef'}"
-          class="nav-item unavailable"
-          aria-disabled="true"
-          title="Available after TV3 integration"
-          ><img src="/images/tv5/utensils.svg" alt="" />Kitchen Management</span
-        >
+        <th:block th:if="${user.role == 'Chef'}"
+          ><a
+            th:replace="~{shared/shell :: navLink('/kitchen','utensils','Kitchen Management',${section == 'kitchen'})}"
+          ></a
+        ></th:block>
       </nav>
       <div class="sidebar-bottom">
         <div class="role-card">
@@ -82,6 +85,14 @@
         </div>
         <p>Restaurant employee workspace</p>
       </div>
+      <a
+        th:if="${user.role == 'Waiter'}"
+        href="/serving"
+        class="ready-notice"
+        data-serving-notice
+        role="status"
+        hidden
+      ></a>
     </aside>
     <th:block
       th:fragment="managerEmployees(section)"

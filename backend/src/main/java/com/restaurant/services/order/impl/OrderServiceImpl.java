@@ -1,5 +1,7 @@
 package com.restaurant.services.order.impl;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.restaurant.dto.order.OrderDetailView;
 import com.restaurant.dto.order.OrderLineView;
 import com.restaurant.dto.order.OrderSummaryView;
@@ -24,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Service for managing orders (UC05). */
 @Service
-@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('WAITER','MANAGER')")
+@PreAuthorize("hasAnyRole('WAITER','MANAGER')")
 public class OrderServiceImpl implements IOrderService {
 
   private final OrderRepository orderRepository;
@@ -33,10 +35,8 @@ public class OrderServiceImpl implements IOrderService {
   private final PaymentRepository paymentRepository;
   private final ICurrentEmployeeService currentEmployeeService;
 
-  public OrderServiceImpl(
-      OrderRepository orderRepository,
-      TableRepository tableRepository,
-      MenuItemRepository menuItemRepository,
+  public OrderServiceImpl(OrderRepository orderRepository,
+      TableRepository tableRepository, MenuItemRepository menuItemRepository,
       PaymentRepository paymentRepository,
       ICurrentEmployeeService currentEmployeeService) {
     this.orderRepository = orderRepository;
@@ -47,16 +47,19 @@ public class OrderServiceImpl implements IOrderService {
   }
 
   /**
-   * Create a new order for a table. Single transaction with pessimistic lock on the table.
+   * Create a new order for a table. Single transaction with pessimistic lock on
+   * the table.
    *
-   * <p>Rules: - Table must exist and be AVAILABLE with no OPEN order. - Order must have at least 1
-   * item line. - Each item must exist and be available. - On success: table becomes OCCUPIED, order
-   * is OPEN.
+   * <p>
+   * Rules: - Table must exist and be AVAILABLE with no OPEN order. - Order must
+   * have at least 1 item line. - Each item must exist and be available. - On
+   * success: table becomes OCCUPIED, order is OPEN.
    */
   @Override
   @Transactional
-  @org.springframework.security.access.prepost.PreAuthorize("hasRole('WAITER')")
-  public Order createOrder(Integer tableId, String note, List<OrderLine> lines) {
+  @PreAuthorize("hasRole('WAITER')")
+  public Order createOrder(Integer tableId, String note,
+      List<OrderLine> lines) {
 
     // Validate at least one line
     if (lines == null || lines.isEmpty()) {
@@ -64,17 +67,18 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     // Lock the table row with PESSIMISTIC_WRITE
-    RestaurantTable table =
-        tableRepository
-            .findByIdWithPessimisticLock(tableId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + tableId));
+    RestaurantTable table = tableRepository.findByIdWithPessimisticLock(tableId)
+        .orElseThrow(() -> new NotFoundException(
+            "Không tìm thấy bàn với mã: " + tableId));
 
     // Check table status
     if (table.getStatus() != TableStatus.AVAILABLE) {
       if (table.getStatus() == TableStatus.OCCUPIED) {
-        throw new BusinessException("Bàn đang được sử dụng (OCCUPIED), không thể tạo đơn.");
+        throw new BusinessException(
+            "Bàn đang được sử dụng (OCCUPIED), không thể tạo đơn.");
       } else {
-        throw new BusinessException("Bàn đang ngoài phục vụ (OUT_OF_SERVICE), không thể tạo đơn.");
+        throw new BusinessException(
+            "Bàn đang ngoài phục vụ (OUT_OF_SERVICE), không thể tạo đơn.");
       }
     }
 
@@ -87,19 +91,18 @@ public class OrderServiceImpl implements IOrderService {
     List<OrderDetail> details = new ArrayList<>();
     for (OrderLine line : lines) {
       if (line.getQuantity() < 1) {
-        throw new BusinessException("Số lượng phải >= 1 cho tất cả các dòng món.");
+        throw new BusinessException(
+            "Số lượng phải >= 1 cho tất cả các dòng món.");
       }
 
-      MenuItem item =
-          menuItemRepository
-              .findById(line.getItemId())
-              .orElseThrow(
-                  () -> new NotFoundException("Không tìm thấy món với mã: " + line.getItemId()));
+      MenuItem item = menuItemRepository.findById(line.getItemId())
+          .orElseThrow(() -> new NotFoundException(
+              "Không tìm thấy món với mã: " + line.getItemId()));
 
       if ((!Boolean.TRUE.equals(item.getIsAvailable())
           || !Boolean.TRUE.equals(item.getIsActive()))) {
-        throw new BusinessException(
-            "Món '" + item.getItemName() + "' đang ngừng bán, không thể thêm vào đơn.");
+        throw new BusinessException("Món '" + item.getItemName()
+            + "' đang ngừng bán, không thể thêm vào đơn.");
       }
 
       OrderDetail detail = new OrderDetail();
@@ -139,7 +142,7 @@ public class OrderServiceImpl implements IOrderService {
   /** Add items to an existing OPEN order. */
   @Override
   @Transactional
-  @org.springframework.security.access.prepost.PreAuthorize("hasRole('WAITER')")
+  @PreAuthorize("hasRole('WAITER')")
   public Order addItemToOrder(Integer orderId, List<OrderLine> lines) {
 
     if (lines == null || lines.isEmpty()) {
@@ -148,7 +151,8 @@ public class OrderServiceImpl implements IOrderService {
 
     Order order = getOrderWithDetails(orderId);
     if (order.getStatus() != OrderStatus.OPEN) {
-      throw new BusinessException("Đơn không ở trạng thái OPEN, không thể thêm món.");
+      throw new BusinessException(
+          "Đơn không ở trạng thái OPEN, không thể thêm món.");
     }
 
     List<OrderDetail> newDetails = new ArrayList<>();
@@ -157,16 +161,14 @@ public class OrderServiceImpl implements IOrderService {
         throw new BusinessException("Số lượng phải >= 1.");
       }
 
-      MenuItem item =
-          menuItemRepository
-              .findById(line.getItemId())
-              .orElseThrow(
-                  () -> new NotFoundException("Không tìm thấy món với mã: " + line.getItemId()));
+      MenuItem item = menuItemRepository.findById(line.getItemId())
+          .orElseThrow(() -> new NotFoundException(
+              "Không tìm thấy món với mã: " + line.getItemId()));
 
       if ((!Boolean.TRUE.equals(item.getIsAvailable())
           || !Boolean.TRUE.equals(item.getIsActive()))) {
-        throw new BusinessException(
-            "Món '" + item.getItemName() + "' đang ngừng bán, không thể thêm vào đơn.");
+        throw new BusinessException("Món '" + item.getItemName()
+            + "' đang ngừng bán, không thể thêm vào đơn.");
       }
 
       OrderDetail detail = new OrderDetail();
@@ -189,26 +191,27 @@ public class OrderServiceImpl implements IOrderService {
   /**
    * Reduce quantity of an order detail line.
    *
-   * <p>Rules: - Order must be OPEN. - Detail must be PENDING. - New quantity must be >= 1 and <
-   * current quantity.
+   * <p>
+   * Rules: - Order must be OPEN. - Detail must be PENDING. - New quantity must
+   * be >= 1 and < current quantity.
    */
   @Override
   @Transactional
-  @org.springframework.security.access.prepost.PreAuthorize("hasRole('WAITER')")
-  public OrderDetail reduceItemQuantity(Integer orderId, Integer detailId, Integer newQuantity) {
+  @PreAuthorize("hasRole('WAITER')")
+  public OrderDetail reduceItemQuantity(Integer orderId, Integer detailId,
+      Integer newQuantity) {
 
     Order order = getOrderWithDetails(orderId);
     if (order.getStatus() != OrderStatus.OPEN) {
-      throw new BusinessException("Đơn không ở trạng thái OPEN, không thể sửa số lượng.");
+      throw new BusinessException(
+          "Đơn không ở trạng thái OPEN, không thể sửa số lượng.");
     }
 
     OrderDetail detail = findDetailInOrder(order, detailId);
 
     if (detail.getCookingStatus() != CookingStatus.PENDING) {
-      throw new BusinessException(
-          "Dòng món đang ở trạng thái "
-              + detail.getCookingStatus()
-              + ", chỉ có thể sửa khi đang PENDING.");
+      throw new BusinessException("Dòng món đang ở trạng thái "
+          + detail.getCookingStatus() + ", chỉ có thể sửa khi đang PENDING.");
     }
 
     if (newQuantity < 1) {
@@ -217,8 +220,7 @@ public class OrderServiceImpl implements IOrderService {
 
     if (newQuantity >= detail.getQuantity()) {
       throw new BusinessException(
-          "Số lượng mới phải nhỏ hơn số lượng hiện tại ("
-              + detail.getQuantity()
+          "Số lượng mới phải nhỏ hơn số lượng hiện tại (" + detail.getQuantity()
               + "). Muốn hủy món thì dùng 'Hủy dòng'.");
     }
 
@@ -233,26 +235,26 @@ public class OrderServiceImpl implements IOrderService {
   /**
    * Cancel an order detail line (set cookingStatus to CANCELLED).
    *
-   * <p>Rules: - Order must be OPEN. - Detail must be PENDING. - Does NOT delete the record, just
-   * marks it CANCELLED.
+   * <p>
+   * Rules: - Order must be OPEN. - Detail must be PENDING. - Does NOT delete
+   * the record, just marks it CANCELLED.
    */
   @Override
   @Transactional
-  @org.springframework.security.access.prepost.PreAuthorize("hasRole('WAITER')")
+  @PreAuthorize("hasRole('WAITER')")
   public OrderDetail cancelOrderDetail(Integer orderId, Integer detailId) {
 
     Order order = getOrderWithDetails(orderId);
     if (order.getStatus() != OrderStatus.OPEN) {
-      throw new BusinessException("Đơn không ở trạng thái OPEN, không thể hủy dòng món.");
+      throw new BusinessException(
+          "Đơn không ở trạng thái OPEN, không thể hủy dòng món.");
     }
 
     OrderDetail detail = findDetailInOrder(order, detailId);
 
     if (detail.getCookingStatus() != CookingStatus.PENDING) {
-      throw new BusinessException(
-          "Dòng món đang ở trạng thái "
-              + detail.getCookingStatus()
-              + ", chỉ có thể hủy khi đang PENDING.");
+      throw new BusinessException("Dòng món đang ở trạng thái "
+          + detail.getCookingStatus() + ", chỉ có thể hủy khi đang PENDING.");
     }
 
     detail.setCookingStatus(CookingStatus.CANCELLED);
@@ -266,37 +268,39 @@ public class OrderServiceImpl implements IOrderService {
   /**
    * Cancel the entire order.
    *
-   * <p>Rules: - Order must be OPEN. - No detail line can be PREPARING, READY, or SERVED. - No
-   * SUCCESSFUL payment for this order. - On success: all non-CANCELLED details become CANCELLED,
-   * order becomes CANCELLED, totalAmount = 0, table becomes AVAILABLE.
+   * <p>
+   * Rules: - Order must be OPEN. - No detail line can be PREPARING, READY, or
+   * SERVED. - No SUCCESSFUL payment for this order. - On success: all
+   * non-CANCELLED details become CANCELLED, order becomes CANCELLED,
+   * totalAmount = 0, table becomes AVAILABLE.
    */
   @Override
   @Transactional
-  @org.springframework.security.access.prepost.PreAuthorize("hasRole('WAITER')")
+  @PreAuthorize("hasRole('WAITER')")
   public Order cancelOrder(Integer orderId, String reason) {
 
     Order order = getOrderWithDetails(orderId);
 
     if (order.getStatus() != OrderStatus.OPEN) {
-      throw new BusinessException("Đơn không ở trạng thái OPEN, không thể hủy.");
+      throw new BusinessException(
+          "Đơn không ở trạng thái OPEN, không thể hủy.");
     }
 
     // Check no detail is PREPARING, READY, or SERVED
     for (OrderDetail detail : order.getDetails()) {
       CookingStatus status = detail.getCookingStatus();
-      if (status == CookingStatus.PREPARING
-          || status == CookingStatus.READY
+      if (status == CookingStatus.PREPARING || status == CookingStatus.READY
           || status == CookingStatus.SERVED) {
-        throw new BusinessException(
-            "Có dòng món đang ở trạng thái "
-                + status
-                + ", không thể hủy đơn. Hãy hoàn thành hoặc hủy từng dòng món trước.");
+        throw new BusinessException("Có dòng món đang ở trạng thái " + status
+            + ", không thể hủy đơn. Hãy hoàn "
+            + "thành hoặc hủy từng dòng món trước.");
       }
     }
 
     // Check no successful payment
     if (paymentRepository.existsSuccessfulByOrderId(orderId)) {
-      throw new BusinessException("Đơn đã có thanh toán thành công, không thể hủy.");
+      throw new BusinessException(
+          "Đơn đã có thanh toán thành công, không thể hủy.");
     }
 
     // Cancel all non-CANCELLED details
@@ -311,7 +315,8 @@ public class OrderServiceImpl implements IOrderService {
     order.setTotalAmount(BigDecimal.ZERO);
     if (reason != null && !reason.isBlank()) {
       String existingNote = order.getNote();
-      order.setNote((existingNote != null ? existingNote + " | " : "") + "Lý do hủy: " + reason);
+      order.setNote((existingNote != null ? existingNote + " | " : "")
+          + "Lý do hủy: " + reason);
     }
 
     // Set table back to AVAILABLE
@@ -327,26 +332,22 @@ public class OrderServiceImpl implements IOrderService {
   @Transactional(readOnly = true)
   public List<OrderSummaryView> listOpenOrders() {
     return orderRepository.findByStatusWithDetails(OrderStatus.OPEN).stream()
-        .map(this::toOrderSummaryView)
-        .toList();
+        .map(this::toOrderSummaryView).toList();
   }
 
   @Override
   @Transactional(readOnly = true)
   public List<OrderSummaryView> listOrdersByStatus(OrderStatus status) {
     return orderRepository.findByStatusWithDetails(status).stream()
-        .map(this::toOrderSummaryView)
-        .toList();
+        .map(this::toOrderSummaryView).toList();
   }
 
   /** Get an order by ID with details as a view DTO. */
   @Override
   @Transactional(readOnly = true)
   public OrderDetailView getOrderDetail(Integer id) {
-    Order order =
-        orderRepository
-            .findByIdWithDetails(id)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn với mã: " + id));
+    Order order = orderRepository.findByIdWithDetails(id).orElseThrow(
+        () -> new NotFoundException("Không tìm thấy đơn với mã: " + id));
     return toOrderDetailView(order);
   }
 
@@ -354,29 +355,30 @@ public class OrderServiceImpl implements IOrderService {
   @Override
   @Transactional(readOnly = true)
   public List<MenuItemOption> listAvailableItems() {
-    return menuItemRepository.findByIsAvailableTrue().stream().map(this::toMenuItemOption).toList();
+    return menuItemRepository.findByIsAvailableTrue().stream()
+        .map(this::toMenuItemOption).toList();
   }
 
   /** Get an order by ID with details (internal use for write operations). */
   private Order getOrderWithDetails(Integer id) {
-    orderRepository.lockForUpdate(id).orElseThrow(() -> new NotFoundException("Order not found."));
-    return orderRepository
-        .findByIdWithDetails(id)
-        .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn với mã: " + id));
+    orderRepository.lockForUpdate(id)
+        .orElseThrow(() -> new NotFoundException("Order not found."));
+    return orderRepository.findByIdWithDetails(id).orElseThrow(
+        () -> new NotFoundException("Không tìm thấy đơn với mã: " + id));
   }
 
   // ==================== Private helpers ====================
 
   /**
-   * Calculate total amount from order details, excluding CANCELLED lines. This is the single method
-   * for recalculating totals.
+   * Calculate total amount from order details, excluding CANCELLED lines. This
+   * is the single method for recalculating totals.
    */
   private BigDecimal calculateTotalAmount(List<OrderDetail> details) {
     BigDecimal total = BigDecimal.ZERO;
     for (OrderDetail detail : details) {
       if (detail.getCookingStatus() != CookingStatus.CANCELLED) {
-        BigDecimal lineTotal =
-            detail.getUnitPriceAtOrder().multiply(BigDecimal.valueOf(detail.getQuantity()));
+        BigDecimal lineTotal = detail.getUnitPriceAtOrder()
+            .multiply(BigDecimal.valueOf(detail.getQuantity()));
         total = total.add(lineTotal);
       }
     }
@@ -396,68 +398,52 @@ public class OrderServiceImpl implements IOrderService {
   // ==================== Entity to View DTO mapping ====================
 
   private OrderSummaryView toOrderSummaryView(Order order) {
-    int itemCount =
-        (int)
-            order.getDetails().stream()
-                .filter(d -> d.getCookingStatus() != CookingStatus.CANCELLED)
-                .count();
-    return new OrderSummaryView(
-        order.getId(),
-        order.getTable().getTableName(),
+    int itemCount = (int) order.getDetails().stream()
+        .filter(d -> d.getCookingStatus() != CookingStatus.CANCELLED).count();
+    return new OrderSummaryView(order.getId(), order.getTable().getTableName(),
         order.getCreatedAt(),
-        order.getEmployee() != null ? order.getEmployee().getFullName() : "(Không rõ)",
-        order.getTotalAmount(),
-        itemCount);
+        order.getEmployee() != null
+            ? order.getEmployee().getFullName()
+            : "(Không rõ)",
+        order.getTotalAmount(), itemCount);
   }
 
   private OrderDetailView toOrderDetailView(Order order) {
     boolean isOpen = order.getStatus() == OrderStatus.OPEN;
-    List<OrderLineView> lines =
-        order.getDetails().stream().map(d -> toOrderLineView(d, isOpen)).toList();
+    List<OrderLineView> lines = order.getDetails().stream()
+        .map(d -> toOrderLineView(d, isOpen)).toList();
 
-    // canCancelOrder: order must be OPEN, no PREPARING/READY/SERVED details, no successful payment
-    boolean canCancelOrder =
-        isOpen
-            && !hasInProgressDetails(order)
-            && !paymentRepository.existsSuccessfulByOrderId(order.getId());
+    // canCancelOrder: order must be OPEN, no PREPARING/READY/SERVED details, no
+    // successful payment
+    boolean canCancelOrder = isOpen && !hasInProgressDetails(order)
+        && !paymentRepository.existsSuccessfulByOrderId(order.getId());
 
-    return new OrderDetailView(
-        order.getId(),
-        order.getTable().getId(),
-        order.getTable().getTableName(),
-        order.getStatus(),
+    return new OrderDetailView(order.getId(), order.getTable().getId(),
+        order.getTable().getTableName(), order.getStatus(),
         order.getCreatedAt(),
-        order.getEmployee() != null ? order.getEmployee().getFullName() : "(Không rõ)",
-        order.getNote(),
-        order.getTotalAmount(),
-        isOpen,
-        canCancelOrder,
-        lines);
+        order.getEmployee() != null
+            ? order.getEmployee().getFullName()
+            : "(Không rõ)",
+        order.getNote(), order.getTotalAmount(), isOpen, canCancelOrder, lines);
   }
 
-  private OrderLineView toOrderLineView(OrderDetail detail, boolean orderIsOpen) {
-    boolean canEdit = orderIsOpen && detail.getCookingStatus() == CookingStatus.PENDING;
-    BigDecimal subtotal =
-        detail
-            .getUnitPriceAtOrder()
-            .multiply(BigDecimal.valueOf(detail.getQuantity()))
-            .setScale(2, RoundingMode.HALF_UP);
-    return new OrderLineView(
-        detail.getId(),
-        detail.getItemNameAtOrder(),
-        detail.getQuantity(),
-        detail.getUnitPriceAtOrder(),
-        subtotal,
-        detail.getCookingStatus(),
-        canEdit);
+  private OrderLineView toOrderLineView(OrderDetail detail,
+      boolean orderIsOpen) {
+    boolean canEdit = orderIsOpen
+        && detail.getCookingStatus() == CookingStatus.PENDING;
+    BigDecimal subtotal = detail.getUnitPriceAtOrder()
+        .multiply(BigDecimal.valueOf(detail.getQuantity()))
+        .setScale(2, RoundingMode.HALF_UP);
+    return new OrderLineView(detail.getId(), detail.getItemNameAtOrder(),
+        detail.getQuantity(), detail.getUnitPriceAtOrder(), subtotal,
+        detail.getCookingStatus(), canEdit);
   }
 
   private MenuItemOption toMenuItemOption(MenuItem item) {
-    return new MenuItemOption(
-        item.getId(),
-        item.getItemName(),
-        item.getPrice(),
-        item.getMenuCategory() == null ? "Other" : item.getMenuCategory().getCategoryName(),
+    return new MenuItemOption(item.getId(), item.getItemName(), item.getPrice(),
+        item.getMenuCategory() == null
+            ? "Other"
+            : item.getMenuCategory().getCategoryName(),
         com.restaurant.web.MenuImages.forItemName(item.getItemName()));
   }
 
@@ -465,8 +451,7 @@ public class OrderServiceImpl implements IOrderService {
   private boolean hasInProgressDetails(Order order) {
     for (OrderDetail detail : order.getDetails()) {
       CookingStatus status = detail.getCookingStatus();
-      if (status == CookingStatus.PREPARING
-          || status == CookingStatus.READY
+      if (status == CookingStatus.PREPARING || status == CookingStatus.READY
           || status == CookingStatus.SERVED) {
         return true;
       }

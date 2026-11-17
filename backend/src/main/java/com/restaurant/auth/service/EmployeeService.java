@@ -1,5 +1,7 @@
 package com.restaurant.auth.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.restaurant.entities.Account;
 import com.restaurant.entities.Employee;
 import com.restaurant.entities.enums.Role;
@@ -12,17 +14,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@org.springframework.security.access.prepost.PreAuthorize("hasRole('MANAGER')")
+@PreAuthorize("hasRole('MANAGER')")
 public class EmployeeService {
 
   private final AccountRepository accountRepository;
   private final EmployeeRepository employeeRepository;
   private final PasswordEncoder passwordEncoder;
 
-  public EmployeeService(
-      AccountRepository accountRepository,
-      EmployeeRepository employeeRepository,
-      PasswordEncoder passwordEncoder) {
+  public EmployeeService(AccountRepository accountRepository,
+      EmployeeRepository employeeRepository, PasswordEncoder passwordEncoder) {
     this.accountRepository = accountRepository;
     this.employeeRepository = employeeRepository;
     this.passwordEncoder = passwordEncoder;
@@ -33,14 +33,15 @@ public class EmployeeService {
   }
 
   public Account getAccount(Integer id) {
-    return accountRepository
-        .findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("Account not found."));
+    return accountRepository.findById(id)
+        .orElseThrow(() -> new com.restaurant.exceptions.NotFoundException(
+            "Account not found."));
   }
 
   @Transactional
   public void assignRole(Integer id, Role role) {
-    if (role == null) throw new IllegalArgumentException("Choose a valid role.");
+    if (role == null)
+      throw new IllegalArgumentException("Choose a valid role.");
     getAccount(id).setRole(role);
   }
 
@@ -50,18 +51,12 @@ public class EmployeeService {
   }
 
   /**
-   * Creates a new employee account (id == null) or updates an existing one (UC03). Empty password
-   * on update means "keep the current password".
+   * Creates a new employee account (id == null) or updates an existing one
+   * (UC03). Empty password on update means "keep the current password".
    */
   @Transactional
-  public void saveAccount(
-      Integer id,
-      String fullName,
-      String position,
-      String suppliedUsername,
-      String password,
-      Role role,
-      boolean active) {
+  public void saveAccount(Integer id, String fullName, String position,
+      String suppliedUsername, String password, Role role, boolean active) {
     String username = suppliedUsername == null ? null : suppliedUsername.trim();
     if (fullName == null || fullName.isBlank()) {
       throw new IllegalArgumentException("Full name is required.");
@@ -73,39 +68,47 @@ public class EmployeeService {
       throw new IllegalArgumentException("Role is required.");
     }
 
-    if (fullName.trim().length() > 100
-        || username.trim().length() > 50
+    if (fullName.trim().length() > 100 || username.trim().length() > 50
         || (position != null && position.length() > 100))
-      throw new IllegalArgumentException("Name, username or position exceeds its maximum length.");
+      throw new IllegalArgumentException(
+          "Name, username or position exceeds its maximum length.");
     if (password != null && !password.isBlank() && password.length() < 6)
-      throw new IllegalArgumentException("Password must have at least 6 characters.");
+      throw new IllegalArgumentException(
+          "Password must have at least 6 characters.");
+    if (password != null && password
+        .getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+      throw new IllegalArgumentException(
+          "Password must not exceed 72 UTF-8 bytes.");
+    }
     fullName = fullName.trim();
     Account account;
     Employee employee;
 
     if (id == null) {
       if (password == null || password.isBlank()) {
-        throw new IllegalArgumentException("Password is required for a new account.");
+        throw new IllegalArgumentException(
+            "Password is required for a new account.");
       }
       if (accountRepository.existsByUsername(username)) {
-        throw new IllegalArgumentException("Username '" + username + "' is already taken.");
+        throw new IllegalArgumentException(
+            "Username '" + username + "' is already taken.");
       }
       employee = new Employee();
       account = new Account();
     } else {
       account = getAccount(id);
       employee = account.getEmployee();
-      accountRepository
-          .findByUsername(username)
+      accountRepository.findByUsername(username)
           .filter(other -> !other.getAccountId().equals(id))
-          .ifPresent(
-              other -> {
-                throw new IllegalArgumentException("Username '" + username + "' is already taken.");
-              });
+          .ifPresent(other -> {
+            throw new IllegalArgumentException(
+                "Username '" + username + "' is already taken.");
+          });
     }
 
     employee.setFullName(fullName);
-    employee.setPosition(position == null || position.isBlank() ? role.name() : position);
+    employee.setPosition(
+        position == null || position.isBlank() ? role.name() : position);
     if (employee.getHireDate() == null) {
       employee.setHireDate(LocalDate.now());
     }

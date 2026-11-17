@@ -12,26 +12,32 @@ public class ReportingFilters {
   private final Clock clock;
   private final String defaultEnd;
 
-  public ReportingFilters(Clock clock, @Value("${reporting.default-end-date:}") String defaultEnd) {
+  public ReportingFilters(Clock clock,
+      @Value("${reporting.default-end-date:}") String defaultEnd) {
     this.clock = clock;
     this.defaultEnd = defaultEnd;
   }
 
   public DateRange range(String from, String to) {
     try {
-      LocalDate end =
-          to == null || to.isBlank()
-              ? (defaultEnd.isBlank() ? LocalDate.now(clock) : LocalDate.parse(defaultEnd))
-              : LocalDate.parse(to);
-      LocalDate start = from == null || from.isBlank() ? end.minusDays(6) : LocalDate.parse(from);
+      LocalDate end = to == null || to.isBlank()
+          ? (defaultEnd.isBlank()
+              ? LocalDate.now(clock)
+              : LocalDate.parse(defaultEnd))
+          : LocalDate.parse(to);
+      LocalDate start = from == null || from.isBlank()
+          ? end.minusDays(6)
+          : LocalDate.parse(from);
       return new DateRange(start, end);
     } catch (java.time.DateTimeException exception) {
-      throw new IllegalArgumentException("Choose valid dates in YYYY-MM-DD format.");
+      throw new IllegalArgumentException(
+          "Choose valid dates in YYYY-MM-DD format.");
     }
   }
 
   public <E extends Enum<E>> E status(String value, Class<E> type) {
-    if (value == null || value.isBlank() || "ALL".equalsIgnoreCase(value)) return null;
+    if (value == null || value.isBlank() || "ALL".equalsIgnoreCase(value))
+      return null;
     try {
       return Enum.valueOf(type, value.toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException exception) {

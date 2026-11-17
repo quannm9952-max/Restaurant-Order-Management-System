@@ -1,5 +1,7 @@
 package com.restaurant.controllers;
 
+import com.restaurant.entities.enums.OrderStatus;
+
 import com.restaurant.dto.AddItemForm;
 import com.restaurant.dto.CancelOrderForm;
 import com.restaurant.dto.CreateOrderForm;
@@ -27,7 +29,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/** Controller for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được tạo/sửa/hủy đơn. */
+/**
+ * Controller for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được
+ * tạo/sửa/hủy đơn.
+ */
 @Controller
 @RequestMapping("/orders")
 public class OrderController {
@@ -35,7 +40,8 @@ public class OrderController {
   private final IOrderService orderService;
   private final ITableService tableService;
 
-  public OrderController(IOrderService orderService, ITableService tableService) {
+  public OrderController(IOrderService orderService,
+      ITableService tableService) {
     this.orderService = orderService;
     this.tableService = tableService;
   }
@@ -45,42 +51,44 @@ public class OrderController {
     model.addAttribute("tables", tableService.listTables());
     var items = orderService.listAvailableItems();
     model.addAttribute("availableItems", items);
-    model.addAttribute(
-        "categories", items.stream().map(MenuItemOption::category).distinct().sorted().toList());
+    model.addAttribute("categories", items.stream()
+        .map(MenuItemOption::category).distinct().sorted().toList());
   }
 
   /** List all OPEN orders. */
   @GetMapping
   public String listOrders(
-      @RequestParam(defaultValue = "OPEN") com.restaurant.entities.enums.OrderStatus status,
-      Model model) {
+      @RequestParam(defaultValue = "OPEN") OrderStatus status, Model model) {
     model.addAttribute("selectedStatus", status.name());
-    if (status != com.restaurant.entities.enums.OrderStatus.OPEN) {
+    if (status != OrderStatus.OPEN) {
       model.addAttribute("orders", orderService.listOrdersByStatus(status));
       return "orders/history";
     }
     List<OrderSummaryView> orders = orderService.listOpenOrders();
     model.addAttribute("orders", orders);
     var tables = tableService.listTables();
-    var selected =
-        tables.stream().filter(t -> t.canCreateOrder() || t.currentOrderId() != null).findFirst();
+    var selected = tables.stream()
+        .filter(t -> t.canCreateOrder() || t.currentOrderId() != null)
+        .findFirst();
     if (selected.isPresent()) {
       model.addAttribute("selectedTable", selected.get());
       if (selected.get().currentOrderId() != null)
-        model.addAttribute("order", orderService.getOrderDetail(selected.get().currentOrderId()));
+        model.addAttribute("order",
+            orderService.getOrderDetail(selected.get().currentOrderId()));
     }
     return "orders/workspace";
   }
 
   /** Show the create order form. */
   @GetMapping("/new")
-  public String showCreateForm(@RequestParam("tableId") Integer tableId, Model model) {
-    CreateOrderForm form =
-        model.containsAttribute("form")
-            ? (CreateOrderForm) model.getAttribute("form")
-            : new CreateOrderForm();
+  public String showCreateForm(@RequestParam("tableId") Integer tableId,
+      Model model) {
+    CreateOrderForm form = model.containsAttribute("form")
+        ? (CreateOrderForm) model.getAttribute("form")
+        : new CreateOrderForm();
     form.setTableId(tableId);
-    if (form.getLines() == null) form.setLines(new ArrayList<>());
+    if (form.getLines() == null)
+      form.setLines(new ArrayList<>());
 
     List<MenuItemOption> availableItems = orderService.listAvailableItems();
     model.addAttribute("form", form);
@@ -91,20 +99,16 @@ public class OrderController {
 
   /** Create a new order (POST). */
   @PostMapping
-  public String createOrder(
-      @Valid @ModelAttribute("form") CreateOrderForm form,
-      BindingResult bindingResult,
-      RedirectAttributes redirectAttributes,
+  public String createOrder(@Valid @ModelAttribute("form") CreateOrderForm form,
+      BindingResult bindingResult, RedirectAttributes redirectAttributes,
       Model model) {
     // Handle validation errors
     if (bindingResult.hasErrors()) {
       redirectAttributes.addFlashAttribute("form", form);
       // For validation errors, redirect back with messages
-      String errors =
-          bindingResult.getFieldErrors().stream()
-              .map(err -> err.getField() + ": " + err.getDefaultMessage())
-              .reduce((a, b) -> a + "; " + b)
-              .orElse("Dữ liệu không hợp lệ.");
+      String errors = bindingResult.getFieldErrors().stream()
+          .map(err -> err.getField() + ": " + err.getDefaultMessage())
+          .reduce((a, b) -> a + "; " + b).orElse("Dữ liệu không hợp lệ.");
       redirectAttributes.addFlashAttribute("errorMessage", errors);
       return "redirect:/orders/new?tableId=" + form.getTableId();
     }
@@ -112,15 +116,16 @@ public class OrderController {
     // Check at least one valid line
     boolean hasValidLine = false;
     for (OrderLineForm line : form.getLines()) {
-      if (line.getItemId() != null && line.getQuantity() != null && line.getQuantity() >= 1) {
+      if (line.getItemId() != null && line.getQuantity() != null
+          && line.getQuantity() >= 1) {
         hasValidLine = true;
         break;
       }
     }
     if (!hasValidLine) {
       redirectAttributes.addFlashAttribute("form", form);
-      redirectAttributes.addFlashAttribute(
-          "errorMessage", "Đơn phải có ít nhất 1 dòng món hợp lệ.");
+      redirectAttributes.addFlashAttribute("errorMessage",
+          "Đơn phải có ít nhất 1 dòng món hợp lệ.");
       return "redirect:/orders/new?tableId=" + form.getTableId();
     }
 
@@ -128,17 +133,17 @@ public class OrderController {
       // Convert form lines to service OrderLine
       List<OrderLine> lines = new ArrayList<>();
       for (OrderLineForm lineForm : form.getLines()) {
-        if (lineForm.getItemId() != null
-            && lineForm.getQuantity() != null
+        if (lineForm.getItemId() != null && lineForm.getQuantity() != null
             && lineForm.getQuantity() >= 1) {
-          lines.add(new OrderLine(lineForm.getItemId(), lineForm.getQuantity()));
+          lines
+              .add(new OrderLine(lineForm.getItemId(), lineForm.getQuantity()));
         }
       }
 
-      com.restaurant.entities.Order order =
-          orderService.createOrder(form.getTableId(), form.getNote(), lines);
-      redirectAttributes.addFlashAttribute(
-          "successMessage", "Tạo đơn #" + order.getId() + " thành công!");
+      com.restaurant.entities.Order order = orderService
+          .createOrder(form.getTableId(), form.getNote(), lines);
+      redirectAttributes.addFlashAttribute("successMessage",
+          "Tạo đơn #" + order.getId() + " thành công!");
       return "redirect:/orders/" + order.getId();
     } catch (BusinessException e) {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -155,57 +160,52 @@ public class OrderController {
   /** Show order detail. */
   @GetMapping("/{id}")
   public String orderDetail(@PathVariable("id") Integer id, Model model) {
-    try {
-      OrderDetailView order = orderService.getOrderDetail(id);
-      model.addAttribute("order", order);
-      model.addAttribute("selectedTable", tableService.getTable(order.tableId()));
-      model.addAttribute("availableItems", orderService.listAvailableItems());
-      return "orders/workspace";
-    } catch (NotFoundException e) {
-      model.addAttribute("errorMessage", e.getMessage());
-      return "error";
-    }
+    OrderDetailView order = orderService.getOrderDetail(id);
+    model.addAttribute("order", order);
+    model.addAttribute("selectedTable", tableService.getTable(order.tableId()));
+    model.addAttribute("availableItems", orderService.listAvailableItems());
+    return "orders/workspace";
   }
 
   /** Add items to an existing OPEN order (POST). */
   @PostMapping("/{id}/items")
-  public String addItemToOrder(
-      @PathVariable("id") Integer id,
+  public String addItemToOrder(@PathVariable("id") Integer id,
       @Valid @ModelAttribute("addForm") AddItemForm addForm,
-      BindingResult bindingResult,
-      RedirectAttributes redirectAttributes) {
+      BindingResult bindingResult, RedirectAttributes redirectAttributes) {
     if (bindingResult.hasErrors()) {
-      redirectAttributes.addFlashAttribute(
-          "errorMessage",
-          "Dữ liệu không hợp lệ: " + bindingResult.getFieldErrors().get(0).getDefaultMessage());
+      redirectAttributes.addFlashAttribute("errorMessage",
+          "Dữ liệu không hợp lệ: "
+              + bindingResult.getFieldErrors().get(0).getDefaultMessage());
       return "redirect:/orders/" + id;
     }
 
     // Check at least one valid line
     boolean hasValidLine = false;
     for (OrderLineForm line : addForm.getLines()) {
-      if (line.getItemId() != null && line.getQuantity() != null && line.getQuantity() >= 1) {
+      if (line.getItemId() != null && line.getQuantity() != null
+          && line.getQuantity() >= 1) {
         hasValidLine = true;
         break;
       }
     }
     if (!hasValidLine) {
-      redirectAttributes.addFlashAttribute(
-          "errorMessage", "Phải có ít nhất 1 dòng món hợp lệ để thêm.");
+      redirectAttributes.addFlashAttribute("errorMessage",
+          "Phải có ít nhất 1 dòng món hợp lệ để thêm.");
       return "redirect:/orders/" + id;
     }
 
     try {
       List<OrderLine> lines = new ArrayList<>();
       for (OrderLineForm lineForm : addForm.getLines()) {
-        if (lineForm.getItemId() != null
-            && lineForm.getQuantity() != null
+        if (lineForm.getItemId() != null && lineForm.getQuantity() != null
             && lineForm.getQuantity() >= 1) {
-          lines.add(new OrderLine(lineForm.getItemId(), lineForm.getQuantity()));
+          lines
+              .add(new OrderLine(lineForm.getItemId(), lineForm.getQuantity()));
         }
       }
       orderService.addItemToOrder(id, lines);
-      redirectAttributes.addFlashAttribute("successMessage", "Thêm món thành công!");
+      redirectAttributes.addFlashAttribute("successMessage",
+          "Thêm món thành công!");
     } catch (BusinessException e) {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (NotFoundException e) {
@@ -216,22 +216,21 @@ public class OrderController {
 
   /** Reduce quantity of an order detail line (POST). */
   @PostMapping("/{id}/items/{detailId}/quantity")
-  public String reduceItemQuantity(
-      @PathVariable("id") Integer id,
+  public String reduceItemQuantity(@PathVariable("id") Integer id,
       @PathVariable("detailId") Integer detailId,
       @Valid @ModelAttribute("qtyForm") UpdateQuantityForm qtyForm,
-      BindingResult bindingResult,
-      RedirectAttributes redirectAttributes) {
+      BindingResult bindingResult, RedirectAttributes redirectAttributes) {
     if (bindingResult.hasErrors()) {
-      redirectAttributes.addFlashAttribute(
-          "errorMessage",
-          "Dữ liệu không hợp lệ: " + bindingResult.getFieldErrors().get(0).getDefaultMessage());
+      redirectAttributes.addFlashAttribute("errorMessage",
+          "Dữ liệu không hợp lệ: "
+              + bindingResult.getFieldErrors().get(0).getDefaultMessage());
       return "redirect:/orders/" + id;
     }
 
     try {
       orderService.reduceItemQuantity(id, detailId, qtyForm.getNewQuantity());
-      redirectAttributes.addFlashAttribute("successMessage", "Cập nhật số lượng thành công!");
+      redirectAttributes.addFlashAttribute("successMessage",
+          "Cập nhật số lượng thành công!");
     } catch (BusinessException e) {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (NotFoundException e) {
@@ -242,13 +241,13 @@ public class OrderController {
 
   /** Cancel an order detail line (POST). */
   @PostMapping("/{id}/items/{detailId}/cancel")
-  public String cancelOrderDetail(
-      @PathVariable("id") Integer id,
+  public String cancelOrderDetail(@PathVariable("id") Integer id,
       @PathVariable("detailId") Integer detailId,
       RedirectAttributes redirectAttributes) {
     try {
       orderService.cancelOrderDetail(id, detailId);
-      redirectAttributes.addFlashAttribute("successMessage", "Hủy dòng món thành công!");
+      redirectAttributes.addFlashAttribute("successMessage",
+          "Hủy dòng món thành công!");
     } catch (BusinessException e) {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (NotFoundException e) {
@@ -259,13 +258,13 @@ public class OrderController {
 
   /** Cancel the entire order (POST). */
   @PostMapping("/{id}/cancel")
-  public String cancelOrder(
-      @PathVariable("id") Integer id,
+  public String cancelOrder(@PathVariable("id") Integer id,
       @ModelAttribute("cancelForm") CancelOrderForm cancelForm,
       RedirectAttributes redirectAttributes) {
     try {
       orderService.cancelOrder(id, cancelForm.getReason());
-      redirectAttributes.addFlashAttribute("successMessage", "Hủy đơn thành công!");
+      redirectAttributes.addFlashAttribute("successMessage",
+          "Hủy đơn thành công!");
     } catch (BusinessException e) {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (NotFoundException e) {

@@ -1,14 +1,15 @@
 package com.restaurant.services.order;
 
 /**
- * Simple DTO for order line items during creation/addition. Used by IOrderService methods to pass
- * item ID and quantity.
+ * Simple DTO for order line items during creation/addition. Used by
+ * IOrderService methods to pass item ID and quantity.
  */
 public class OrderLine {
   private Integer itemId;
   private Integer quantity;
 
-  public OrderLine() {}
+  public OrderLine() {
+  }
 
   public OrderLine(Integer itemId, Integer quantity) {
     this.itemId = itemId;

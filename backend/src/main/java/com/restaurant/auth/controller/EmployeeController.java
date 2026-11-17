@@ -52,16 +52,14 @@ public class EmployeeController {
   }
 
   @PostMapping("/save")
-  public String save(
-      @RequestParam(required = false) Integer id,
+  public String save(@RequestParam(required = false) Integer id,
       @RequestParam(required = false) String fullName,
       @RequestParam(required = false) String position,
       @RequestParam(required = false) String username,
       @RequestParam(required = false) String password,
       @RequestParam(required = false) String confirmPassword,
       @RequestParam(required = false) String role,
-      @RequestParam(required = false) String active,
-      Model model) {
+      @RequestParam(required = false) String active, Model model) {
 
     Map<String, Object> form = new HashMap<>();
     form.put("id", id);
@@ -84,8 +82,8 @@ public class EmployeeController {
       if (confirmPassword != null && !confirmPassword.equals(password)) {
         throw new IllegalArgumentException("Passwords do not match.");
       }
-      employeeService.saveAccount(
-          id, fullName, position, username, password, parsedRole, activeState);
+      employeeService.saveAccount(id, fullName, position, username, password,
+          parsedRole, activeState);
     } catch (IllegalArgumentException ex) {
       model.addAttribute("error", ex.getMessage());
       return renderForm(model, form, id != null);
@@ -94,8 +92,9 @@ public class EmployeeController {
     return "redirect:/employees?saved";
   }
 
-  private String renderForm(Model model, Map<String, Object> form, boolean editing) {
-    for (String key : new String[] {"id", "fullName", "position", "username"})
+  private String renderForm(Model model, Map<String, Object> form,
+      boolean editing) {
+    for (String key : new String[]{"id", "fullName", "position", "username"})
       form.putIfAbsent(key, null);
     model.addAttribute("accounts", employeeService.listAccounts());
     model.addAttribute("form", form);
@@ -105,8 +104,8 @@ public class EmployeeController {
   }
 
   @PostMapping("/{id}/role")
-  public String role(
-      @PathVariable Integer id, @RequestParam String role, RedirectAttributes flash) {
+  public String role(@PathVariable Integer id, @RequestParam String role,
+      RedirectAttributes flash) {
     try {
       employeeService.assignRole(id, Role.valueOf(role));
       flash.addFlashAttribute("successMessage", "Employee role updated.");

@@ -9,23 +9,19 @@ import java.util.Locale;
 
 /** Read models only: no duplicate JPA entities or reporting tables. */
 public final class ReportingModels {
-  private ReportingModels() {}
+  private ReportingModels() {
+  }
 
   public enum OrderStatus {
-    OPEN,
-    COMPLETED,
-    CANCELLED
+    OPEN, COMPLETED, CANCELLED
   }
 
   public enum PaymentStatus {
-    PENDING,
-    SUCCESSFUL,
-    FAILED
+    PENDING, SUCCESSFUL, FAILED
   }
 
   public enum Grouping {
-    DAY,
-    WEEK
+    DAY, WEEK
   }
 
   public static String label(Enum<?> value) {
@@ -35,8 +31,10 @@ public final class ReportingModels {
 
   public record DateRange(LocalDate from, LocalDate to) {
     public DateRange {
-      if (from == null || to == null || from.isAfter(to) || to.equals(LocalDate.MAX)) {
-        throw new IllegalArgumentException("Choose a valid start date and end date.");
+      if (from == null || to == null || from.isAfter(to)
+          || to.equals(LocalDate.MAX)) {
+        throw new IllegalArgumentException(
+            "Choose a valid start date and end date.");
       }
     }
 
@@ -50,8 +48,8 @@ public final class ReportingModels {
 
     public String display() {
       return from.format(DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH))
-          + " – "
-          + to.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH));
+          + " – " + to.format(
+              DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH));
     }
   }
 
@@ -81,13 +79,8 @@ public final class ReportingModels {
     }
   }
 
-  public record OrderRow(
-      int orderId,
-      String tableName,
-      String employeeName,
-      LocalDateTime createdAt,
-      OrderStatus status,
-      BigDecimal totalAmount,
+  public record OrderRow(int orderId, String tableName, String employeeName,
+      LocalDateTime createdAt, OrderStatus status, BigDecimal totalAmount,
       String notes) {
     public String code() {
       return "ORD-" + orderId;
@@ -98,8 +91,8 @@ public final class ReportingModels {
     }
   }
 
-  public record OrderLine(
-      int detailId, String itemName, int quantity, BigDecimal unitPrice, String preparationStatus) {
+  public record OrderLine(int detailId, String itemName, int quantity,
+      BigDecimal unitPrice, String preparationStatus) {
     public BigDecimal lineTotal() {
       return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
@@ -114,29 +107,22 @@ public final class ReportingModels {
     }
   }
 
-  public record OrderDetails(OrderRow order, List<OrderLine> items, List<PaymentRow> payments) {
+  public record OrderDetails(OrderRow order, List<OrderLine> items,
+      List<PaymentRow> payments) {
     public OrderDetails {
       items = List.copyOf(items);
       payments = List.copyOf(payments);
     }
 
     public BigDecimal calculatedTotal() {
-      return items.stream()
-          .filter(item -> !item.cancelled())
-          .map(OrderLine::lineTotal)
-          .reduce(BigDecimal.ZERO, BigDecimal::add);
+      return items.stream().filter(item -> !item.cancelled())
+          .map(OrderLine::lineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
   }
 
-  public record PaymentRow(
-      int paymentId,
-      int orderId,
-      LocalDateTime paymentTime,
-      BigDecimal amount,
-      String paymentMethod,
-      PaymentStatus status,
-      String transactionReference,
-      String tableName,
+  public record PaymentRow(int paymentId, int orderId,
+      LocalDateTime paymentTime, BigDecimal amount, String paymentMethod,
+      PaymentStatus status, String transactionReference, String tableName,
       OrderStatus orderStatus) {
     public String code() {
       return "PAY-" + paymentId;
@@ -151,7 +137,8 @@ public final class ReportingModels {
     }
 
     public boolean includedInRevenue() {
-      return status == PaymentStatus.SUCCESSFUL && orderStatus == OrderStatus.COMPLETED;
+      return status == PaymentStatus.SUCCESSFUL
+          && orderStatus == OrderStatus.COMPLETED;
     }
   }
 
@@ -161,40 +148,31 @@ public final class ReportingModels {
     }
   }
 
-  public record RevenueSummary(
-      BigDecimal totalRevenue,
-      long successful,
-      long pending,
-      long failed,
-      long inconsistentSuccessful) {
+  public record RevenueSummary(BigDecimal totalRevenue, long successful,
+      long pending, long failed, long inconsistentSuccessful) {
     public long excluded() {
       return pending + failed + inconsistentSuccessful;
     }
   }
 
-  public record DailyRevenue(LocalDate date, long transactions, BigDecimal amount) {}
+  public record DailyRevenue(LocalDate date, long transactions,
+      BigDecimal amount) {
+  }
 
-  public record ChartPoint(
-      LocalDate start,
-      LocalDate end,
-      long transactions,
-      BigDecimal amount,
-      BigDecimal heightPercent) {
+  public record ChartPoint(LocalDate start, LocalDate end, long transactions,
+      BigDecimal amount, BigDecimal heightPercent) {
     public String display() {
-      DateTimeFormatter format = DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH);
+      DateTimeFormatter format = DateTimeFormatter.ofPattern("dd MMM",
+          Locale.ENGLISH);
       return start.equals(end)
           ? start.format(format)
           : start.format(format) + " – " + end.format(format);
     }
   }
 
-  public record RevenueReport(
-      DateRange range,
-      Grouping grouping,
-      RevenueSummary summary,
-      List<ChartPoint> points,
-      List<PaymentRow> recentPayments,
-      BigDecimal chartCeiling) {
+  public record RevenueReport(DateRange range, Grouping grouping,
+      RevenueSummary summary, List<ChartPoint> points,
+      List<PaymentRow> recentPayments, BigDecimal chartCeiling) {
     public RevenueReport {
       points = List.copyOf(points);
       recentPayments = List.copyOf(recentPayments);
@@ -202,12 +180,8 @@ public final class ReportingModels {
 
     public List<BigDecimal> axisTicks() {
       BigDecimal step = chartCeiling.divide(BigDecimal.valueOf(4));
-      return List.of(
-          chartCeiling,
-          step.multiply(BigDecimal.valueOf(3)),
-          step.multiply(BigDecimal.valueOf(2)),
-          step,
-          BigDecimal.ZERO);
+      return List.of(chartCeiling, step.multiply(BigDecimal.valueOf(3)),
+          step.multiply(BigDecimal.valueOf(2)), step, BigDecimal.ZERO);
     }
   }
 }

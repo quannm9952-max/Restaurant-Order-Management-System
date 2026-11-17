@@ -16,6 +16,8 @@
           <a href="/tables" class="close-dialog" aria-label="Close">&#215;</a>
         </div>
         <div class="dialog-body">
+          <p class="notice error" role="alert" th:if="${errorMessage}"
+             th:text="${errorMessage}"></p>
           <input type="hidden" name="id" th:value="${table.id}" />
           <div class="field">
             <label for="name">Table name</label

@@ -9,8 +9,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 /**
- * Tells Spring Security how to find a user: look the username up in the Account table. Other team
- * members never need to touch this file.
+ * Tells Spring Security how to find a user: look the username up in the Account
+ * table. Other team members never need to touch this file.
  */
 @Service
 public class AccountUserDetailsService implements UserDetailsService {
@@ -22,15 +22,13 @@ public class AccountUserDetailsService implements UserDetailsService {
   }
 
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    Account account =
-        accountRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
+  public UserDetails loadUserByUsername(String username)
+      throws UsernameNotFoundException {
+    Account account = accountRepository.findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
 
     return User.withUsername(account.getUsername())
-        .password(account.getPasswordHash())
-        .roles(account.getRole().name()) // becomes ROLE_MANAGER, ROLE_WAITER, ...
+        .password(account.getPasswordHash()).roles(account.getRole().name())
         .disabled(!account.isActive()) // is_active = false -> cannot log in
         .build();
   }

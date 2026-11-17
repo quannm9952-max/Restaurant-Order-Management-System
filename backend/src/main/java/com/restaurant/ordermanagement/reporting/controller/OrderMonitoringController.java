@@ -13,22 +13,22 @@ public class OrderMonitoringController {
   private final MonitoringService monitoring;
   private final ReportingFilters filters;
 
-  public OrderMonitoringController(MonitoringService monitoring, ReportingFilters filters) {
+  public OrderMonitoringController(MonitoringService monitoring,
+      ReportingFilters filters) {
     this.monitoring = monitoring;
     this.filters = filters;
   }
 
   @GetMapping("/manager/orders")
-  String orders(
-      @RequestParam(defaultValue = "") String q,
+  String orders(@RequestParam(defaultValue = "") String q,
       @RequestParam(required = false) String status,
-      @RequestParam(defaultValue = "0") int page,
-      Model model) {
+      @RequestParam(defaultValue = "0") int page, Model model) {
     OrderStatus selected = filters.status(status, OrderStatus.class);
     model.addAttribute("result", monitoring.orders(q, selected, page));
     model.addAttribute("orderCounts", monitoring.orderCounts(q));
     model.addAttribute("q", q.trim());
-    model.addAttribute("selectedStatus", selected == null ? "ALL" : selected.name());
+    model.addAttribute("selectedStatus",
+        selected == null ? "ALL" : selected.name());
     model.addAttribute("section", "orders");
     return "reports/orders";
   }

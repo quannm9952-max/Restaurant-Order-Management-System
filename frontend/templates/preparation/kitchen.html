@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{shared/shell :: head('Kitchen Management')}"></head>
+  <body>
+    <aside th:replace="~{shared/shell :: sidebar('kitchen')}"></aside>
+    <header
+      th:replace="~{shared/shell :: header('Kitchen Management')}"
+    ></header>
+    <main
+      class="main-content preparation-workspace"
+      data-preparation-board
+      data-updates-url="/kitchen/updates"
+      th:attr="data-revision=${queue.revision}"
+    >
+      <section
+        th:replace="~{shared/shell :: heading('Kitchen Management','Track each item and move it to the next cooking stage.')}"
+      ></section>
+      <div th:replace="~{shared/shell :: flash}"></div>
+      <section class="panel prep-toolbar">
+        <nav class="prep-tabs" aria-label="Cooking stage">
+          <a
+            th:each="state : ${ {'PENDING','PREPARING','READY'} }"
+            th:href="@{/kitchen(status=${state})}"
+            th:classappend="${selectedStatus == state} ? 'selected'"
+            th:attr="data-stage=${#strings.toLowerCase(state)}"
+          >
+            <i></i
+            ><span
+              th:text="${#strings.capitalize(#strings.toLowerCase(state))}"
+            ></span
+            ><b th:text="${queue.counts[state]}"></b>
+          </a>
+        </nav>
+        <div class="prep-toolbar-note">
+          <span
+            th:text="'Orders containing ' + ${#strings.capitalize(#strings.toLowerCase(selectedStatus))} + ' items'"
+          ></span
+          ><small>Other item statuses stay visible for context</small>
+        </div>
+        <a
+          class="prep-refresh"
+          th:href="@{/kitchen(status=${selectedStatus})}"
+          title="Refresh kitchen"
+          aria-label="Refresh kitchen"
+          >↻</a
+        >
+      </section>
+      <section class="prep-board" aria-label="Kitchen order items">
+        <article
+          class="panel preparation-card"
+          th:each="order : ${queue.orders}"
+          th:classappend="${#strings.toLowerCase(selectedStatus)}"
+          th:attr="data-order-id=${order.orderId}"
+        >
+          <header class="prep-card-heading">
+            <h2 th:text="${order.tableName}"></h2>
+            <div>
+              <strong th:text="'ORD-' + ${order.orderId}"></strong
+              ><small
+                th:text="${#lists.size(order.lines)} + ' item lines'"
+                th:title="${#temporals.format(order.createdAt,'dd MMM yyyy · HH:mm')}"
+              ></small>
+            </div>
+          </header>
+          <p
+            class="prep-order-note"
+            th:if="${order.orderNote != null and !#strings.isEmpty(order.orderNote)}"
+          >
+            <strong>Order note:</strong>
+            <span th:text="${order.orderNote}"></span>
+          </p>
+          <div class="prep-card-lines">
+            <div
+              class="prep-line"
+              th:each="line : ${order.lines}"
+              th:classappend="${(line.status.name() == selectedStatus ? 'focused ' : '') + #strings.toLowerCase(line.status.name())}"
+              th:attr="data-line-id=${line.lineId}"
+            >
+              <span class="prep-qty" th:text="${line.quantity}"></span>
+              <div class="prep-line-info">
+                <h3 th:text="${line.itemName}"></h3>
+                <span
+                  class="status-chip"
+                  th:classappend="${#strings.toLowerCase(line.status.name())}"
+                  th:text="${line.statusLabel()}"
+                ></span>
+              </div>
+              <button
+                class="btn btn-primary prep-action"
+                type="button"
+                th:if="${line.status.name() == 'PENDING'}"
+                th:attr="data-open-dialog='start-' + ${line.lineId}"
+              >
+                Start Preparing
+              </button>
+              <button
+                class="btn btn-navy prep-action"
+                type="button"
+                th:if="${line.status.name() == 'PREPARING'}"
+                th:attr="data-open-dialog='ready-' + ${line.lineId}"
+              >
+                ✓ &nbsp; Mark Ready
+              </button>
+              <button
+                class="btn prep-action"
+                disabled
+                th:if="${line.status.name() == 'READY'}"
+              >
+                Awaiting Waiter
+              </button>
+              <button
+                class="btn prep-action"
+                disabled
+                th:if="${line.status.name() == 'SERVED'}"
+              >
+                Already Served
+              </button>
+              <button
+                class="btn prep-action"
+                disabled
+                th:if="${line.status.name() == 'CANCELLED'}"
+              >
+                No Action
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+      <section class="panel prep-empty" th:if="${#lists.isEmpty(queue.orders)}">
+        <span class="module-icon"
+          ><img src="/images/tv5/checkcircle.svg" alt=""
+        /></span>
+        <h2
+          th:text="'No ' + ${#strings.toLowerCase(selectedStatus)} + ' items'"
+        ></h2>
+        <p>There are no Open orders containing items in this stage.</p>
+        <a
+          class="btn btn-outline-secondary"
+          th:href="@{/kitchen(status=${selectedStatus})}"
+          >Refresh kitchen</a
+        >
+      </section>
+      <p class="footnote">
+        Pending → Preparing → Ready. Each item updates independently. Chef
+        access ends at Ready; serving is handled by the Waiter.
+      </p>
+      <p class="prep-sync-note" data-preparation-sync>
+        Updates automatically every 15 seconds. Refresh pauses while a
+        confirmation or filter is open.
+      </p>
+    </main>
+    <th:block th:each="order : ${queue.orders}"
+      ><th:block th:each="line : ${order.lines}">
+        <dialog
+          class="app-dialog prep-dialog"
+          th:if="${line.status.name() == 'PENDING' or line.status.name() == 'PREPARING'}"
+          th:id="${(line.status.name() == 'PENDING' ? 'start-' : 'ready-') + line.lineId}"
+        >
+          <form
+            th:action="@{/kitchen/orders/{id}/items/{line}/{action}(id=${order.orderId},line=${line.lineId},action=${line.status.name() == 'PENDING' ? 'start' : 'ready'})}"
+            method="post"
+            data-preparation-action
+          >
+            <input type="hidden" name="status" th:value="${selectedStatus}" />
+            <div class="dialog-head">
+              <div class="prep-dialog-title">
+                <span class="module-icon"
+                  ><img
+                    th:src="${line.status.name() == 'PENDING' ? '/images/tv5/clock.svg' : '/images/tv5/check.svg'}"
+                    alt=""
+                /></span>
+                <div>
+                  <h2
+                    th:text="${line.status.name() == 'PENDING' ? 'Start Preparing Item' : 'Mark Item Ready'}"
+                  ></h2>
+                  <p
+                    th:text="'ORD-' + ${order.orderId} + ' · ' + ${order.tableName}"
+                  ></p>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="close-dialog"
+                data-close-dialog
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div class="dialog-body">
+              <h3
+                class="prep-confirm-item"
+                th:text="${line.quantity} + ' × ' + ${line.itemName}"
+              ></h3>
+              <p>Change the cooking status for this item line?</p>
+              <div class="prep-transition">
+                <span
+                  class="status-chip"
+                  th:classappend="${#strings.toLowerCase(line.status.name())}"
+                  th:text="${line.statusLabel()}"
+                ></span
+                ><span class="prep-arrow">→</span
+                ><span
+                  class="status-chip"
+                  th:classappend="${line.status.name() == 'PENDING' ? 'preparing' : 'ready'}"
+                  th:text="${line.status.name() == 'PENDING' ? 'Preparing' : 'Ready'}"
+                ></span>
+              </div>
+              <p class="prep-confirm-note">
+                Only this item line will change.<br />Other items in the order
+                keep their current status.
+              </p>
+            </div>
+            <div class="dialog-footer">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                data-close-dialog
+              >
+                Go Back</button
+              ><button
+                class="btn btn-primary"
+                type="submit"
+                th:text="${line.status.name() == 'PENDING' ? 'Start Preparing' : 'Mark Ready'}"
+              ></button>
+            </div>
+          </form>
+        </dialog> </th:block
+    ></th:block>
+  </body>
+</html>

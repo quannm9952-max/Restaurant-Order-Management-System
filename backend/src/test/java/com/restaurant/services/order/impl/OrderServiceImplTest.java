@@ -37,17 +37,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {
 
-  @Mock private OrderRepository orderRepository;
+  @Mock
+  private OrderRepository orderRepository;
 
-  @Mock private TableRepository tableRepository;
+  @Mock
+  private TableRepository tableRepository;
 
-  @Mock private MenuItemRepository menuItemRepository;
+  @Mock
+  private MenuItemRepository menuItemRepository;
 
-  @Mock private PaymentRepository paymentRepository;
+  @Mock
+  private PaymentRepository paymentRepository;
 
-  @Mock private ICurrentEmployeeService currentEmployeeService;
+  @Mock
+  private ICurrentEmployeeService currentEmployeeService;
 
-  @InjectMocks private OrderServiceImpl orderService;
+  @InjectMocks
+  private OrderServiceImpl orderService;
 
   private RestaurantTable table;
   private Employee employee;
@@ -56,9 +62,8 @@ class OrderServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    lenient()
-        .when(orderRepository.lockForUpdate(any()))
-        .thenAnswer(inv -> orderRepository.findByIdWithDetails(inv.getArgument(0)));
+    lenient().when(orderRepository.lockForUpdate(any())).thenAnswer(
+        inv -> orderRepository.findByIdWithDetails(inv.getArgument(0)));
     account = new Account();
     account.setId(1);
     account.setUsername("waiter_demo");
@@ -81,7 +86,8 @@ class OrderServiceImplTest {
     menuItem.setPrice(new BigDecimal("55000"));
     menuItem.setIsAvailable(true);
 
-    lenient().when(currentEmployeeService.getCurrentEmployee()).thenReturn(employee);
+    lenient().when(currentEmployeeService.getCurrentEmployee())
+        .thenReturn(employee);
   }
 
   // ==================== CREATE ORDER TESTS ====================
@@ -91,11 +97,14 @@ class OrderServiceImplTest {
     OrderLine line = new OrderLine(1, 2);
     List<OrderLine> lines = List.of(line);
 
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
     when(menuItemRepository.findById(1)).thenReturn(Optional.of(menuItem));
-    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
-    when(tableRepository.save(any(RestaurantTable.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+    when(tableRepository.save(any(RestaurantTable.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     Order order = orderService.createOrder(1, "Góc yên tĩnh", lines);
 
@@ -104,10 +113,11 @@ class OrderServiceImplTest {
     assertEquals(0, new BigDecimal("110000").compareTo(order.getTotalAmount()));
     assertEquals(1, order.getDetails().size());
     assertEquals("Phở bò", order.getDetails().get(0).getItemNameAtOrder());
-    assertEquals(
-        0, new BigDecimal("55000").compareTo(order.getDetails().get(0).getUnitPriceAtOrder()));
+    assertEquals(0, new BigDecimal("55000")
+        .compareTo(order.getDetails().get(0).getUnitPriceAtOrder()));
     assertEquals(2, order.getDetails().get(0).getQuantity());
-    assertEquals(CookingStatus.PENDING, order.getDetails().get(0).getCookingStatus());
+    assertEquals(CookingStatus.PENDING,
+        order.getDetails().get(0).getCookingStatus());
     assertEquals(employee, order.getEmployee());
 
     assertEquals(TableStatus.OCCUPIED, table.getStatus());
@@ -118,11 +128,11 @@ class OrderServiceImplTest {
   @Test
   void createOrder_tableNotFound_shouldThrowNotFoundException() {
     OrderLine line = new OrderLine(1, 1);
-    when(tableRepository.findByIdWithPessimisticLock(999)).thenReturn(Optional.empty());
+    when(tableRepository.findByIdWithPessimisticLock(999))
+        .thenReturn(Optional.empty());
 
-    NotFoundException ex =
-        assertThrows(
-            NotFoundException.class, () -> orderService.createOrder(999, null, List.of(line)));
+    NotFoundException ex = assertThrows(NotFoundException.class,
+        () -> orderService.createOrder(999, null, List.of(line)));
     assertTrue(ex.getMessage().contains("Không tìm thấy bàn"));
   }
 
@@ -130,11 +140,11 @@ class OrderServiceImplTest {
   void createOrder_tableOccupied_shouldThrowBusinessException() {
     table.setStatus(TableStatus.OCCUPIED);
     OrderLine line = new OrderLine(1, 1);
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class, () -> orderService.createOrder(1, null, List.of(line)));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.createOrder(1, null, List.of(line)));
     assertTrue(ex.getMessage().contains("OCCUPIED"));
   }
 
@@ -142,49 +152,49 @@ class OrderServiceImplTest {
   void createOrder_tableOutOfService_shouldThrowBusinessException() {
     table.setStatus(TableStatus.OUT_OF_SERVICE);
     OrderLine line = new OrderLine(1, 1);
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class, () -> orderService.createOrder(1, null, List.of(line)));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.createOrder(1, null, List.of(line)));
     assertTrue(ex.getMessage().contains("OUT_OF_SERVICE"));
   }
 
   @Test
   void createOrder_tableHasOpenOrder_shouldThrowBusinessException() {
     OrderLine line = new OrderLine(1, 1);
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(true);
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class, () -> orderService.createOrder(1, null, List.of(line)));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.createOrder(1, null, List.of(line)));
     assertTrue(ex.getMessage().contains("đã có đơn OPEN"));
   }
 
   @Test
   void createOrder_emptyLines_shouldThrowBusinessException() {
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.createOrder(1, null, List.of()));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.createOrder(1, null, List.of()));
     assertTrue(ex.getMessage().contains("ít nhất 1 dòng món"));
   }
 
   @Test
   void createOrder_nullLines_shouldThrowBusinessException() {
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.createOrder(1, null, null));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.createOrder(1, null, null));
     assertTrue(ex.getMessage().contains("ít nhất 1 dòng món"));
   }
 
   @Test
   void createOrder_quantityLessThanOne_shouldThrowBusinessException() {
     OrderLine line = new OrderLine(1, 0);
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class, () -> orderService.createOrder(1, null, List.of(line)));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.createOrder(1, null, List.of(line)));
     assertTrue(ex.getMessage().contains(">= 1"));
   }
 
@@ -192,26 +202,26 @@ class OrderServiceImplTest {
   void createOrder_unavailableItem_shouldThrowBusinessException() {
     menuItem.setIsAvailable(false);
     OrderLine line = new OrderLine(1, 1);
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
     when(menuItemRepository.findById(1)).thenReturn(Optional.of(menuItem));
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class, () -> orderService.createOrder(1, null, List.of(line)));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.createOrder(1, null, List.of(line)));
     assertTrue(ex.getMessage().contains("đang ngừng bán"));
   }
 
   @Test
   void createOrder_itemNotFound_shouldThrowNotFoundException() {
     OrderLine line = new OrderLine(999, 1);
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
     when(menuItemRepository.findById(999)).thenReturn(Optional.empty());
 
-    NotFoundException ex =
-        assertThrows(
-            NotFoundException.class, () -> orderService.createOrder(1, null, List.of(line)));
+    NotFoundException ex = assertThrows(NotFoundException.class,
+        () -> orderService.createOrder(1, null, List.of(line)));
     assertTrue(ex.getMessage().contains("Không tìm thấy món"));
   }
 
@@ -240,15 +250,16 @@ class OrderServiceImplTest {
     newItem.setIsAvailable(true);
     when(menuItemRepository.findById(2)).thenReturn(Optional.of(newItem));
 
-    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     OrderLine line = new OrderLine(2, 3);
     Order result = orderService.addItemToOrder(1, List.of(line));
 
     assertEquals(1, result.getDetails().size());
     assertEquals("Cà phê", result.getDetails().get(0).getItemNameAtOrder());
-    assertEquals(
-        0, new BigDecimal("25000").compareTo(result.getDetails().get(0).getUnitPriceAtOrder()));
+    assertEquals(0, new BigDecimal("25000")
+        .compareTo(result.getDetails().get(0).getUnitPriceAtOrder()));
     assertEquals(3, result.getDetails().get(0).getQuantity());
     assertEquals(0, new BigDecimal("75000").compareTo(result.getTotalAmount()));
   }
@@ -260,8 +271,8 @@ class OrderServiceImplTest {
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
     OrderLine line = new OrderLine(1, 1);
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.addItemToOrder(1, List.of(line)));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.addItemToOrder(1, List.of(line)));
     assertTrue(ex.getMessage().contains("không ở trạng thái OPEN"));
   }
 
@@ -282,7 +293,8 @@ class OrderServiceImplTest {
     order.setTotalAmount(new BigDecimal("275000"));
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
-    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     OrderDetail result = orderService.reduceItemQuantity(1, 1, 3);
 
@@ -302,8 +314,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.reduceItemQuantity(1, 1, 3));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.reduceItemQuantity(1, 1, 3));
     assertTrue(ex.getMessage().contains("PREPARING"));
   }
 
@@ -319,8 +331,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.reduceItemQuantity(1, 1, 5));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.reduceItemQuantity(1, 1, 5));
     assertTrue(ex.getMessage().contains("nhỏ hơn số lượng hiện tại"));
   }
 
@@ -336,8 +348,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.reduceItemQuantity(1, 1, 0));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.reduceItemQuantity(1, 1, 0));
     assertTrue(ex.getMessage().contains(">= 1"));
   }
 
@@ -358,7 +370,8 @@ class OrderServiceImplTest {
     order.setTotalAmount(new BigDecimal("110000"));
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
-    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     OrderDetail result = orderService.cancelOrderDetail(1, 1);
 
@@ -378,8 +391,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.cancelOrderDetail(1, 1));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.cancelOrderDetail(1, 1));
     assertTrue(ex.getMessage().contains("READY"));
   }
 
@@ -395,8 +408,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.cancelOrderDetail(1, 1));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.cancelOrderDetail(1, 1));
     assertTrue(ex.getMessage().contains("CANCELLED"));
   }
 
@@ -406,22 +419,25 @@ class OrderServiceImplTest {
   void createOrder_priceShouldNotChange_whenMenuItemPriceChanges() {
     // Create order with item at price 55000
     OrderLine line = new OrderLine(1, 2);
-    when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+    when(tableRepository.findByIdWithPessimisticLock(1))
+        .thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
     when(menuItemRepository.findById(1)).thenReturn(Optional.of(menuItem));
-    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
-    when(tableRepository.save(any(RestaurantTable.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+    when(tableRepository.save(any(RestaurantTable.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     Order order = orderService.createOrder(1, null, List.of(line));
-    assertEquals(
-        0, new BigDecimal("55000").compareTo(order.getDetails().get(0).getUnitPriceAtOrder()));
+    assertEquals(0, new BigDecimal("55000")
+        .compareTo(order.getDetails().get(0).getUnitPriceAtOrder()));
 
     // Change menu item price
     menuItem.setPrice(new BigDecimal("70000"));
 
     // The order detail should still have the old price
-    assertEquals(
-        0, new BigDecimal("55000").compareTo(order.getDetails().get(0).getUnitPriceAtOrder()));
+    assertEquals(0, new BigDecimal("55000")
+        .compareTo(order.getDetails().get(0).getUnitPriceAtOrder()));
     assertEquals(0, new BigDecimal("110000").compareTo(order.getTotalAmount()));
   }
 
@@ -441,8 +457,10 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
     when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(false);
-    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
-    when(tableRepository.save(any(RestaurantTable.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+    when(tableRepository.save(any(RestaurantTable.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     Order result = orderService.cancelOrder(1, "Đổi ý");
 
@@ -450,7 +468,8 @@ class OrderServiceImplTest {
     assertEquals(0, BigDecimal.ZERO.compareTo(result.getTotalAmount()));
     assertTrue(result.getNote().contains("Lý do hủy: Đổi ý"));
     assertEquals(TableStatus.AVAILABLE, table.getStatus());
-    assertEquals(CookingStatus.CANCELLED, result.getDetails().get(0).getCookingStatus());
+    assertEquals(CookingStatus.CANCELLED,
+        result.getDetails().get(0).getCookingStatus());
   }
 
   @Test
@@ -459,8 +478,8 @@ class OrderServiceImplTest {
     order.setStatus(OrderStatus.COMPLETED);
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.cancelOrder(1, null));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.cancelOrder(1, null));
     assertTrue(ex.getMessage().contains("không ở trạng thái OPEN"));
   }
 
@@ -475,8 +494,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.cancelOrder(1, null));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.cancelOrder(1, null));
     assertTrue(ex.getMessage().contains("PREPARING"));
   }
 
@@ -491,8 +510,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.cancelOrder(1, null));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.cancelOrder(1, null));
     assertTrue(ex.getMessage().contains("READY"));
   }
 
@@ -507,8 +526,8 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.cancelOrder(1, null));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.cancelOrder(1, null));
     assertTrue(ex.getMessage().contains("SERVED"));
   }
 
@@ -524,8 +543,8 @@ class OrderServiceImplTest {
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
     when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(true);
 
-    BusinessException ex =
-        assertThrows(BusinessException.class, () -> orderService.cancelOrder(1, null));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> orderService.cancelOrder(1, null));
     assertTrue(ex.getMessage().contains("thanh toán thành công"));
   }
 
@@ -551,8 +570,10 @@ class OrderServiceImplTest {
 
     when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
     when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(false);
-    when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
-    when(tableRepository.save(any(RestaurantTable.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+    when(tableRepository.save(any(RestaurantTable.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
     Order result = orderService.cancelOrder(1, null);
 
@@ -568,8 +589,8 @@ class OrderServiceImplTest {
   void getOrderDetail_notFound_shouldThrowNotFoundException() {
     when(orderRepository.findByIdWithDetails(999)).thenReturn(Optional.empty());
 
-    NotFoundException ex =
-        assertThrows(NotFoundException.class, () -> orderService.getOrderDetail(999));
+    NotFoundException ex = assertThrows(NotFoundException.class,
+        () -> orderService.getOrderDetail(999));
     assertTrue(ex.getMessage().contains("Không tìm thấy đơn"));
   }
 
@@ -587,7 +608,8 @@ class OrderServiceImplTest {
     order.getDetails().add(detail);
     order.setTotalAmount(new BigDecimal("110000"));
 
-    when(orderRepository.findByStatusWithDetails(OrderStatus.OPEN)).thenReturn(List.of(order));
+    when(orderRepository.findByStatusWithDetails(OrderStatus.OPEN))
+        .thenReturn(List.of(order));
 
     List<OrderSummaryView> result = orderService.listOpenOrders();
 
@@ -618,7 +640,8 @@ class OrderServiceImplTest {
     detail2.setCookingStatus(CookingStatus.CANCELLED);
     order.getDetails().add(detail2);
 
-    when(orderRepository.findByStatusWithDetails(OrderStatus.OPEN)).thenReturn(List.of(order));
+    when(orderRepository.findByStatusWithDetails(OrderStatus.OPEN))
+        .thenReturn(List.of(order));
 
     List<OrderSummaryView> result = orderService.listOpenOrders();
     assertEquals(1, result.get(0).itemCount());
@@ -797,7 +820,8 @@ class OrderServiceImplTest {
 
   @Test
   void listAvailableItems_shouldReturnMenuItemOptions() {
-    when(menuItemRepository.findByIsAvailableTrue()).thenReturn(List.of(menuItem));
+    when(menuItemRepository.findByIsAvailableTrue())
+        .thenReturn(List.of(menuItem));
 
     List<MenuItemOption> result = orderService.listAvailableItems();
 

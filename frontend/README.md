@@ -3,10 +3,11 @@ Server-rendered HTML, Thymeleaf, CSS, JavaScript and Bootstrap. Maven packages t
 
 - templates/shared: role-aware navigation.
 - templates/employees, tables, orders: member 1/2 views.
+- templates/preparation: member 3 kitchen and serving queues, confirmation dialogs and empty states.
 - templates/menu.html, payments.html, invoice.html: member 4 views.
 - templates/reports, payment-history, reporting: member 5 views.
 - static: local CSS, JavaScript, Bootstrap, fonts and menu images.
 
-Read the root README for startup and docs/INTEGRATION.md for the deferred member 3 module.
+Read the root README for startup and docs/INTEGRATION.md for the shared integration and complete order-to-payment workflow.
 
 The supplied Figma PNG references are documented in `docs/FIGMA-AUDIT.md`. `templates/shared/shell.html` owns navigation, header, alerts and shared document assets. `workspace.css` styles the integrated modules; the existing reporting styles cover report-specific content. Role-specific interactions live in separate local scripts, with no frontend build or CDN dependency.

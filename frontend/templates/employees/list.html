@@ -234,7 +234,11 @@
           >
         </div>
         <div class="dialog-body">
-          <input type="hidden" name="id" th:value="${form.id}" /><input type="hidden" name="position" th:value="${form.position}" />
+          <input type="hidden" name="id" th:value="${form.id}" /><input
+            type="hidden"
+            name="position"
+            th:value="${form.position}"
+          />
           <div
             th:if="${error}"
             class="notice danger"

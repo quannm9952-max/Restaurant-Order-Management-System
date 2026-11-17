@@ -36,7 +36,8 @@ public class OrderDetail {
   @Column(name = "quantity", nullable = false)
   private Integer quantity;
 
-  @Column(name = "unit_price_at_order", nullable = false, precision = 12, scale = 2)
+  @Column(name = "unit_price_at_order", nullable = false, precision = 12,
+      scale = 2)
   private BigDecimal unitPriceAtOrder;
 
   @Size(max = 150)

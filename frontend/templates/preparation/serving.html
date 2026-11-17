@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{shared/shell :: head('Serving Management')}"></head>
+  <body>
+    <aside th:replace="~{shared/shell :: sidebar('serving')}"></aside>
+    <header
+      th:replace="~{shared/shell :: header('Serving Management')}"
+    ></header>
+    <main
+      class="main-content preparation-workspace"
+      data-preparation-board
+      data-updates-url="/serving/updates"
+      th:attr="data-revision=${queue.revision}"
+    >
+      <section class="page-heading">
+        <div>
+          <div class="title-line">
+            <h1>Serving Management</h1>
+            <span class="manager-badge">Waiter access</span>
+          </div>
+          <p>Confirm prepared dishes as served, one item line at a time.</p>
+        </div>
+        <div class="prep-transition-label">
+          <span class="status-chip ready">Ready</span
+          ><span class="prep-arrow">→</span
+          ><span class="status-chip served">Served</span>
+        </div>
+      </section>
+      <div th:replace="~{shared/shell :: flash}"></div>
+      <form
+        class="panel prep-toolbar serving-filters"
+        action="/serving"
+        method="get"
+      >
+        <label class="visually-hidden" for="table-filter">Table</label
+        ><select
+          id="table-filter"
+          class="form-select"
+          name="tableId"
+          onchange="this.form.submit()"
+        >
+          <option value="">All tables</option>
+          <option
+            th:each="table : ${queue.tables}"
+            th:value="${table.id}"
+            th:selected="${selectedTableId == table.id}"
+            th:text="${table.name}"
+          ></option>
+        </select>
+        <div class="search-field">
+          <img src="/images/tv5/search.svg" alt="" /><input
+            class="form-control"
+            type="search"
+            name="q"
+            th:value="${q}"
+            maxlength="100"
+            placeholder="Search food, table or order..."
+            aria-label="Search ready items"
+          />
+        </div>
+        <button class="btn btn-outline-secondary prep-search" type="submit">
+          Search</button
+        ><span class="status-chip ready">Ready</span
+        ><span
+          class="prep-ready-total"
+          th:text="${queue.lineCount} + ' Ready lines · ' + ${queue.tableCount} + ' tables'"
+        ></span>
+      </form>
+      <div class="flex-row spread prep-board-label">
+        <h2>Ready to serve</h2>
+        <small>Confirm each order item line separately</small>
+      </div>
+      <section class="prep-board" aria-label="Ready order items">
+        <article
+          class="panel preparation-card serving-card"
+          th:each="order : ${queue.orders}"
+          th:attr="data-order-id=${order.orderId}"
+        >
+          <header class="prep-card-heading">
+            <h2 th:text="${order.tableName}"></h2>
+            <div>
+              <strong th:text="'ORD-' + ${order.orderId}"></strong
+              ><small
+                th:text="${#lists.size(order.lines)} + ' Ready item lines'"
+              ></small>
+            </div>
+          </header>
+          <p
+            class="prep-order-note"
+            th:if="${order.orderNote != null and !#strings.isEmpty(order.orderNote)}"
+          >
+            <strong>Order note:</strong>
+            <span th:text="${order.orderNote}"></span>
+          </p>
+          <div class="prep-card-lines">
+            <div
+              class="prep-line ready"
+              th:each="line : ${order.lines}"
+              th:attr="data-line-id=${line.lineId}"
+            >
+              <span class="prep-qty"
+                ><small>QTY</small><b th:text="${line.quantity}"></b
+              ></span>
+              <div class="prep-line-info">
+                <h3 th:text="${line.itemName}"></h3>
+                <small
+                  class="prep-line-meta"
+                  th:text="${order.tableName} + ' · Line ' + ${line.lineId}"
+                ></small
+                ><span class="status-chip ready">Ready</span>
+              </div>
+              <button
+                class="btn btn-primary prep-action"
+                type="button"
+                th:attr="data-open-dialog='served-' + ${line.lineId}"
+              >
+                Confirm Served
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+      <section class="panel prep-empty" th:if="${#lists.isEmpty(queue.orders)}">
+        <span class="module-icon"
+          ><img src="/images/tv5/checkcircle.svg" alt=""
+        /></span>
+        <h2>No Ready items</h2>
+        <p
+          th:text="${q != '' or selectedTableId != null ? 'No Ready item lines match these filters.' : 'New items appear here when the Chef marks them Ready.'}"
+        ></p>
+        <a class="btn btn-outline-secondary" href="/serving"
+          >Refresh / Clear filters</a
+        >
+      </section>
+      <section class="panel prep-serving-note">
+        <img src="/images/tv5/info.svg" alt="" />
+        <div>
+          <strong>Confirm only after the dishes have reached the table.</strong>
+          <p>
+            Each line updates independently. A Served item cannot be confirmed
+            again.
+          </p>
+        </div>
+        <div class="prep-transition-label">
+          <span class="status-chip ready">Ready</span
+          ><span class="prep-arrow">→</span
+          ><span class="status-chip served">Served</span>
+        </div>
+      </section>
+      <p class="footnote">
+        Only Ready → Served is allowed in this workspace. Closed orders are
+        excluded.
+      </p>
+      <p class="prep-sync-note" data-preparation-sync>
+        Updates automatically every 15 seconds. Refresh pauses while a
+        confirmation or filter is open.
+      </p>
+    </main>
+    <th:block th:each="order : ${queue.orders}"
+      ><dialog
+        class="app-dialog prep-dialog"
+        th:each="line : ${order.lines}"
+        th:id="'served-' + ${line.lineId}"
+      >
+        <form
+          th:action="@{/serving/orders/{id}/items/{line}/served(id=${order.orderId},line=${line.lineId})}"
+          method="post"
+          data-preparation-action
+        >
+          <input
+            type="hidden"
+            name="tableId"
+            th:value="${selectedTableId}"
+          /><input type="hidden" name="q" th:value="${q}" />
+          <div class="dialog-head">
+            <div class="prep-dialog-title">
+              <span class="module-icon"
+                ><img src="/images/tv5/check.svg" alt=""
+              /></span>
+              <div>
+                <h2>Confirm Item Served</h2>
+                <p
+                  th:text="'ORD-' + ${order.orderId} + ' · ' + ${order.tableName}"
+                ></p>
+              </div>
+            </div>
+            <button
+              class="close-dialog"
+              type="button"
+              data-close-dialog
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div class="dialog-body">
+            <h3
+              class="prep-confirm-item"
+              th:text="${line.quantity} + ' × ' + ${line.itemName}"
+            ></h3>
+            <p>Have all dishes in this item line reached the table?</p>
+            <div class="prep-transition">
+              <span class="status-chip ready">Ready</span
+              ><span class="prep-arrow">→</span
+              ><span class="status-chip served">Served</span>
+            </div>
+            <p class="prep-confirm-note">
+              Only this Ready item line will be confirmed.<br />Other items in
+              the order keep their current status.
+            </p>
+          </div>
+          <div class="dialog-footer">
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              data-close-dialog
+            >
+              Go Back</button
+            ><button class="btn btn-primary" type="submit">
+              Confirm Served
+            </button>
+          </div>
+        </form>
+      </dialog></th:block
+    >
+  </body>
+</html>

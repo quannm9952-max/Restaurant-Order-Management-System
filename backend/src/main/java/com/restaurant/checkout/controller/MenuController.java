@@ -1,6 +1,9 @@
 package com.restaurant.checkout.controller;
 
 import com.restaurant.checkout.service.MenuService;
+import com.restaurant.exceptions.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +16,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/menu")
 public class MenuController {
+  private static final Logger LOG = LoggerFactory
+      .getLogger(MenuController.class);
 
   private final MenuService service;
 
@@ -22,8 +27,8 @@ public class MenuController {
 
   /** UC09 – 5-Star Menu Management Main View */
   @GetMapping
-  public String menuManagement(
-      @RequestParam(required = false) String search,
+  @SuppressWarnings("unchecked")
+  public String menuManagement(@RequestParam(required = false) String search,
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String availability,
       @RequestParam(required = false, defaultValue = "all") String priceRange,
@@ -37,8 +42,17 @@ public class MenuController {
       availableFilter = false;
     }
 
-    List<Map<String, Object>> items =
-        service.searchMenu(search, category, availableFilter, sortBy, priceRange);
+    List<Map<String, Object>> items = service.searchMenu(search, category,
+        availableFilter, sortBy, priceRange);
+    var draft = model.asMap().get("menuDraft");
+    if (draft instanceof Map<?, ?> submitted && submitted.get("id") != null) {
+      items = items.stream()
+          .map(item -> item.get("id").toString()
+              .equals(submitted.get("id").toString())
+                  ? (Map<String, Object>) draft
+                  : item)
+          .toList();
+    }
     Map<String, Object> stats = service.menuStats();
     List<String> categories = service.categories();
 
@@ -48,18 +62,18 @@ public class MenuController {
     model.addAttribute("categoryRows", service.categoryRows());
     model.addAttribute("currentSearch", search != null ? search : "");
     model.addAttribute("currentCategory", category != null ? category : "All");
-    model.addAttribute("currentAvailability", availability != null ? availability : "all");
-    model.addAttribute("currentPriceRange", priceRange != null ? priceRange : "all");
+    model.addAttribute("currentAvailability",
+        availability != null ? availability : "all");
+    model.addAttribute("currentPriceRange",
+        priceRange != null ? priceRange : "all");
     model.addAttribute("currentSort", sortBy);
 
     return "menu";
   }
 
   @PostMapping("/categories/save")
-  public String saveCategory(
-      @RequestParam(required = false) Long id,
-      @RequestParam String name,
-      RedirectAttributes flash) {
+  public String saveCategory(@RequestParam(required = false) Long id,
+      @RequestParam String name, RedirectAttributes flash) {
     try {
       service.saveCategory(id, name);
       flash.addFlashAttribute("success", "Category saved.");
@@ -74,56 +88,65 @@ public class MenuController {
   @ResponseBody
   public ResponseEntity<?> getMenuItemJson(@PathVariable long id) {
     try {
-      Map<String, Object> item = service.getMenuItem(id);
-      return ResponseEntity.ok(item);
-    } catch (Exception e) {
-      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+      return ResponseEntity.ok(service.getMenuItem(id));
+    } catch (NotFoundException ex) {
+      return ResponseEntity.status(404).body(Map.of("error", ex.getMessage()));
+    } catch (IllegalArgumentException ex) {
+      return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    } catch (org.springframework.dao.DataAccessException ex) {
+      LOG.error("Unable to load record details", ex);
+      return ResponseEntity.internalServerError()
+          .body(Map.of("error", "Unable to load details. Please try again."));
     }
   }
 
   /** Add new dish to menu */
   @PostMapping
-  public String addMenuItem(
-      @RequestParam String name,
+  public String addMenuItem(@RequestParam String name,
       @RequestParam String category,
       @RequestParam(required = false) String customCategory,
       @RequestParam(required = false) String description,
-      @RequestParam BigDecimal price,
-      RedirectAttributes redirectAttrs) {
+      @RequestParam BigDecimal price, RedirectAttributes redirectAttrs) {
     try {
-      String selectedCategory =
-          (category != null && !category.isBlank()) ? category : customCategory;
-      if ("__new__".equals(category) && customCategory != null && !customCategory.isBlank()) {
+      String selectedCategory = (category != null && !category.isBlank())
+          ? category
+          : customCategory;
+      if ("__new__".equals(category) && customCategory != null
+          && !customCategory.isBlank()) {
         selectedCategory = customCategory;
       }
       service.addMenu(name, selectedCategory, description, price);
-      redirectAttrs.addFlashAttribute(
-          "success", "Successfully added new dish '" + name.trim() + "' to menu!");
-    } catch (Exception e) {
-      redirectAttrs.addFlashAttribute("error", "Error adding menu item: " + e.getMessage());
+      redirectAttrs.addFlashAttribute("success",
+          "Successfully added new dish '" + name.trim() + "' to menu!");
+    } catch (IllegalArgumentException
+        | com.restaurant.exceptions.BusinessException | NotFoundException e) {
+      redirectAttrs.addFlashAttribute("error",
+          "Error adding menu item: " + e.getMessage());
+      retainDraft(redirectAttrs, null, name, category, customCategory,
+          description, price, true);
     }
     return "redirect:/menu";
   }
 
   /** Direct GET /menu/{id}/edit opens modal */
   @GetMapping("/{id}/edit")
-  public String editMenuItemGet(@PathVariable long id, RedirectAttributes redirectAttrs) {
+  public String editMenuItemGet(@PathVariable long id,
+      RedirectAttributes redirectAttrs) {
     redirectAttrs.addFlashAttribute("autoOpenEditId", id);
     return "redirect:/menu";
   }
 
   /** Direct GET /menu/{id} opens modal */
   @GetMapping("/{id}")
-  public String viewMenuItemGet(@PathVariable long id, RedirectAttributes redirectAttrs) {
+  public String viewMenuItemGet(@PathVariable long id,
+      RedirectAttributes redirectAttrs) {
     redirectAttrs.addFlashAttribute("autoOpenViewId", id);
     return "redirect:/menu";
   }
 
   /** Update menu item */
   @PostMapping({"/{id}/update", "/{id}/edit"})
-  public String updateMenuItem(
-      @PathVariable long id,
-      @RequestParam String name,
+  public String updateMenuItem(@PathVariable long id, @RequestParam String name,
       @RequestParam String category,
       @RequestParam(required = false) String customCategory,
       @RequestParam(required = false) String description,
@@ -131,62 +154,85 @@ public class MenuController {
       @RequestParam(defaultValue = "false") boolean available,
       RedirectAttributes redirectAttrs) {
     try {
-      String selectedCategory =
-          (category != null && !category.isBlank()) ? category : customCategory;
-      if ("__new__".equals(category) && customCategory != null && !customCategory.isBlank()) {
+      String selectedCategory = (category != null && !category.isBlank())
+          ? category
+          : customCategory;
+      if ("__new__".equals(category) && customCategory != null
+          && !customCategory.isBlank()) {
         selectedCategory = customCategory;
       }
-      service.updateMenu(id, name, selectedCategory, description, price, available);
-      redirectAttrs.addFlashAttribute(
-          "success", "Successfully updated dish #" + id + " ('" + name.trim() + "')!");
-    } catch (Exception e) {
-      redirectAttrs.addFlashAttribute(
-          "error", "Error updating dish #" + id + ": " + e.getMessage());
+      service.updateMenu(id, name, selectedCategory, description, price,
+          available);
+      redirectAttrs.addFlashAttribute("success",
+          "Successfully updated dish #" + id + " ('" + name.trim() + "')!");
+    } catch (IllegalArgumentException
+        | com.restaurant.exceptions.BusinessException | NotFoundException e) {
+      redirectAttrs.addFlashAttribute("error",
+          "Error updating dish #" + id + ": " + e.getMessage());
+      retainDraft(redirectAttrs, id, name, category, customCategory,
+          description, price, available);
     }
     return "redirect:/menu";
   }
 
   /** Toggle dish availability */
   @PostMapping({"/{id}/toggle-status", "/{id}/status"})
-  public String toggleStatus(
-      @PathVariable long id, @RequestParam boolean available, RedirectAttributes redirectAttrs) {
+  public String toggleStatus(@PathVariable long id,
+      @RequestParam boolean available, RedirectAttributes redirectAttrs) {
     try {
       service.toggleMenuAvailability(id, available);
-      String msg =
-          available
-              ? "Successfully re-activated dish #" + id + " to Available."
-              : "Successfully marked dish #" + id + " as Unavailable.";
+      String msg = available
+          ? "Successfully re-activated dish #" + id + " to Available."
+          : "Successfully marked dish #" + id + " as Unavailable.";
       redirectAttrs.addFlashAttribute("success", msg);
-    } catch (Exception e) {
-      redirectAttrs.addFlashAttribute(
-          "error", "Error changing dish #" + id + " status: " + e.getMessage());
+    } catch (IllegalArgumentException
+        | com.restaurant.exceptions.BusinessException | NotFoundException e) {
+      redirectAttrs.addFlashAttribute("error",
+          "Error changing dish #" + id + " status: " + e.getMessage());
     }
     return "redirect:/menu";
   }
 
   /** Delete menu item */
   @PostMapping({"/{id}/delete", "/{id}/remove"})
-  public String deleteMenuItem(
-      @PathVariable long id,
+  public String deleteMenuItem(@PathVariable long id,
       @RequestParam(defaultValue = "false") boolean force,
       RedirectAttributes redirectAttrs) {
     try {
       service.deleteMenu(id, force);
-      redirectAttrs.addFlashAttribute(
-          "success", "Successfully deactivated dish #" + id + " from menu!");
+      redirectAttrs.addFlashAttribute("success",
+          "Successfully deactivated dish #" + id + " from menu!");
     } catch (IllegalStateException e) {
       redirectAttrs.addFlashAttribute("error", e.getMessage());
-    } catch (Exception e) {
-      redirectAttrs.addFlashAttribute(
-          "error", "Error deleting dish #" + id + ": " + e.getMessage());
+    } catch (IllegalArgumentException
+        | com.restaurant.exceptions.BusinessException | NotFoundException e) {
+      redirectAttrs.addFlashAttribute("error",
+          "Error deleting dish #" + id + ": " + e.getMessage());
     }
     return "redirect:/menu";
   }
 
   /** Direct GET /menu/{id}/delete opens delete dialog */
   @GetMapping("/{id}/delete")
-  public String deleteMenuItemGet(@PathVariable long id, RedirectAttributes redirectAttrs) {
+  public String deleteMenuItemGet(@PathVariable long id,
+      RedirectAttributes redirectAttrs) {
     redirectAttrs.addFlashAttribute("autoOpenDeleteId", id);
     return "redirect:/menu";
+  }
+
+  private void retainDraft(RedirectAttributes flash, Long id, String name,
+      String category, String customCategory, String description,
+      BigDecimal price, boolean available) {
+    var draft = new java.util.HashMap<String, Object>();
+    draft.put("id", id);
+    draft.put("name", name);
+    draft.put("category",
+        "__new__".equals(category) ? customCategory : category);
+    draft.put("description", description);
+    draft.put("price", price);
+    draft.put("available", available);
+    flash.addFlashAttribute("menuDraft", draft);
+    if (id != null)
+      flash.addFlashAttribute("autoOpenEditId", id);
   }
 }

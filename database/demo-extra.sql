@@ -1,13 +1,13 @@
--- DEMO fixture for checkout while UC06/UC07 await TV3; idempotent.
+-- Independent DEMO checkout fixture; reruns preserve existing business records.
 INSERT INTO Restaurant_tables(table_id,table_name,capacity,status) VALUES
 (9010,'DEMO Checkout Table',4,'OCCUPIED')
-ON DUPLICATE KEY UPDATE table_name=VALUES(table_name);
+ON DUPLICATE KEY UPDATE table_id=VALUES(table_id);
 INSERT INTO Orders(order_id,table_id,employee_id,created_at,status,total_amount,notes)
-VALUES(1100,9010,9001,'2026-11-05 12:00:00','OPEN',39.00,'DEMO: Served fixture; TV3 not integrated')
-ON DUPLICATE KEY UPDATE notes=VALUES(notes);
+VALUES(1100,9010,9001,'2026-11-05 12:00:00','OPEN',39.00,'DEMO: Served fixture for independent checkout verification')
+ON DUPLICATE KEY UPDATE order_id=VALUES(order_id);
 INSERT INTO Order_Detail(order_detail_id,order_id,item_id,quantity,unit_price_at_order,item_name_at_order,preparation_status)
 VALUES(4100,1100,9001,2,19.50,'DEMO checkout dish','SERVED')
-ON DUPLICATE KEY UPDATE item_name_at_order=VALUES(item_name_at_order);
+ON DUPLICATE KEY UPDATE order_detail_id=VALUES(order_detail_id);
 
 INSERT INTO Menu_category(category_id,category_name,description,is_active) VALUES
 (9101,'Main Courses','DEMO catalog',true),(9102,'Appetizers','DEMO catalog',true),(9103,'Beverages','DEMO catalog',true),(9104,'Desserts','DEMO catalog',true)

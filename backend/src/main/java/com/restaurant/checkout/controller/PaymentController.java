@@ -1,6 +1,9 @@
 package com.restaurant.checkout.controller;
 
 import com.restaurant.checkout.service.PaymentService;
+import com.restaurant.exceptions.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +14,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class PaymentController {
+  private static final Logger LOG = LoggerFactory
+      .getLogger(PaymentController.class);
 
   private final PaymentService service;
 
@@ -20,25 +25,18 @@ public class PaymentController {
 
   /** Billing & Payment Management Dashboard */
   @GetMapping("/payments")
-  public String paymentDashboard(
-      @RequestParam(required = false) String search,
-      @RequestParam(required = false) Long orderId,
-      Model model) {
+  public String paymentDashboard(@RequestParam(required = false) String search,
+      @RequestParam(required = false) Long orderId, Model model) {
 
-    Map<String, Object> stats = service.paymentStats();
-    List<Map<String, Object>> pendingList = service.pendingOrders(search);
-    List<Map<String, Object>> recentPayments = service.payments();
-
-    model.addAttribute("stats", stats);
-    model.addAttribute("pendingOrders", pendingList);
-    model.addAttribute("recentPayments", recentPayments);
     model.addAttribute("currentSearch", search != null ? search : "");
     var checkoutOrders = service.checkoutOrders(search);
     model.addAttribute("checkoutOrders", checkoutOrders);
     if (orderId != null)
-      model.addAttribute("selectedOrder", service.orderDetailForPayment(orderId));
+      model.addAttribute("selectedOrder",
+          service.orderDetailForPayment(orderId));
     else if (!checkoutOrders.isEmpty())
-      model.addAttribute("selectedOrder", checkoutOrders.getFirst());
+      model.addAttribute("selectedOrder", service.orderDetailForPayment(
+          ((Number) checkoutOrders.getFirst().get("id")).longValue()));
 
     return "payments";
   }
@@ -48,50 +46,52 @@ public class PaymentController {
   @ResponseBody
   public ResponseEntity<?> getOrderDetailJson(@PathVariable long orderId) {
     try {
-      Map<String, Object> detail = service.orderDetailForPayment(orderId);
-      return ResponseEntity.ok(detail);
-    } catch (Exception e) {
-      return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+      return ResponseEntity.ok(service.orderDetailForPayment(orderId));
+    } catch (NotFoundException ex) {
+      return ResponseEntity.status(404).body(Map.of("error", ex.getMessage()));
+    } catch (IllegalArgumentException ex) {
+      return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    } catch (org.springframework.dao.DataAccessException ex) {
+      LOG.error("Unable to load record details", ex);
+      return ResponseEntity.internalServerError()
+          .body(Map.of("error", "Unable to load details. Please try again."));
     }
   }
 
   /** Confirm payment with transaction lock and duplicate protection */
   @PostMapping("/payments/{orderId}/confirm")
-  public String confirmPayment(
-      @PathVariable long orderId,
+  public String confirmPayment(@PathVariable long orderId,
       @RequestParam(defaultValue = "Cash") String paymentMethod,
       RedirectAttributes redirectAttrs) {
     try {
       long paymentId = service.payOrder(orderId, paymentMethod, true);
-      redirectAttrs.addFlashAttribute(
-          "success",
-          "Payment successfully recorded for Order #"
-              + orderId
-              + " (Txn #"
-              + paymentId
-              + ", method: "
-              + paymentMethod
+      redirectAttrs.addFlashAttribute("success",
+          "Payment successfully recorded for Order #" + orderId + " (Txn #"
+              + paymentId + ", method: " + paymentMethod
               + "). Order completed and table released.");
       return "redirect:/invoices/" + orderId;
-    } catch (Exception e) {
-      redirectAttrs.addFlashAttribute(
-          "error", "Payment error for Order #" + orderId + ": " + e.getMessage());
+    } catch (IllegalArgumentException
+        | com.restaurant.exceptions.BusinessException | NotFoundException
+        | IllegalStateException e) {
+      redirectAttrs.addFlashAttribute("error",
+          "Payment error for Order #" + orderId + ": " + e.getMessage());
       return "redirect:/payments";
     }
   }
 
   /** Record payment failure (Order remains Open, Table remains Occupied) */
   @PostMapping("/payments/{orderId}/fail")
-  public String recordPaymentFailure(
-      @PathVariable long orderId,
+  public String recordPaymentFailure(@PathVariable long orderId,
       @RequestParam(defaultValue = "Cash") String paymentMethod,
       RedirectAttributes redirectAttrs) {
     try {
       service.payOrder(orderId, paymentMethod, false);
-      redirectAttrs.addFlashAttribute(
-          "error",
-          "Payment marked as failed for Order #" + orderId + ". Order remains in Open status.");
-    } catch (Exception e) {
+      redirectAttrs.addFlashAttribute("error",
+          "Payment marked as failed for Order #" + orderId
+              + ". Order remains in Open status.");
+    } catch (IllegalArgumentException
+        | com.restaurant.exceptions.BusinessException | NotFoundException
+        | IllegalStateException e) {
       redirectAttrs.addFlashAttribute("error", "Error: " + e.getMessage());
     }
     return "redirect:/payments";
@@ -99,8 +99,8 @@ public class PaymentController {
 
   /** View and print invoice */
   @GetMapping("/invoices/{orderId}")
-  public String viewInvoice(
-      @PathVariable long orderId, Model model, RedirectAttributes redirectAttrs) {
+  public String viewInvoice(@PathVariable long orderId, Model model,
+      RedirectAttributes redirectAttrs) {
     try {
       Map<String, Object> invoice = service.invoiceData(orderId);
       model.addAttribute("order", invoice.get("order"));
@@ -109,9 +109,11 @@ public class PaymentController {
       model.addAttribute("total", invoice.get("total"));
       model.addAttribute("invoiceNumber", invoice.get("invoiceNumber"));
       return "invoice";
-    } catch (Exception e) {
-      redirectAttrs.addFlashAttribute(
-          "error", "Cannot view invoice for Order #" + orderId + ": " + e.getMessage());
+    } catch (IllegalArgumentException
+        | com.restaurant.exceptions.BusinessException | NotFoundException
+        | IllegalStateException e) {
+      redirectAttrs.addFlashAttribute("error",
+          "Cannot view invoice for Order #" + orderId + ": " + e.getMessage());
       return "redirect:/payments";
     }
   }

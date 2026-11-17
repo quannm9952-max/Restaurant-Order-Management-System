@@ -1,5 +1,7 @@
 package com.restaurant.services.table.impl;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.restaurant.dto.table.TableView;
 import com.restaurant.entities.RestaurantTable;
 import com.restaurant.entities.enums.TableStatus;
@@ -15,13 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 /** Service for managing restaurant tables (UC04). */
 @Service
 @Transactional(readOnly = true)
-@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('WAITER','MANAGER')")
+@PreAuthorize("hasAnyRole('WAITER','MANAGER')")
 public class TableServiceImpl implements ITableService {
 
   private final TableRepository tableRepository;
   private final OrderRepository orderRepository;
 
-  public TableServiceImpl(TableRepository tableRepository, OrderRepository orderRepository) {
+  public TableServiceImpl(TableRepository tableRepository,
+      OrderRepository orderRepository) {
     this.tableRepository = tableRepository;
     this.orderRepository = orderRepository;
   }
@@ -30,7 +33,7 @@ public class TableServiceImpl implements ITableService {
   @Override
   @Transactional(readOnly = true)
   public List<TableView> listTables() {
-    return tableRepository.findAll().stream().map(this::toTableView).toList();
+    return toTableViews(tableRepository.findAll());
   }
 
   /** Get tables filtered by status as view DTOs. */
@@ -38,8 +41,9 @@ public class TableServiceImpl implements ITableService {
   @Transactional(readOnly = true)
   public List<TableView> listTablesByStatus(String status) {
     try {
-      var tableStatus = TableStatus.valueOf(status.toUpperCase(java.util.Locale.ROOT));
-      return tableRepository.findByStatus(tableStatus).stream().map(this::toTableView).toList();
+      var tableStatus = TableStatus
+          .valueOf(status.toUpperCase(java.util.Locale.ROOT));
+      return toTableViews(tableRepository.findByStatus(tableStatus));
     } catch (IllegalArgumentException exception) {
       throw new BusinessException("Trạng thái bàn không hợp lệ.");
     }
@@ -49,40 +53,32 @@ public class TableServiceImpl implements ITableService {
   @Override
   @Transactional(readOnly = true)
   public TableView getTable(Integer id) {
-    RestaurantTable table =
-        tableRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + id));
+    RestaurantTable table = tableRepository.findById(id).orElseThrow(
+        () -> new NotFoundException("Không tìm thấy bàn với mã: " + id));
     return toTableView(table);
   }
 
-  /** Get a table by ID (internal use for write operations). */
-  private RestaurantTable getTableById(Integer id) {
-    return tableRepository
-        .findById(id)
-        .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + id));
-  }
-
   /**
-   * Update table status manually. Only allows AVAILABLE <-> OUT_OF_SERVICE transitions.
+   * Update table status manually. Only allows AVAILABLE <-> OUT_OF_SERVICE
+   * transitions.
    *
-   * <p>Rules: - Cannot manually set OCCUPIED (only system sets this when creating an order). -
-   * Table with OPEN order cannot be changed to AVAILABLE or OUT_OF_SERVICE. - Cannot change to the
-   * same status it already has.
+   * <p>
+   * Rules: - Cannot manually set OCCUPIED (only system sets this when creating
+   * an order). - Table with OPEN order cannot be changed to AVAILABLE or
+   * OUT_OF_SERVICE. - Cannot change to the same status it already has.
    */
   @Override
   @Transactional
-  public RestaurantTable updateTableStatus(Integer tableId, TableStatus newStatus) {
-    RestaurantTable table =
-        tableRepository
-            .findByIdWithPessimisticLock(tableId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + tableId));
+  public RestaurantTable updateTableStatus(Integer tableId,
+      TableStatus newStatus) {
+    RestaurantTable table = tableRepository.findByIdWithPessimisticLock(tableId)
+        .orElseThrow(() -> new NotFoundException(
+            "Không tìm thấy bàn với mã: " + tableId));
 
     // Cannot manually set OCCUPIED
     if (newStatus == TableStatus.OCCUPIED) {
-      throw new BusinessException(
-          "Không thể đặt thủ công trạng thái OCCUPIED. Trạng thái này chỉ được đặt tự động khi tạo"
-              + " đơn.");
+      throw new BusinessException("Không thể đặt thủ công trạng thái OCCUPIED. "
+          + "Trạng thái này chỉ được đặt tự động khi tạo" + " đơn.");
     }
 
     // Cannot change to the same status
@@ -92,7 +88,8 @@ public class TableServiceImpl implements ITableService {
 
     // Table with OPEN order cannot be changed
     if (orderRepository.existsOpenByTableId(tableId)) {
-      throw new BusinessException("Bàn đang có đơn OPEN, không thể thay đổi trạng thái.");
+      throw new BusinessException(
+          "Bàn đang có đơn OPEN, không thể thay đổi trạng thái.");
     }
 
     table.setStatus(newStatus);
@@ -107,19 +104,32 @@ public class TableServiceImpl implements ITableService {
 
   // ==================== Entity to View DTO mapping ====================
 
-  private TableView toTableView(RestaurantTable table) {
-    Integer currentOrderId = orderRepository.findOpenOrderIdByTableId(table.getId()).orElse(null);
-    boolean hasOpen = currentOrderId != null;
-    boolean canCreateOrder = table.getStatus() == TableStatus.AVAILABLE && !hasOpen;
-    boolean canChangeStatus = !hasOpen && table.getStatus() != TableStatus.OCCUPIED;
+  private List<TableView> toTableViews(List<RestaurantTable> tables) {
+    if (tables.isEmpty())
+      return List.of();
+    var openOrders = orderRepository.findOpenTableOrders().stream()
+        .collect(java.util.stream.Collectors.toMap(
+            OrderRepository.OpenTableOrder::getTableId,
+            OrderRepository.OpenTableOrder::getOrderId));
+    return tables.stream()
+        .map(table -> toTableView(table, openOrders.get(table.getId())))
+        .toList();
+  }
 
-    return new TableView(
-        table.getId(),
-        table.getTableName(),
-        table.getCapacity(),
-        table.getStatus(),
-        currentOrderId,
-        canCreateOrder,
+  private TableView toTableView(RestaurantTable table) {
+    return toTableView(table,
+        orderRepository.findOpenOrderIdByTableId(table.getId()).orElse(null));
+  }
+
+  private TableView toTableView(RestaurantTable table, Integer currentOrderId) {
+    boolean hasOpen = currentOrderId != null;
+    boolean canCreateOrder = table.getStatus() == TableStatus.AVAILABLE
+        && !hasOpen;
+    boolean canChangeStatus = !hasOpen
+        && table.getStatus() != TableStatus.OCCUPIED;
+
+    return new TableView(table.getId(), table.getTableName(),
+        table.getCapacity(), table.getStatus(), currentOrderId, canCreateOrder,
         canChangeStatus);
   }
 }

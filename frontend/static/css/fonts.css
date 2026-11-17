@@ -1,4 +1,28 @@
-@font-face{font-family:Inter;font-style:normal;font-weight:400;font-display:swap;src:url('../fonts/inter-regular.ttf') format('truetype')}
-@font-face{font-family:Inter;font-style:normal;font-weight:600;font-display:swap;src:url('../fonts/inter-semibold.ttf') format('truetype')}
-@font-face{font-family:Inter;font-style:normal;font-weight:700;font-display:swap;src:url('../fonts/inter-bold.ttf') format('truetype')}
-@font-face{font-family:Manrope;font-style:normal;font-weight:700;font-display:swap;src:url('../fonts/manrope-bold.ttf') format('truetype')}
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/inter-regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/inter-semibold.ttf") format("truetype");
+}
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/inter-bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: Manrope;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/manrope-bold.ttf") format("truetype");
+}

@@ -13,8 +13,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 class CurrentEmployeeServiceImplTest {
   AccountRepository accounts = mock(AccountRepository.class);
-  CurrentEmployeeServiceImpl service =
-      new CurrentEmployeeServiceImpl(mock(EmployeeRepository.class), accounts);
+  CurrentEmployeeServiceImpl service = new CurrentEmployeeServiceImpl(
+      mock(EmployeeRepository.class), accounts);
 
   @AfterEach
   void clear() {
@@ -22,9 +22,9 @@ class CurrentEmployeeServiceImplTest {
   }
 
   void signedIn() {
-    SecurityContextHolder.getContext()
-        .setAuthentication(
-            new UsernamePasswordAuthenticationToken("real_waiter", "unused", java.util.List.of()));
+    SecurityContextHolder.getContext().setAuthentication(
+        new UsernamePasswordAuthenticationToken("real_waiter", "unused",
+            java.util.List.of()));
   }
 
   @Test

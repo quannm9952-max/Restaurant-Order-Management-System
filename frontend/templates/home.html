@@ -91,17 +91,14 @@
             <p>Create orders, add dishes and manage dine-in orders.</p>
             <span class="open-link">Open workspace &#8594;</span></a
           >
-          <article class="workspace-card pending" aria-disabled="true">
-            <span class="module-icon"
-              ><img src="/images/tv5/table.svg" alt=""
-            /></span>
+          <a class="workspace-card" href="/serving"
+            ><span class="module-icon"
+              ><img src="/images/tv5/table.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
             <h3>Serving Management</h3>
-            <p>
-              The serving workspace will be available after the kitchen module
-              is integrated.
-            </p>
-            <span class="muted tiny">Pending TV3 integration</span>
-          </article>
+            <p>View Ready dishes and confirm delivery to each table.</p>
+            <span class="open-link">Open workspace &#8594;</span></a
+          >
         </div>
         <div class="workspace-cards single" th:if="${user.role == 'Cashier'}">
           <a class="workspace-card" href="/payments"
@@ -116,17 +113,16 @@
           >
         </div>
         <div class="workspace-cards single" th:if="${user.role == 'Chef'}">
-          <article class="workspace-card pending" aria-disabled="true">
-            <span class="module-icon"
-              ><img src="/images/tv5/table.svg" alt=""
-            /></span>
+          <a class="workspace-card" href="/kitchen"
+            ><span class="module-icon"
+              ><img src="/images/tv5/utensils.svg" alt="" /></span
+            ><span class="arrow">&#8599;</span>
             <h3>Kitchen Management</h3>
             <p>
-              The kitchen workspace will be available after the kitchen module
-              is integrated.
+              Track each order item from Pending through Preparing to Ready.
             </p>
-            <span class="muted tiny">Pending TV3 integration</span>
-          </article>
+            <span class="open-link">Open workspace &#8594;</span></a
+          >
         </div>
         <div class="footnote">
           <span

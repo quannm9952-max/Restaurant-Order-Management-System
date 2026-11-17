@@ -12,7 +12,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class ReportingConfiguration {
   @Bean
-  Clock reportingClock(@Value("${reporting.zone:Asia/Ho_Chi_Minh}") String zone) {
+  Clock reportingClock(
+      @Value("${reporting.zone:Asia/Ho_Chi_Minh}") String zone) {
     return Clock.system(ZoneId.of(zone));
   }
 

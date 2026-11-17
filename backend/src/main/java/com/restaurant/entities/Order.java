@@ -44,7 +44,8 @@ public class Order {
   @Column(name = "notes")
   private String note;
 
-  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL,
+      orphanRemoval = true)
   private List<OrderDetail> details = new ArrayList<>();
 
   @PrePersist

@@ -1,9 +1,107 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{reporting/fragments :: head('Order Details')}"></head><body>
-<aside th:replace="~{reporting/fragments :: sidebar('orders')}"></aside><header th:replace="~{reporting/fragments :: header('Restaurant Orders')}"></header>
-<main id="main" class="main-content"><section th:replace="~{reporting/fragments :: heading('Order Details','Recorded order items, quantities, prices and statuses.')}"></section><a class="back-link" th:href="@{/manager/orders}">← Back to Restaurant Orders</a>
-    <section class="panel order-details"><div class="panel-heading"><h2 th:text="${details.order.code()}"></h2><span th:replace="~{reporting/fragments :: status(${details.order.status.name()},${details.order.statusLabel()})}"></span></div><dl class="order-summary"><div><dt>Table</dt><dd th:text="${details.order.tableName}"></dd></div><div><dt>Created by</dt><dd th:text="${details.order.employeeName}"></dd></div><div><dt>Created at</dt><dd th:text="${#temporals.format(details.order.createdAt,'dd MMM yyyy · HH:mm')}"></dd></div><div><dt>Recorded total</dt><dd th:text="${@money.format(details.order.totalAmount)}"></dd></div></dl><p th:if="${details.order.notes != null}" th:text="${details.order.notes}"></p>
-    <div class="table-responsive"><table class="table records-table"><thead><tr><th>ITEM AT ORDER TIME</th><th>QUANTITY</th><th>UNIT PRICE AT ORDER TIME</th><th>ITEM STATUS</th><th class="text-end">LINE TOTAL</th></tr></thead><tbody><tr th:each="item : ${details.items}" th:classappend="${item.cancelled()} ? 'cancelled-line'"><td th:text="${item.itemName}"></td><td th:text="${item.quantity}"></td><td th:text="${@money.format(item.unitPrice)}"></td><td><span th:replace="~{reporting/fragments :: status(${item.preparationStatus},${item.statusLabel()})}"></span></td><td class="text-end"><span th:text="${@money.format(item.lineTotal())}"></span><small th:if="${item.cancelled()}">Excluded from total</small></td></tr></tbody><tfoot><tr><th colspan="4">Total of non-cancelled items</th><th class="text-end" th:text="${@money.format(details.calculatedTotal())}"></th></tr></tfoot></table></div>
-    <h2 class="mt-4">Related payments</h2><p th:if="${#lists.isEmpty(details.payments)}" class="subtle">No payment records for this order.</p><div class="related-payment" th:each="payment : ${details.payments}"><a th:href="@{/manager/payment-history/{id}(id=${payment.paymentId},from=${#temporals.format(payment.paymentTime,'yyyy-MM-dd')},to=${#temporals.format(payment.paymentTime,'yyyy-MM-dd')})}" th:text="${payment.code()}"></a><span th:replace="~{reporting/fragments :: status(${payment.status.name()},${payment.statusLabel()})}"></span><b th:text="${@money.format(payment.amount)}"></b></div>
-    </section></main></body></html>
+  <head th:replace="~{reporting/fragments :: head('Order Details')}"></head>
+  <body>
+    <aside th:replace="~{reporting/fragments :: sidebar('orders')}"></aside>
+    <header
+      th:replace="~{reporting/fragments :: header('Restaurant Orders')}"
+    ></header>
+    <main id="main" class="main-content">
+      <section
+        th:replace="~{reporting/fragments :: heading('Order Details','Recorded order items, quantities, prices and statuses.')}"
+      ></section>
+      <a class="back-link" th:href="@{/manager/orders}"
+        >← Back to Restaurant Orders</a
+      >
+      <section class="panel order-details">
+        <div class="panel-heading">
+          <h2 th:text="${details.order.code()}"></h2>
+          <span
+            th:replace="~{reporting/fragments :: status(${details.order.status.name()},${details.order.statusLabel()})}"
+          ></span>
+        </div>
+        <dl class="order-summary">
+          <div>
+            <dt>Table</dt>
+            <dd th:text="${details.order.tableName}"></dd>
+          </div>
+          <div>
+            <dt>Created by</dt>
+            <dd th:text="${details.order.employeeName}"></dd>
+          </div>
+          <div>
+            <dt>Created at</dt>
+            <dd
+              th:text="${#temporals.format(details.order.createdAt,'dd MMM yyyy · HH:mm')}"
+            ></dd>
+          </div>
+          <div>
+            <dt>Recorded total</dt>
+            <dd th:text="${@money.format(details.order.totalAmount)}"></dd>
+          </div>
+        </dl>
+        <p
+          th:if="${details.order.notes != null}"
+          th:text="${details.order.notes}"
+        ></p>
+        <div class="table-responsive">
+          <table class="table records-table">
+            <thead>
+              <tr>
+                <th>ITEM AT ORDER TIME</th>
+                <th>QUANTITY</th>
+                <th>UNIT PRICE AT ORDER TIME</th>
+                <th>ITEM STATUS</th>
+                <th class="text-end">LINE TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                th:each="item : ${details.items}"
+                th:classappend="${item.cancelled()} ? 'cancelled-line'"
+              >
+                <td th:text="${item.itemName}"></td>
+                <td th:text="${item.quantity}"></td>
+                <td th:text="${@money.format(item.unitPrice)}"></td>
+                <td>
+                  <span
+                    th:replace="~{reporting/fragments :: status(${item.preparationStatus},${item.statusLabel()})}"
+                  ></span>
+                </td>
+                <td class="text-end">
+                  <span th:text="${@money.format(item.lineTotal())}"></span
+                  ><small th:if="${item.cancelled()}"
+                    >Excluded from total</small
+                  >
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="4">Total of non-cancelled items</th>
+                <th
+                  class="text-end"
+                  th:text="${@money.format(details.calculatedTotal())}"
+                ></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <h2 class="mt-4">Related payments</h2>
+        <p th:if="${#lists.isEmpty(details.payments)}" class="subtle">
+          No payment records for this order.
+        </p>
+        <div class="related-payment" th:each="payment : ${details.payments}">
+          <a
+            th:href="@{/manager/payment-history/{id}(id=${payment.paymentId},from=${#temporals.format(payment.paymentTime,'yyyy-MM-dd')},to=${#temporals.format(payment.paymentTime,'yyyy-MM-dd')})}"
+            th:text="${payment.code()}"
+          ></a
+          ><span
+            th:replace="~{reporting/fragments :: status(${payment.status.name()},${payment.statusLabel()})}"
+          ></span
+          ><b th:text="${@money.format(payment.amount)}"></b>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

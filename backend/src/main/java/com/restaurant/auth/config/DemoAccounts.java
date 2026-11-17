@@ -19,9 +19,7 @@ public class DemoAccounts implements CommandLineRunner {
   private final PasswordEncoder encoder;
   private final String password;
 
-  public DemoAccounts(
-      AccountRepository accounts,
-      EmployeeRepository employees,
+  public DemoAccounts(AccountRepository accounts, EmployeeRepository employees,
       PasswordEncoder encoder,
       @Value("${DEMO_PASSWORD:123456}") String password) {
     this.accounts = accounts;
@@ -34,10 +32,13 @@ public class DemoAccounts implements CommandLineRunner {
   @Transactional
   public void run(String... args) {
     if (password.length() < 6)
-      throw new IllegalArgumentException("DEMO_PASSWORD must have at least 6 characters.");
+      throw new IllegalArgumentException(
+          "DEMO_PASSWORD must have at least 6 characters.");
     for (Role role : Role.values()) {
-      String username = "demo_" + role.name().toLowerCase(java.util.Locale.ROOT);
-      if (accounts.existsByUsername(username)) continue;
+      String username = "demo_"
+          + role.name().toLowerCase(java.util.Locale.ROOT);
+      if (accounts.existsByUsername(username))
+        continue;
       var employee = new Employee();
       employee.setFullName("DEMO " + role.name());
       employee.setPosition(role.name());

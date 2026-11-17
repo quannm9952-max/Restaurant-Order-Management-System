@@ -11,7 +11,8 @@ public class AddItemForm {
   @Valid
   private List<OrderLineForm> lines;
 
-  public AddItemForm() {}
+  public AddItemForm() {
+  }
 
   public List<OrderLineForm> getLines() {
     return lines;

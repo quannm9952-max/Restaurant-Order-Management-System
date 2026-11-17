@@ -1,52 +1,83 @@
 package com.restaurant.exceptions;
 
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 /**
- * Global exception handler for the application. Catches exceptions thrown by controllers and adds
- * error messages to the model. Controllers should use RedirectAttributes for POST-redirect-GET
- * pattern with flash messages. This handler mainly serves as a safety net for uncaught exceptions.
+ * Shared HTTP error boundary; internal exception details stay in server logs.
  */
-@org.springframework.core.annotation.Order(100)
+@Order(100)
 @ControllerAdvice
 public class GlobalExceptionHandler {
+  private static final Logger LOG = LoggerFactory
+      .getLogger(GlobalExceptionHandler.class);
 
-  /**
-   * Handle business rule violations — adds error message to model. Controllers catching this
-   * exception should redirect with flash message.
-   */
-  @org.springframework.web.bind.annotation.ResponseStatus(
-      org.springframework.http.HttpStatus.BAD_REQUEST)
-  @ExceptionHandler(BusinessException.class)
-  public String handleBusinessException(BusinessException ex, Model model) {
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler({BusinessException.class, IllegalArgumentException.class})
+  public String business(RuntimeException ex, Model model) {
     model.addAttribute("errorMessage", ex.getMessage());
     return "error";
   }
 
-  /** Handle not found exceptions. */
-  @org.springframework.web.bind.annotation.ResponseStatus(
-      org.springframework.http.HttpStatus.NOT_FOUND)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler({MethodArgumentTypeMismatchException.class,
+      MissingServletRequestParameterException.class,
+      ServletRequestBindingException.class})
+  public String invalidInput(Exception ex, Model model) {
+    model.addAttribute("errorMessage",
+        "Check the required fields and enter valid values.");
+    return "error";
+  }
+
+  @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(NotFoundException.class)
-  public String handleNotFoundException(NotFoundException ex, Model model) {
+  public String missing(NotFoundException ex, Model model) {
     model.addAttribute("errorMessage", ex.getMessage());
     return "error";
   }
 
-  @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-  @org.springframework.web.bind.annotation.ResponseStatus(
-      org.springframework.http.HttpStatus.FORBIDDEN)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  @ExceptionHandler({NoResourceFoundException.class,
+      NoHandlerFoundException.class})
+  public String unknownResource(Exception ex, Model model) {
+    model.addAttribute("errorMessage", "The requested page was not found.");
+    return "error";
+  }
+
+  @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public String wrongMethod(Exception ex, Model model) {
+    model.addAttribute("errorMessage",
+        "This action does not support that method.");
+    return "error";
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
   public String denied() {
     return "access-denied";
   }
 
-  /** Handle generic exceptions as a last resort. */
-  @org.springframework.web.bind.annotation.ResponseStatus(
-      org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(Exception.class)
-  public String handleGenericException(Exception ex, Model model) {
-    model.addAttribute("errorMessage", "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
+  public String unexpected(Exception ex, Model model) {
+    String reference = UUID.randomUUID().toString();
+    LOG.error("Unhandled request failure [{}]", reference, ex);
+    model.addAttribute("errorMessage",
+        "Unable to complete this request. Please try again. Reference: "
+            + reference);
     return "error";
   }
 }

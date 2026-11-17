@@ -18,7 +18,8 @@ public class CreateOrderForm {
   @Valid
   private List<OrderLineForm> lines;
 
-  public CreateOrderForm() {}
+  public CreateOrderForm() {
+  }
 
   public Integer getTableId() {
     return tableId;

@@ -10,7 +10,8 @@ public class UpdateQuantityForm {
   @Min(value = 1, message = "Số lượng mới phải >= 1.")
   private Integer newQuantity;
 
-  public UpdateQuantityForm() {}
+  public UpdateQuantityForm() {
+  }
 
   public Integer getNewQuantity() {
     return newQuantity;

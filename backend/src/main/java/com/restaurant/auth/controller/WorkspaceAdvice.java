@@ -16,31 +16,25 @@ public class WorkspaceAdvice {
   @ModelAttribute("user")
   public Map<String, Object> currentUser(Authentication auth) {
     var user = new LinkedHashMap<String, Object>();
-    if (auth == null) return user;
-    String role =
-        auth.getAuthorities().stream()
-            .map(a -> a.getAuthority())
-            .filter(a -> a.startsWith("ROLE_"))
-            .findFirst()
-            .orElse("ROLE_WAITER")
-            .substring(5);
+    if (auth == null)
+      return user;
+    String role = auth.getAuthorities().stream().map(a -> a.getAuthority())
+        .filter(a -> a.startsWith("ROLE_")).findFirst().orElse("ROLE_WAITER")
+        .substring(5);
     user.put("name", auth.getName());
     user.put("username", auth.getName());
-    user.put("role", role.substring(0, 1) + role.substring(1).toLowerCase(Locale.ROOT));
-    accounts
-        .findByUsername(auth.getName())
-        .ifPresent(
-            a -> {
-              user.put("id", a.getEmployee().getEmployeeId());
-              user.put("name", a.getEmployee().getFullName());
-            });
+    user.put("role",
+        role.substring(0, 1) + role.substring(1).toLowerCase(Locale.ROOT));
+    accounts.findByUsername(auth.getName()).ifPresent(a -> {
+      user.put("id", a.getEmployee().getEmployeeId());
+      user.put("name", a.getEmployee().getFullName());
+    });
     String name = user.get("name").toString().trim();
     String[] words = name.split("\\s+");
     user.put("firstName", words[0]);
-    user.put(
-        "initials",
+    user.put("initials",
         (words[0].substring(0, 1)
-                + (words.length > 1 ? words[words.length - 1].substring(0, 1) : ""))
+            + (words.length > 1 ? words[words.length - 1].substring(0, 1) : ""))
             .toUpperCase(Locale.ROOT));
     return user;
   }

@@ -23,18 +23,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TableServiceImplTest {
 
-  @Mock private TableRepository tableRepository;
+  @Mock
+  private TableRepository tableRepository;
 
-  @Mock private OrderRepository orderRepository;
+  @Mock
+  private OrderRepository orderRepository;
 
-  @InjectMocks private TableServiceImpl tableService;
+  @InjectMocks
+  private TableServiceImpl tableService;
 
   private RestaurantTable table;
 
   @BeforeEach
   void setUp() {
     org.mockito.Mockito.lenient()
-        .when(tableRepository.findByIdWithPessimisticLock(org.mockito.ArgumentMatchers.any()))
+        .when(tableRepository
+            .findByIdWithPessimisticLock(org.mockito.ArgumentMatchers.any()))
         .thenAnswer(inv -> tableRepository.findById(inv.getArgument(0)));
     table = new RestaurantTable();
     table.setId(1);
@@ -48,7 +52,7 @@ class TableServiceImplTest {
   @Test
   void listTables_shouldReturnTableViewList() {
     when(tableRepository.findAll()).thenReturn(List.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+    when(orderRepository.findOpenTableOrders()).thenReturn(List.of());
 
     List<TableView> result = tableService.listTables();
 
@@ -62,8 +66,9 @@ class TableServiceImplTest {
 
   @Test
   void listTablesByStatus_shouldReturnFilteredTableViewList() {
-    when(tableRepository.findByStatus(TableStatus.AVAILABLE)).thenReturn(List.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+    when(tableRepository.findByStatus(TableStatus.AVAILABLE))
+        .thenReturn(List.of(table));
+    when(orderRepository.findOpenTableOrders()).thenReturn(List.of());
 
     List<TableView> result = tableService.listTablesByStatus("AVAILABLE");
 
@@ -75,7 +80,8 @@ class TableServiceImplTest {
   void getTable_notFound_shouldThrowNotFoundException() {
     when(tableRepository.findById(999)).thenReturn(Optional.empty());
 
-    NotFoundException ex = assertThrows(NotFoundException.class, () -> tableService.getTable(999));
+    NotFoundException ex = assertThrows(NotFoundException.class,
+        () -> tableService.getTable(999));
     assertTrue(ex.getMessage().contains("Không tìm thấy bàn"));
   }
 
@@ -85,9 +91,11 @@ class TableServiceImplTest {
   void updateTableStatus_availableToOutOfService_shouldSucceed() {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
-    when(tableRepository.save(any(RestaurantTable.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(tableRepository.save(any(RestaurantTable.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
-    RestaurantTable result = tableService.updateTableStatus(1, TableStatus.OUT_OF_SERVICE);
+    RestaurantTable result = tableService.updateTableStatus(1,
+        TableStatus.OUT_OF_SERVICE);
 
     assertEquals(TableStatus.OUT_OF_SERVICE, result.getStatus());
     verify(tableRepository).save(table);
@@ -98,9 +106,11 @@ class TableServiceImplTest {
     table.setStatus(TableStatus.OUT_OF_SERVICE);
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
-    when(tableRepository.save(any(RestaurantTable.class))).thenAnswer(inv -> inv.getArgument(0));
+    when(tableRepository.save(any(RestaurantTable.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
 
-    RestaurantTable result = tableService.updateTableStatus(1, TableStatus.AVAILABLE);
+    RestaurantTable result = tableService.updateTableStatus(1,
+        TableStatus.AVAILABLE);
 
     assertEquals(TableStatus.AVAILABLE, result.getStatus());
     verify(tableRepository).save(table);
@@ -110,9 +120,8 @@ class TableServiceImplTest {
   void updateTableStatus_manualOccupied_shouldThrowBusinessException() {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class, () -> tableService.updateTableStatus(1, TableStatus.OCCUPIED));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> tableService.updateTableStatus(1, TableStatus.OCCUPIED));
     assertTrue(ex.getMessage().contains("thủ công"));
     assertTrue(ex.getMessage().contains("OCCUPIED"));
   }
@@ -121,10 +130,8 @@ class TableServiceImplTest {
   void updateTableStatus_sameStatus_shouldThrowBusinessException() {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class,
-            () -> tableService.updateTableStatus(1, TableStatus.AVAILABLE));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> tableService.updateTableStatus(1, TableStatus.AVAILABLE));
     assertTrue(ex.getMessage().contains("không thay đổi"));
   }
 
@@ -133,10 +140,8 @@ class TableServiceImplTest {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
     when(orderRepository.existsOpenByTableId(1)).thenReturn(true);
 
-    BusinessException ex =
-        assertThrows(
-            BusinessException.class,
-            () -> tableService.updateTableStatus(1, TableStatus.OUT_OF_SERVICE));
+    BusinessException ex = assertThrows(BusinessException.class,
+        () -> tableService.updateTableStatus(1, TableStatus.OUT_OF_SERVICE));
     assertTrue(ex.getMessage().contains("đơn OPEN"));
   }
 
@@ -144,10 +149,8 @@ class TableServiceImplTest {
   void updateTableStatus_tableNotFound_shouldThrowNotFoundException() {
     when(tableRepository.findById(999)).thenReturn(Optional.empty());
 
-    NotFoundException ex =
-        assertThrows(
-            NotFoundException.class,
-            () -> tableService.updateTableStatus(999, TableStatus.OUT_OF_SERVICE));
+    NotFoundException ex = assertThrows(NotFoundException.class,
+        () -> tableService.updateTableStatus(999, TableStatus.OUT_OF_SERVICE));
     assertTrue(ex.getMessage().contains("Không tìm thấy bàn"));
   }
 
@@ -172,7 +175,8 @@ class TableServiceImplTest {
   @Test
   void getTable_canCreateOrder_true_whenAvailableAndNoOpenOrder() {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.empty());
 
     TableView view = tableService.getTable(1);
 
@@ -183,7 +187,8 @@ class TableServiceImplTest {
   void getTable_canCreateOrder_false_whenOccupied() {
     table.setStatus(TableStatus.OCCUPIED);
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.of(10));
 
     TableView view = tableService.getTable(1);
 
@@ -195,7 +200,8 @@ class TableServiceImplTest {
   void getTable_canCreateOrder_false_whenOutOfService() {
     table.setStatus(TableStatus.OUT_OF_SERVICE);
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.empty());
 
     TableView view = tableService.getTable(1);
 
@@ -205,7 +211,8 @@ class TableServiceImplTest {
   @Test
   void getTable_canCreateOrder_false_whenHasOpenOrder() {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.of(10));
 
     TableView view = tableService.getTable(1);
 
@@ -216,7 +223,8 @@ class TableServiceImplTest {
   @Test
   void getTable_canChangeStatus_true_whenAvailableAndNoOpenOrder() {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.empty());
 
     TableView view = tableService.getTable(1);
 
@@ -227,7 +235,8 @@ class TableServiceImplTest {
   void getTable_canChangeStatus_true_whenOutOfServiceAndNoOpenOrder() {
     table.setStatus(TableStatus.OUT_OF_SERVICE);
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.empty());
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.empty());
 
     TableView view = tableService.getTable(1);
 
@@ -238,7 +247,8 @@ class TableServiceImplTest {
   void getTable_canChangeStatus_false_whenOccupied() {
     table.setStatus(TableStatus.OCCUPIED);
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.of(10));
 
     TableView view = tableService.getTable(1);
 
@@ -248,10 +258,36 @@ class TableServiceImplTest {
   @Test
   void getTable_canChangeStatus_false_whenHasOpenOrder() {
     when(tableRepository.findById(1)).thenReturn(Optional.of(table));
-    when(orderRepository.findOpenOrderIdByTableId(1)).thenReturn(Optional.of(10));
+    when(orderRepository.findOpenOrderIdByTableId(1))
+        .thenReturn(Optional.of(10));
 
     TableView view = tableService.getTable(1);
 
     assertFalse(view.canChangeStatus());
+  }
+
+  @Test
+  void tableListReadsOpenOrdersOnceAndPreservesOccupiedOrderLink() {
+    var second = new RestaurantTable();
+    second.setId(2);
+    second.setTableName("Table 2");
+    second.setCapacity(4);
+    second.setStatus(TableStatus.OCCUPIED);
+    var open = new OrderRepository.OpenTableOrder() {
+      public Integer getTableId() {
+        return 2;
+      }
+      public Integer getOrderId() {
+        return 99;
+      }
+    };
+    when(tableRepository.findAll()).thenReturn(List.of(table, second));
+    when(orderRepository.findOpenTableOrders()).thenReturn(List.of(open));
+    var views = tableService.listTables();
+    assertNull(views.getFirst().currentOrderId());
+    assertEquals(99, views.get(1).currentOrderId());
+    assertFalse(views.get(1).canCreateOrder());
+    verify(orderRepository, times(1)).findOpenTableOrders();
+    verify(orderRepository, never()).findOpenOrderIdByTableId(any());
   }
 }
