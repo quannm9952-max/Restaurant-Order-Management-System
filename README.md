@@ -3,32 +3,41 @@
 Hệ thống quản lý nhà hàng: tài khoản, nhân viên, bàn, đặt món, bếp, phục vụ,
 thực đơn, thanh toán/hóa đơn, tra cứu và báo cáo doanh thu.
 
-## Ba phần mã nguồn
+## Mã nguồn và công nghệ
 
 ```text
 frontend/    HTML, CSS, JavaScript, Thymeleaf, Bootstrap và ảnh/font
 backend/     Java 21, Spring Boot, MVC, Security, JPA/JDBC và JUnit
-database/   Schema, dữ liệu demo, dữ liệu test và SQL đối soát
+database/    Schema, dữ liệu demo/test và SQL đối soát
 ```
 
-`run.cmd` chạy ứng dụng; `verify.cmd` kiểm thử và đóng gói.
-Tài liệu kỹ thuật hiện tại nằm trong `backend/docs`.
+Docker Compose đóng gói và chạy Spring Boot cùng MySQL 8.4.13. Công nghệ,
+nghiệp vụ và giao diện giữ nguyên. Không cần XAMPP, MySQL hoặc JDK cài riêng
+để chạy bằng Docker. VS Code/IntelliJ và GitHub vẫn dùng như trước.
 
-## Chạy trên Windows
+## Chạy bằng Docker Compose
 
-Cần OpenJDK 21 và MySQL Community. Mở PowerShell ở gốc dự án:
+Cài và mở [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/),
+chọn Linux containers và chờ Docker Engine hoạt động. Trên Windows, chuẩn bị
+WSL2 theo hướng dẫn của Docker Desktop. Sau đó mở terminal tại gốc dự án:
 
 ```powershell
-$env:DB_URL = "jdbc:mysql://localhost:3306/restaurant_order_management_demo?createDatabaseIfNotExist=true"
-$env:DB_USERNAME = "root"
-$env:DB_PASSWORD = "mat_khau_mysql_tren_may_ban"
-.\run.cmd
+Copy-Item .env.example .env
+docker compose up --build -d
 ```
 
-Nếu MySQL local không có mật khẩu, đặt `$env:DB_PASSWORD = ""`.
-Điều chỉnh host/cổng/database trong DB_URL cho máy đang sử dụng.
-Mở **http://localhost:8080**. Đổi cổng bằng `$env:PORT = "8081"`.
-Không cần Node.js để chạy giao diện.
+Hoặc chạy `run.cmd`; file này tạo `.env` nếu chưa có và gọi cùng lệnh Compose.
+Mở **http://localhost:8080** khi log app báo đã khởi động.
+Nếu cổng 8080 đang được ứng dụng khác sử dụng, đổi `APP_PORT` trong `.env`.
+
+```powershell
+docker compose ps
+docker compose logs -f app
+docker compose down
+```
+
+`down` giữ dữ liệu trong volume `mysql-data`. Không dùng `down -v` khi cần giữ
+lại dữ liệu. Đổi mật khẩu DB trong `.env` không tự đổi mật khẩu của volume đã có.
 
 | Actor | Tài khoản demo | Mật khẩu |
 | --- | --- | --- |
@@ -37,21 +46,33 @@ Không cần Node.js để chạy giao diện.
 | Chef | demo_chef | 123456 |
 | Cashier | demo_cashier | 123456 |
 
-`run.cmd` chọn profile demo mặc định. Profile này tạo schema/dữ liệu còn thiếu;
-khởi động lại giữ các thay đổi và mật khẩu đã lưu. Profile default không nạp
-SQL hay tạo tài khoản. Có thể cấu hình `DEMO_PASSWORD` trước lần tạo tài khoản
-đầu tiên. Mật khẩu được lưu bằng BCrypt.
+Container app dùng profile demo để tạo schema/dữ liệu còn thiếu; khởi động
+lại giữ các thay đổi và mật khẩu đã lưu. `.env` chứa cấu hình local và được
+Git bỏ qua. Xem `.env.example` để biết cổng và tài khoản MySQL mẫu.
 
-## Kiểm tra
+MySQL Docker mặc định ở **localhost:3308** để không trùng MySQL/XAMPP cũ.
+DBeaver kết nối bằng MYSQL_DATABASE/MYSQL_USER/MYSQL_PASSWORD trong `.env`.
+Trong mạng Docker, app kết nối `db:3306`.
+
+## Kiểm thử
 
 ```powershell
 .\verify.cmd
 ```
 
-Kiểm thử dùng H2 riêng. Thư mục `backend/target` và log là kết quả sinh ra,
-được Git bỏ qua. Các ca kiểm tra nghiệp vụ, quyền, rollback và đồng thời nằm
-trong `backend/src/test/java`.
+Lệnh build stage verify trong Docker, chạy Maven/JUnit/H2 như trước. Có thể
+chạy trực tiếp khi máy phát triển đã có JDK 21:
 
+```powershell
+cd backend
+.\mvnw.cmd --no-transfer-progress verify
+```
+
+GitHub Actions chạy kiểm thử Java và kiểm tra khởi động Docker Compose trên
+Linux. Image runtime chứa JRE, JAR và SQL; frontend nằm trong JAR. Các file
+build, log, `.env` và bản sao lưu DB không được đưa vào image hoặc Git.
+
+- [Hướng dẫn Docker và chuyển dữ liệu cũ](backend/docs/docker.md)
 - [Kiến trúc và quy ước](backend/docs/architecture.md)
 - [Yêu cầu nghiệp vụ](backend/docs/requirements.md)
 - [Kết quả kiểm thử](backend/docs/testing.md)

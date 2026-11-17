@@ -62,3 +62,19 @@ ngoài thư mục dự án.
 Đây là kiểm chứng chức năng và cấu trúc; không phải kiểm thử tải hoặc xác
 nhận độ khớp Figma 100% bằng quan sát trình duyệt. GitHub Actions được cấu
 hình chạy verify; kết quả trên là kết quả chạy local.
+
+## Bổ sung môi trường Docker Compose
+
+Đợt này chỉ thay file đóng gói/chạy và hướng dẫn. Git diff xác nhận POM,
+backend/src, frontend và SQL nghiệp vụ không đổi. Maven test chạy lại:
+**208 test đạt, 0 failure, 0 error**. Compose YAML hợp lệ với JSON Schema
+chính thức của Compose Specification; có đúng app Spring Boot và db MySQL.
+
+Job `docker` trong GitHub Actions kiểm tra `compose config`, build/chạy hai
+container trên Linux, đăng nhập bốn actor, kiểm tra 9 bảng và giá món đã sửa
+được giữ qua down/up bằng cùng volume. Xem kết quả tại
+[GitHub Actions](https://github.com/quannm9952-max/Restaurant-Order-Management-System/actions).
+
+Máy làm việc chưa có Docker Desktop/WSL2; theo lựa chọn của người dùng, agent
+không cài hệ thống và chưa chạy Docker local. Hướng dẫn ở docker.md để chạy
+sau khi người dùng tự cài. MySQL và dữ liệu local cũ không bị sửa/xóa.

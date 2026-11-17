@@ -1,0 +1,55 @@
+name: restaurant-system
+
+services:
+  db:
+    image: mysql:8.4.13
+    command:
+      - --lower-case-table-names=1
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-restaurant_order_management}
+      MYSQL_USER: ${MYSQL_USER:-restaurant}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-restaurant_local}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_local}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3308}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$${MYSQL_PASSWORD}" mysql --protocol=TCP
+          --host=127.0.0.1 --user="$${MYSQL_USER}"
+          --database="$${MYSQL_DATABASE}" --execute='SELECT 1' >/dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 40s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-restaurant_order_management}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Ho_Chi_Minh
+      DB_USERNAME: ${MYSQL_USER:-restaurant}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-restaurant_local}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-123456}
+      PORT: "8080"
+      TZ: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

@@ -16,3 +16,6 @@ Không chạy test-data trên database đang sử dụng vì fixture có thể g
 Sau khi chọn đúng database trong DBeaver/MySQL client, chạy schema.sql rồi
 demo-data.sql để chuẩn bị dữ liệu thủ công. Không có bảng Kitchen hoặc Revenue;
 bếp/phục vụ dùng Orders/Order_Detail, báo cáo đọc Payment/Orders.
+
+Môi trường Docker Compose dùng MySQL 8.4.13 tại localhost:3308. Dữ liệu
+lưu trong named volume; xem `backend/docs/docker.md` để chuyển dữ liệu cũ.

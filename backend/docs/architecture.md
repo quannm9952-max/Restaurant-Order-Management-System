@@ -2,6 +2,7 @@
 
 Ứng dụng dùng Java 21, Spring Boot, Thymeleaf, Bootstrap và MySQL.
 Một JAR chứa cả backend và frontend. H2 chỉ dùng để kiểm thử.
+Docker Compose chạy JAR và MySQL thành hai container; chi tiết trong docker.md.
 
 ```text
 backend/src/main/java/com/restaurant/

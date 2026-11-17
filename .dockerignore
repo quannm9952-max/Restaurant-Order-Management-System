@@ -1,0 +1,13 @@
+.git
+.github
+.vscode
+**/target
+**/*.log
+**/*.iml
+**/.classpath
+**/.project
+**/.settings
+.env
+.env.*
+**/backups
+backend/docs

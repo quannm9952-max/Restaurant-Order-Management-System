@@ -18,3 +18,71 @@ jobs:
       - name: Check formatting, test and package
         working-directory: backend
         run: sh ./mvnw --batch-mode --no-transfer-progress verify
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose
+        run: docker compose --env-file .env.example config --quiet
+      - name: Start Spring Boot and MySQL
+        run: docker compose --env-file .env.example up --build --detach
+      - name: Check application and four actors
+        shell: bash
+        run: |
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/login > /tmp/login.html; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://localhost:8080/login > /tmp/login.html
+          grep -q 'name="username"' /tmp/login.html
+          for role in manager waiter chef cashier; do
+            cookies=$(mktemp)
+            curl --fail --silent --cookie-jar "$cookies" http://localhost:8080/login > /tmp/login.html
+            token=$(sed -n 's/.*name="_csrf"[^>]*value="\([^" ]*\)".*/\1/p' /tmp/login.html)
+            test -n "$token"
+            code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+              --cookie "$cookies" --cookie-jar "$cookies" \
+              --data-urlencode "_csrf=$token" \
+              --data-urlencode "username=demo_$role" \
+              --data-urlencode "password=123456" http://localhost:8080/login)
+            test "$code" = 302
+            case "$role" in
+              manager) path=employees ;;
+              waiter) path=orders ;;
+              chef) path=kitchen ;;
+              cashier) path=payments ;;
+            esac
+            code=$(curl --silent --output /tmp/page.html --write-out '%{http_code}' \
+              --cookie "$cookies" "http://localhost:8080/$path")
+            test "$code" = 200
+          done
+          tables=$(docker compose --env-file .env.example exec -T db sh -c \
+            'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()"')
+          test "$tables" = 9
+      - name: Check persistent MySQL data
+        shell: bash
+        run: |
+          docker compose --env-file .env.example exec -T db sh -c \
+            'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" -e "UPDATE Menu_item SET unit_price=77.00 WHERE item_id=9111"'
+          docker compose --env-file .env.example down
+          docker compose --env-file .env.example up --detach
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/login > /tmp/login.html; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent http://localhost:8080/login > /tmp/login.html
+          price=$(docker compose --env-file .env.example exec -T db sh -c \
+            'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" -N -e "SELECT unit_price FROM Menu_item WHERE item_id=9111"')
+          test "$price" = 77.00
+      - name: Container logs
+        if: always()
+        run: docker compose --env-file .env.example logs --no-color --tail 150
+      - name: Stop test containers
+        if: always()
+        run: docker compose --env-file .env.example down
