@@ -10,7 +10,7 @@ import com.restaurant.exceptions.NotFoundException;
 import java.util.List;
 
 /**
- * Service interface for managing orders (UC05). // TODO(auth): chỉ WAITER - chỉ WAITER được
+ * Service interface for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được
  * tạo/sửa/hủy đơn.
  */
 public interface IOrderService {
@@ -89,14 +89,14 @@ public interface IOrderService {
   Order cancelOrder(Integer orderId, String reason);
 
   /**
-   * Get all OPEN orders as summary views. // TODO(auth): WAITER, MANAGER
+   * Get all OPEN orders as summary views. Access: WAITER, MANAGER
    *
    * @return list of open order summary views
    */
   List<OrderSummaryView> listOpenOrders();
 
   /**
-   * Get an order by ID with details as a view DTO. // TODO(auth): WAITER, MANAGER
+   * Get an order by ID with details as a view DTO. Access: WAITER, MANAGER
    *
    * @param id the order ID
    * @return the order detail view

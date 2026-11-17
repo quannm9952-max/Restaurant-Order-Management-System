@@ -65,9 +65,9 @@ DATABASE
 
 | Component | Technology |
 |---|---|
-| Frontend | To be updated |
-| Backend | To be updated |
-| Database | To be updated |
-| Development IDE | To be updated |
+| Frontend | HTML, CSS, JavaScript, Thymeleaf, Bootstrap |
+| Backend | Java 21 (OpenJDK), Spring Boot 4.1.2, Spring Security |
+| Database | MySQL Community; DBeaver Community for inspection |
+| Development IDE | Visual Studio Code |
 | Version Control | Git and GitHub |
-| Architecture | 3-Layer Architecture |
+| Architecture | MVC; Controller / Service / Repository, shared entities, DTOs, validation |

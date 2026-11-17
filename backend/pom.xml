@@ -11,8 +11,8 @@
 	<groupId>com.restaurant</groupId>
 	<artifactId>restaurant-order-management</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>Restaurant Order Management System</name>
+	<description>Integrated accounts, orders, menu, checkout and reporting</description>
 	<url/>
 	<licenses>
 		<license/>

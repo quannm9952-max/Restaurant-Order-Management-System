@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Controller for managing restaurant tables (UC04). // TODO(auth): WAITER, MANAGER - chỉ WAITER,
+ * Controller for managing restaurant tables (UC04). Access: WAITER, MANAGER - chỉ WAITER,
  * MANAGER được cập nhật trạng thái bàn và xem đơn/bàn.
  */
 @Controller

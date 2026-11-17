@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Controller for managing orders (UC05). // TODO(auth): chỉ WAITER - chỉ WAITER được tạo/sửa/hủy
+ * Controller for managing orders (UC05). Access: chỉ WAITER - chỉ WAITER được tạo/sửa/hủy
  * đơn.
  */
 @Controller

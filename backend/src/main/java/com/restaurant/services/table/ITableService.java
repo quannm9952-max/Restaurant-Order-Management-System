@@ -8,20 +8,20 @@ import com.restaurant.exceptions.NotFoundException;
 import java.util.List;
 
 /**
- * Service interface for managing restaurant tables (UC04). // TODO(auth): WAITER, MANAGER - chỉ
+ * Service interface for managing restaurant tables (UC04). Access: WAITER, MANAGER - chỉ
  * WAITER, MANAGER được cập nhật trạng thái bàn và xem đơn/bàn.
  */
 public interface ITableService {
 
   /**
-   * Get all tables as view DTOs. // TODO(auth): WAITER, MANAGER
+   * Get all tables as view DTOs. Access: WAITER, MANAGER
    *
    * @return list of all table views
    */
   List<TableView> listTables();
 
   /**
-   * Get tables filtered by status as view DTOs. // TODO(auth): WAITER, MANAGER
+   * Get tables filtered by status as view DTOs. Access: WAITER, MANAGER
    *
    * @param status the status filter string
    * @return list of table views with the given status
@@ -29,7 +29,7 @@ public interface ITableService {
   List<TableView> listTablesByStatus(String status);
 
   /**
-   * Get a table by ID as a view DTO. // TODO(auth): WAITER, MANAGER
+   * Get a table by ID as a view DTO. Access: WAITER, MANAGER
    *
    * @param id the table ID
    * @return the table view

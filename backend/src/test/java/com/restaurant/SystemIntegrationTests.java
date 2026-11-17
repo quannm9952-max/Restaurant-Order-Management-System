@@ -175,12 +175,22 @@ class SystemIntegrationTests {
         .andExpect(content().string(org.hamcrest.Matchers.containsString("INV-1100")));
   }
 
-  @Test
+  @ParameterizedTest
+  @ValueSource(strings = {"PENDING", "PREPARING", "READY"})
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
-  void rejectsUnservedItemsAndRecordsFailedPaymentWithoutClosingOrder() {
-    jdbc.update("UPDATE Order_Detail SET preparation_status='PENDING' WHERE order_id=1100");
+  void rejectsPaymentAttemptsBeforeAllItemsAreServed(String status) {
+    jdbc.update("UPDATE Order_Detail SET preparation_status=? WHERE order_id=1100", status);
     assertThatThrownBy(() -> payments.payOrder(1100, "Cash", true))
         .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> payments.payOrder(1100, "Cash", false))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM Payment WHERE order_id=1100", Long.class))
+        .isZero();
+  }
+
+  @Test
+  @WithMockUser(username = "test_cashier", roles = "CASHIER")
+  void recordsFailedPaymentForAServedOrderWithoutClosingIt() {
     payments.payOrder(1100, "Cash", false);
     assertThat(jdbc.queryForObject("SELECT status FROM Orders WHERE order_id=1100", String.class))
         .isEqualTo("OPEN");
@@ -188,6 +198,19 @@ class SystemIntegrationTests {
             jdbc.queryForObject(
                 "SELECT status FROM Restaurant_tables WHERE table_id=9010", String.class))
         .isEqualTo("OCCUPIED");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"AVAILABLE", "OCCUPIED", "OUT_OF_SERVICE"})
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void tableFiltersUseTheSharedEnum(String status) throws Exception {
+    mvc.perform(get("/tables").param("status", status)).andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void invalidTableFilterIsRejected() throws Exception {
+    mvc.perform(get("/tables").param("status", "INVALID")).andExpect(status().isBadRequest());
   }
 
   @Test
@@ -229,6 +252,18 @@ class SystemIntegrationTests {
   }
 
   @Test
+  @WithMockUser(username = "test_waiter", roles = "WAITER")
+  void aNoteAcceptedByTheOrderFormPersistsWithoutAnEntityValidationFailure() {
+    String note = "N".repeat(500);
+    var order = orders.createOrder(9004, note, List.of(new OrderLine(9001, 1)));
+    entityManager.flush();
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT notes FROM Orders WHERE order_id=?", String.class, order.getId()))
+        .isEqualTo(note);
+  }
+
+  @Test
   @WithMockUser(username = "test_manager", roles = "MANAGER")
   void menuChangesAndDeactivationPreserveOrderHistory() {
     menu.updateMenu(
@@ -261,7 +296,7 @@ class SystemIntegrationTests {
         null,
         "TEST employee",
         "Waiter",
-        "test_new_employee",
+        " test_new_employee ",
         "TEST_password_2026",
         com.restaurant.entities.enums.Role.WAITER,
         true);

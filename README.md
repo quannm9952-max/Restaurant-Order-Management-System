@@ -1,5 +1,73 @@
-# Restaurant-Order-Management-System
-Restaurant Order Management System Project
+# Restaurant Order Management System
+
+Bản tích hợp TV1, TV2, TV4 và TV5: đăng nhập, tài khoản nhân viên, bàn, đơn hàng, thực đơn, thanh toán/hóa đơn, tra cứu đơn, doanh thu và lịch sử thanh toán. **UC06–UC07 của TV3 chưa được tích hợp**; Chef đăng nhập được và thấy thông báo chờ module bếp.
+
+## Chạy trên Windows
+
+Cần OpenJDK 21 và MySQL Community đang chạy. Maven Wrapper được cung cấp trong `backend`; không cần cài Node.js để chạy giao diện Thymeleaf.
+
+Mở PowerShell tại thư mục repository:
+
+```powershell
+# Thay các giá trị theo MySQL trên máy của bạn; không commit mật khẩu thật.
+$env:DB_USERNAME = "root"
+$env:DB_PASSWORD = "mat_khau_mysql_tren_may_ban"
+.\run.cmd
+```
+
+Nếu tài khoản MySQL local không có mật khẩu, đặt `$env:DB_PASSWORD = ""`. Mặc định profile `demo` dùng database riêng `restaurant_order_management_demo` ở cổng 3306, tạo schema 9 bảng và dữ liệu giả lập. Tài khoản DB cần quyền tạo database/bảng; có thể tạo database trước bằng MySQL client hoặc DBeaver nếu không cấp quyền tạo database cho ứng dụng.
+
+Nếu dùng cổng hoặc tên database khác:
+
+```powershell
+$env:DB_URL = "jdbc:mysql://127.0.0.1:3307/restaurant_order_management_demo?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false"
+.\run.cmd
+```
+
+Mở **http://localhost:8080**. Có thể đổi cổng ứng dụng bằng `$env:PORT = "8081"`.
+
+| Vai trò | Tài khoản demo |
+| --- | --- |
+| Manager | `demo_manager` |
+| Waiter | `demo_waiter` |
+| Cashier | `demo_cashier` |
+| Chef | `demo_chef` |
+
+Mật khẩu demo mặc định cho cả bốn tài khoản: **`DEMO_Restaurant_2026`**. Đây là thông tin thử nghiệm công khai, chỉ tạo trong profile `demo`. Đặt `$env:DEMO_PASSWORD` trước lần tạo tài khoản đầu tiên để dùng mật khẩu thử nghiệm khác. Khởi động lại không đặt lại mật khẩu hoặc thay đổi nghiệp vụ đã lưu; tài khoản đã có có thể đổi qua trang quản lý nhân viên.
+
+`run.cmd` chọn profile `demo` nếu chưa đặt `SPRING_PROFILES_ACTIVE`. Cấu hình mặc định ngoài demo không tự tạo tài khoản hay nạp SQL và dùng database `restaurant_order_management`; có thể đặt `$env:SPRING_PROFILES_ACTIVE = "default"` sau khi chuẩn bị DB/tài khoản theo hướng dẫn triển khai của nhóm.
+
+## Kiểm tra và demo
+
+```powershell
+.\verify.cmd
+```
+
+Lệnh chạy JUnit, kiểm thử Spring Security, JPA/JDBC, render Thymeleaf và HTTP servlet, rồi đóng gói JAR. Kiểm thử tự động dùng H2 riêng, không ghi vào MySQL đang sử dụng. Chi tiết kết quả MySQL và giới hạn kiểm chứng nằm trong [docs/VERIFICATION.md](docs/VERIFICATION.md).
+
+- Manager quản lý nhân viên/thực đơn/bàn, xem đơn và báo cáo; Waiter tạo/sửa/hủy đơn theo điều kiện; Cashier thanh toán/in hóa đơn.
+- Dữ liệu báo cáo mẫu **29/10–04/11/2026** có **24 thanh toán thành công, 1,892.00 USD**, không tính 4 giao dịch pending/failed. Báo cáo mặc định mở khoảng mẫu; để xem thanh toán mới, chọn khoảng ngày chứa ngày phát sinh.
+- Đơn **DEMO 1100**, bàn **DEMO Checkout Table**, có món đã Served và tổng **39.00 USD** để thử checkout độc lập. Thanh toán hợp lệ tạo Payment + Invoice, hoàn tất đơn và giải phóng bàn trong một transaction.
+- Đơn mới tạo vẫn Pending và chưa được thanh toán cho đến khi có module TV3. Không có nút giả để bỏ qua luồng bếp/phục vụ.
+- Profile demo nạp `demo-seed.sql` và `demo-extra.sql` theo cách không ghi đè thay đổi khi khởi động lại. `seed.sql` là fixture đối soát dành cho kiểm thử/reset dữ liệu mẫu, không chạy trên DB nghiệp vụ đang dùng.
+- Tất cả số tiền demo dùng USD; không phải dữ liệu hoặc tỷ giá của nhà hàng thật.
+
+## Cấu trúc mã nguồn và công nghệ
+
+```text
+backend/       Java 21, Spring Boot, Controller / Service / Repository,
+               entity dùng chung, DTO, validation, Spring Security và JUnit
+frontend/      HTML, CSS, JavaScript, Thymeleaf, Bootstrap, ảnh/font local
+database/      Schema 9 bảng, seed kiểm thử, seed demo và truy vấn đối soát
+docs/          Ghi chú tích hợp, kiểm thử và hợp đồng để bổ sung TV3
+run.cmd        Build và chạy ứng dụng trên localhost
+verify.cmd     Kiểm thử và đóng gói
+```
+
+Frontend được Maven đóng gói vào cùng một JAR; không chạy một frontend server riêng. Có thể dùng DBeaver Community để kiểm tra schema/dữ liệu trong MySQL. Xem [docs/INTEGRATION.md](docs/INTEGRATION.md) để biết nguồn đóng góp từng thành viên, quyền và cách tích hợp TV3 sau.
+
+## Tài liệu phân tích và thiết kế
+
 [Sơ đồ DFD](https://drive.google.com/drive/folders/1iH7k0nbfwjVc4JCCPAepSWYFlU3fPa_O?usp=sharing)
 ## GUI Design
 

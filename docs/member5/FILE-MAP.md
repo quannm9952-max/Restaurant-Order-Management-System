@@ -1,3 +1,5 @@
+> Historical member-5 handoff before integration. Use [the current README](../../README.md) and [integration notes](../INTEGRATION.md) for startup, account and architecture details.
+
 # Phân loại file thành viên 5
 
 Bản chuẩn bị nằm trong `restaurant-order-management-git`, trên nhánh `feature/reports-history`. Cấu trúc chính gồm frontend, backend và database. Các file dưới đây là đường dẫn tính từ thư mục repository.

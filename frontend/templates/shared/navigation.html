@@ -1,5 +1,5 @@
 <!DOCTYPE html><html xmlns:th="http://www.thymeleaf.org"><body>
-<nav th:fragment="navigation" class="system-nav" aria-label="Restaurant workspace">
+<nav th:fragment="navigation" th:if="${user != null and !#maps.isEmpty(user)}" class="system-nav" aria-label="Restaurant workspace">
 <a href="/home">Restaurant - Home</a>
 <a th:if="${user.role=='Manager' or user.role=='Waiter'}" href="/tables">Tables</a>
 <a th:if="${user.role=='Manager' or user.role=='Waiter'}" href="/orders">Orders</a>

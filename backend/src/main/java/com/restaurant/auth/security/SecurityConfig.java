@@ -2,12 +2,14 @@ package com.restaurant.auth.security;
 
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -21,6 +23,7 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/login",
                         "/error",
+                        "/access-denied",
                         "/css/**",
                         "/orders/css/**",
                         "/orders/js/**",
@@ -48,7 +51,7 @@ public class SecurityConfig {
                     .hasRole("WAITER")
                     .requestMatchers(HttpMethod.POST, "/tables/**")
                     .hasAnyRole("WAITER", "MANAGER")
-                    .requestMatchers("/", "/home", "/dashboard", "/access-denied", "/logout")
+                    .requestMatchers("/", "/home", "/dashboard", "/logout")
                     .authenticated()
                     .anyRequest()
                     .denyAll())

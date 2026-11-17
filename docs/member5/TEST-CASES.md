@@ -1,3 +1,5 @@
+> Historical member-5 handoff before integration. Use [the current README](../../README.md) and [integration notes](../INTEGRATION.md) for startup, account and architecture details.
+
 # Test case và kết quả phần thành viên 5
 
 Ngày kiểm tra: 15/11/2026, múi giờ Asia/Bangkok. Phạm vi là UC10–UC12 và profile demo độc lập; chưa kiểm thử xuyên suốt với code của TV1–TV4.

@@ -47,11 +47,11 @@ public class EmployeeService {
       Integer id,
       String fullName,
       String position,
-      String username,
+      String suppliedUsername,
       String password,
       Role role,
       boolean active) {
-
+    String username = suppliedUsername == null ? null : suppliedUsername.trim();
     if (fullName == null || fullName.isBlank()) {
       throw new IllegalArgumentException("Full name is required.");
     }

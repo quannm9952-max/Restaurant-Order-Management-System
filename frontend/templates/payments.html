@@ -350,7 +350,7 @@
           <div class="rule-item">✓ Order is currently in <b>Open</b> status</div>
           <div class="rule-item">✓ All dishes have been verified as <b>Served</b></div>
           <div class="rule-item">✓ No prior Successful payment transaction exists</div>
-          <div class="rule-item">🔒 Transaction is protected via <b>Database Transaction & SELECT FOR UPDATE</b></div>
+          <div class="rule-item">🔒 Payment, invoice, order and table are updated together</div>
         </div>
 
         <div class="modal-foot" style="padding-top:15px;">
@@ -512,7 +512,7 @@ function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceA
   function handlePaymentSubmit(form) {
     const btn = document.getElementById('btnSubmitPayment');
     btn.disabled = true;
-    btn.innerHTML = '⏳ Processing transaction with Database lock...';
+    btn.innerHTML = '⏳ Recording payment...';
     btn.style.opacity = '0.7';
     return true;
   }

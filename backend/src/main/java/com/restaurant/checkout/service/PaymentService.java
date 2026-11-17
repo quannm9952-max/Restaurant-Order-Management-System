@@ -119,7 +119,7 @@ public class PaymentService {
     var detail = orderDetailForPayment(id);
     if (((Number) detail.get("total_items")).longValue() == 0)
       throw new IllegalStateException("Order has no active items.");
-    if (success && !Boolean.TRUE.equals(detail.get("readyToPay")))
+    if (!Boolean.TRUE.equals(detail.get("readyToPay")))
       throw new IllegalStateException("Every active item must be Served before payment.");
     String method = paymentMethod == null ? "Cash" : paymentMethod.trim();
     if (!Set.of("Cash", "Card", "Bank Transfer").contains(method))

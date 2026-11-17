@@ -1,21 +1,12 @@
-# Backend thành viên 5
+# Backend
+Java 21 / Spring Boot 4.1.2. Entry point: src/main/java/com/restaurant/RestaurantApplication.java.
 
-Ứng dụng Spring Boot, Java 21. Điểm khởi động là `src/main/java/com/restaurant/ordermanagement/RestaurantOrderManagementApplication.java`.
+Use run.cmd or verify.cmd at the repository root. The Maven Wrapper is in this directory.
 
-| Package trong `reporting` | Trách nhiệm |
-| --- | --- |
-| `controller` | Route UC10–UC12, nhận bộ lọc, chọn view và xử lý lỗi |
-| `service` | Đọc dữ liệu, kiểm tra quyền Manager, tổng hợp doanh thu |
-| `repository` | SQL đọc Orders/Order_Detail/Payment và các bảng chung |
-| `dto` | Kiểu dữ liệu trả cho giao diện, trạng thái, phân trang |
-| `config` | Phân quyền, profile demo, đồng hồ và định dạng tiền |
+- auth: shared identity, accounts and role protection.
+- controllers/services/dto: tables and orders.
+- entities/repository: the nine-table shared domain and JPA persistence.
+- checkout: menu, checkout and invoices on the same datasource.
+- ordermanagement/reporting: read-only reporting queries and DTOs.
 
-`src/main/resources` giữ cấu hình ứng dụng; `src/test` giữ JUnit/MockMvc và cấu hình H2. Frontend nằm ở `../frontend`, database scripts ở `../database`.
-
-Chạy test từ thư mục này:
-
-```powershell
-.\mvnw.cmd --no-transfer-progress verify
-```
-
-Hoặc dùng `verify-tv5.cmd` ở thư mục repository. Maven đóng gói các file HTML/CSS/JS từ frontend vào cùng JAR; các đường dẫn `/css`, `/js`, `/images`, `/fonts` và các route `/manager/**` được giữ nguyên.
+The frontend is packaged from ../frontend; SQL scripts are in ../database. Read the root README for MySQL and demo configuration. H2 is test-only.

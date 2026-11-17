@@ -40,7 +40,7 @@ public class Order {
   @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
   private BigDecimal totalAmount = BigDecimal.ZERO;
 
-  @Size(max = 255)
+  @Size(max = 500)
   @Column(name = "notes")
   private String note;
 

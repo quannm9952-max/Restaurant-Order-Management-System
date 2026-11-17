@@ -8,10 +8,8 @@ import java.util.Locale;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration(proxyBeanMethods = false)
-@EnableMethodSecurity
 public class ReportingConfiguration {
   @Bean
   Clock reportingClock(@Value("${reporting.zone:Asia/Ho_Chi_Minh}") String zone) {

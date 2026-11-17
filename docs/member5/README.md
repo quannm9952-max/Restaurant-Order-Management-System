@@ -1,3 +1,5 @@
+> Historical member-5 handoff before integration. Use [the current README](../../README.md) and [integration notes](../INTEGRATION.md) for startup, account and architecture details.
+
 # Bàn giao phần thành viên 5
 
 Thành viên 5 — Quân — thực hiện **UC10 View Restaurant Orders**, **UC11 View Revenue Reports** và **UC12 View Payment History**. Chỉ Manager được xem các chức năng này. Đây là phần triển khai riêng của thành viên 5; việc ghép code, review và merge với các thành viên khác được thực hiện sau.

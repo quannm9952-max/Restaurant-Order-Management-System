@@ -1,3 +1,5 @@
+> Historical member-5 handoff before integration. Use [the current README](../../README.md) and [integration notes](../INTEGRATION.md) for startup, account and architecture details.
+
 # Checklist phối hợp và demo của thành viên 5
 
 Checklist này chuẩn bị cho Stage 4. Chưa thực hiện việc tổng hợp hoặc merge bài các thành viên khác.
