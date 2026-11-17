@@ -269,6 +269,19 @@
         th:attr="data-auto-open=${autoOpenDeleteId == item.id ? 'true' : null}"
       >
         <form th:action="@{/menu/{id}/delete(id=${item.id})}" method="post">
+          <input type="hidden" name="search" th:value="${currentSearch}" />
+          <input type="hidden" name="category" th:value="${currentCategory}" />
+          <input
+            type="hidden"
+            name="availability"
+            th:value="${currentAvailability}"
+          />
+          <input
+            type="hidden"
+            name="priceRange"
+            th:value="${currentPriceRange}"
+          />
+          <input type="hidden" name="sortBy" th:value="${currentSort}" />
           <div class="dialog-head">
             <h2>Delete Menu Item</h2>
             <button

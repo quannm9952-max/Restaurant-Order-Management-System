@@ -168,8 +168,14 @@ class MenuManagementIntegrationTest {
       throws Exception {
     long id = menu.addMenu("TEST Delete Dish", "TEST New Category", "",
         BigDecimal.ONE, null);
-    mvc.perform(post("/menu/" + id + "/delete").with(csrf()))
-        .andExpect(redirectedUrl("/menu"))
+    mvc.perform(post("/menu/" + id + "/delete").with(csrf())
+        .param("search", "TEST Delete Dish")
+        .param("category", "TEST New Category")
+        .param("availability", "available").param("priceRange", "under_10")
+        .param("sortBy", "price_asc"))
+        .andExpect(redirectedUrl("/menu?search=TEST+Delete+Dish"
+            + "&category=TEST+New+Category&availability=available"
+            + "&priceRange=under_10&sortBy=price_asc"))
         .andExpect(flash().attributeExists("success"));
     restoreAuthentication();
     assertThat(menu.searchMenu("TEST Delete Dish", null, null, null, null))
@@ -180,6 +186,10 @@ class MenuManagementIntegrationTest {
         "SELECT COUNT(*) FROM Menu_item WHERE item_id=? AND is_active=false AND is_available=false",
         Integer.class, id)).isEqualTo(1);
     mvc.perform(get("/menu/" + id + "/json")).andExpect(status().isNotFound());
+    mvc.perform(post("/menu/" + id + "/delete").with(csrf()).param("category",
+        "TEST New Category"))
+        .andExpect(redirectedUrl("/menu?category=TEST+New+Category"))
+        .andExpect(flash().attributeExists("error"));
   }
 
   @Test

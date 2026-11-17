@@ -1,4 +1,4 @@
-# Kiểm chứng hệ thống, 17/11/2026
+# Kiểm chứng hệ thống
 
 ## Menu Management: xóa danh mục, xóa món và tải ảnh
 
@@ -15,6 +15,10 @@ file giả, rỗng hoặc quá lớn; không dùng filename người gửi làm 
 Thêm/sửa ảnh, giữ ảnh khi không tải lại và rollback database/ảnh đều có test.
 HTTP thật xác nhận multipart đọc CSRF trong body, thiếu CSRF trả 403,
 file quá 5 MB hiện lỗi và không tạo món. Waiter không được sửa/xóa menu.
+Cập nhật 18/11/2026: ca xóa món xác nhận redirect giữ danh mục, tìm kiếm,
+trạng thái, khoảng giá và sắp xếp; nếu món đã bị xóa trước đó, thông báo lỗi
+vẫn giữ danh mục. Docker/Cloudflare đã kiểm tra form và chuyển hướng giữ đủ
+bộ lọc; checksum 9 bảng chính trước/sau cập nhật không đổi.
 
 Chrome headless trên Docker/MySQL riêng đã thao tác thêm/sửa/chuyển/xóa món,
 xóa danh mục rỗng, chặn danh mục còn món, xem trước và thay ảnh. Tạo lại

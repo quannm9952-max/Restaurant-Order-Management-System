@@ -211,6 +211,7 @@ public class MenuController {
   /** Delete menu item */
   @PostMapping({"/{id}/delete", "/{id}/remove"})
   public String deleteMenuItem(@PathVariable long id,
+      @RequestParam Map<String, String> filters,
       RedirectAttributes redirectAttrs) {
     try {
       service.deleteMenu(id);
@@ -222,6 +223,12 @@ public class MenuController {
         | com.restaurant.exception.BusinessException | NotFoundException e) {
       redirectAttrs.addFlashAttribute("error",
           "Error deleting dish #" + id + ": " + e.getMessage());
+    }
+    for (String name : List.of("search", "category", "availability",
+        "priceRange", "sortBy")) {
+      String value = filters.get(name);
+      if (value != null && !value.isBlank())
+        redirectAttrs.addAttribute(name, value);
     }
     return "redirect:/menu";
   }
