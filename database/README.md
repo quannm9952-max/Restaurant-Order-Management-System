@@ -10,7 +10,10 @@ MySQL Community, schema 9 bảng theo ERD của nhóm.
 | `check.sql` | Truy vấn đối soát doanh thu và trạng thái |
 
 Ứng dụng profile demo nạp schema và demo-data. Profile default không tự nạp
-SQL. Tài khoản đăng nhập demo do `DemoAccounts` tạo, mật khẩu mặc định 123456.
+SQL. `DemoAccounts` kích hoạt một lần 4 tài khoản mẫu `DEMO_FIXTURE_*` chưa
+được cấu hình và tạo thêm 4 tài khoản `demo_*`, mật khẩu mặc định 123456.
+Cả 8 đăng nhập bằng username; các lần khởi động sau giữ mật khẩu và trạng thái
+khóa do Manager chỉnh. Tài khoản mới do Manager tạo cũng dùng cùng luồng đăng nhập.
 Không chạy test-data trên database đang sử dụng vì fixture có thể ghi đè dữ liệu.
 
 Sau khi chọn đúng database trong DBeaver/MySQL client, chạy schema.sql rồi

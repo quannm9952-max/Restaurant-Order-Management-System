@@ -6,9 +6,12 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.restaurant.config.DemoAccounts;
 import com.restaurant.dto.order.OrderLine;
 import com.restaurant.dto.report.ReportModels.*;
+import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
+import com.restaurant.repository.EmployeeRepository;
 import com.restaurant.service.EmployeeService;
 import com.restaurant.service.MenuService;
 import com.restaurant.service.OrderService;
@@ -31,6 +34,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -61,6 +65,8 @@ class SystemIntegrationTest {
   EmployeeService employees;
   @Autowired
   AccountRepository accounts;
+  @Autowired
+  EmployeeRepository employeeRepository;
   @Autowired
   OrderService orders;
   @Autowired
@@ -99,9 +105,111 @@ class SystemIntegrationTest {
   @ParameterizedTest
   @ValueSource(strings = {"manager", "waiter", "cashier", "chef"})
   void allFourRolesUseTheSharedDatabaseLogin(String role) throws Exception {
-    mvc.perform(formLogin().user("test_" + role).password("TEST_ONLY_2026"))
-        .andExpect(authenticated().withRoles(role.toUpperCase()))
-        .andExpect(redirectedUrl("/home"));
+    var login = mvc
+        .perform(formLogin().user("test_" + role).password("TEST_ONLY_2026"))
+        .andExpect(authenticated().withUsername("test_" + role)
+            .withRoles(role.toUpperCase()))
+        .andExpect(redirectedUrl("/home")).andReturn();
+    mvc.perform(get("/home")
+        .session((MockHttpSession) login.getRequest().getSession(false)))
+        .andExpect(status().isOk())
+        .andExpect(content().string(org.hamcrest.Matchers
+            .containsString("Welcome, TEST " + role.toUpperCase())));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"manager", "waiter", "cashier", "chef"})
+  void employeeDisplayNameCannotBeUsedInsteadOfUsername(String role)
+      throws Exception {
+    mvc.perform(formLogin().user("TEST " + role.toUpperCase())
+        .password("TEST_ONLY_2026")).andExpect(unauthenticated())
+        .andExpect(redirectedUrl("/login?error"));
+  }
+
+  @Test
+  @WithMockUser(username = "test_waiter", roles = "WAITER")
+  void welcomeUsesTheCurrentFullEmployeeName() throws Exception {
+    jdbc.update("UPDATE Employee SET full_name=? WHERE employee_id=9702",
+        "Nguyễn Thị Minh Anh");
+    entityManager.clear();
+    var page = mvc.perform(get("/home")).andExpect(status().isOk()).andReturn()
+        .getResponse().getContentAsString(StandardCharsets.UTF_8);
+    assertThat(page).contains("Welcome, Nguyễn Thị Minh Anh")
+        .doesNotContain("Welcome back, Nguyễn.");
+  }
+
+  @Test
+  void managerCreatedEmployeeCanLoginByUsernameAndSeeTheirName()
+      throws Exception {
+    mvc.perform(
+        post("/employees/save").with(user("test_manager").roles("MANAGER"))
+            .with(csrf()).param("fullName", "Trần Minh Châu")
+            .param("position", "WAITER").param("username", "minh.chau")
+            .param("password", "123456").param("confirmPassword", "123456")
+            .param("role", "WAITER").param("active", "on"))
+        .andExpect(redirectedUrl("/employees?saved"));
+    var login = mvc.perform(formLogin().user("minh.chau").password("123456"))
+        .andExpect(
+            authenticated().withUsername("minh.chau").withRoles("WAITER"))
+        .andReturn();
+    var page = mvc
+        .perform(get("/home")
+            .session((MockHttpSession) login.getRequest().getSession(false)))
+        .andExpect(status().isOk()).andReturn().getResponse()
+        .getContentAsString(StandardCharsets.UTF_8);
+    assertThat(page).contains("Welcome, Trần Minh Châu");
+  }
+
+  @Test
+  void demoSetupMakesAllEightSampleAccountsUsableWithoutReplacingEmployees()
+      throws Exception {
+    var setup = new DemoAccounts(accounts, employeeRepository, encoder,
+        "123456");
+    setup.run();
+    for (Role role : Role.values()) {
+      for (String username : List.of("demo_" + role.name().toLowerCase(),
+          "DEMO_FIXTURE_" + role.name())) {
+        var account = accounts.findByUsername(username).orElseThrow();
+        assertThat(account.isActive()).isTrue();
+        assertThat(encoder.matches("123456", account.getPasswordHash()))
+            .isTrue();
+        if (username.startsWith("DEMO_FIXTURE_"))
+          assertThat(account.getEmployee().getId()).isEqualTo(account.getId());
+        var login = mvc.perform(formLogin().user(username).password("123456"))
+            .andExpect(
+                authenticated().withUsername(username).withRoles(role.name()))
+            .andReturn();
+        var page = mvc
+            .perform(get("/home").session(
+                (MockHttpSession) login.getRequest().getSession(false)))
+            .andExpect(status().isOk()).andReturn().getResponse()
+            .getContentAsString();
+        assertThat(page)
+            .contains("Welcome, " + account.getEmployee().getFullName());
+      }
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"DEMO_FIXTURE_WAITER", "demo_waiter"})
+  void demoRestartPreservesChangedPasswordsAndLockedAccounts(String username)
+      throws Exception {
+    var setup = new DemoAccounts(accounts, employeeRepository, encoder,
+        "123456");
+    setup.run();
+    var account = accounts.findByUsername(username).orElseThrow();
+    account.setActive(false);
+    account.setPasswordHash(encoder.encode("CHANGED_TEST_PASSWORD"));
+    accounts.saveAndFlush(account);
+    setup.run();
+    entityManager.clear();
+    var unchanged = accounts.findByUsername(username).orElseThrow();
+    assertThat(unchanged.isActive()).isFalse();
+    assertThat(
+        encoder.matches("CHANGED_TEST_PASSWORD", unchanged.getPasswordHash()))
+        .isTrue();
+    mvc.perform(formLogin().user(username).password("CHANGED_TEST_PASSWORD"))
+        .andExpect(unauthenticated());
   }
 
   @Test

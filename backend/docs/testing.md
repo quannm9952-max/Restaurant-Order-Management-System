@@ -78,3 +78,20 @@ container trên Linux, đăng nhập bốn actor, kiểm tra 9 bảng và giá m
 Máy làm việc chưa có Docker Desktop/WSL2; theo lựa chọn của người dùng, agent
 không cài hệ thống và chưa chạy Docker local. Hướng dẫn ở docker.md để chạy
 sau khi người dùng tự cài. MySQL và dữ liệu local cũ không bị sửa/xóa.
+
+## Cập nhật đăng nhập username và lời chào (17/11/2026)
+
+Maven `verify`: **217 test đạt, 0 failure, 0 error, 0 skipped**;
+SystemIntegrationTest có 73 ca. Bao gồm đăng nhập 8 username mẫu, từ chối
+họ tên/mật khẩu sai, tài khoản mới tạo qua Manager và lời chào đầy đủ họ tên
+tiếng Việt. Khóa tài khoản và mật khẩu đã sửa được giữ khi chạy lại khởi tạo demo.
+
+Docker/MySQL thật: cả 8 tài khoản trong Employee Management đăng nhập bằng
+đúng cột Username, mật khẩu `123456`, vào được màn hình đúng quyền. Trang chủ
+và tên ở header khớp tên nhân viên. Chrome headless kiểm tra giao diện 4 actor,
+tài khoản mẫu cũ, tìm kiếm username và bộ lọc role của Manager.
+
+Đã sao lưu DB trước cập nhật. Checksum xác nhận chỉ Account 9001–9004 được
+kích hoạt và đặt mật khẩu ban đầu; 4 tài khoản demo đang hoạt động và 8 bảng
+khác giữ nguyên. Khởi động lại app giữ nguyên fingerprint của cả 9 bảng và
+8 tài khoản. Đăng nhập qua HTTPS Cloudflare Tunnel cũng đạt.

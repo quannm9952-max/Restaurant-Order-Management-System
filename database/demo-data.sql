@@ -8,7 +8,8 @@ INSERT INTO Employee (employee_id, full_name, position) VALUES
   (9004, 'DEMO Manager', 'MANAGER')
 ON DUPLICATE KEY UPDATE employee_id=VALUES(employee_id);
 
--- Accounts are disabled fixture records. Interactive local demo authentication is profile-scoped.
+-- DemoAccounts activates these legacy sample accounts once in the demo profile.
+-- Reruns preserve subsequent password and account-status changes.
 INSERT INTO Account (account_id, employee_id, username, password_hash, role, is_active) VALUES
   (9001, 9001, 'DEMO_FIXTURE_WAITER', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20D3A3xH60JYdw6BY2Zr4oW17Q4p4K', 'WAITER', 0),
   (9002, 9002, 'DEMO_FIXTURE_CHEF', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20D3A3xH60JYdw6BY2Zr4oW17Q4p4K', 'CHEF', 0),

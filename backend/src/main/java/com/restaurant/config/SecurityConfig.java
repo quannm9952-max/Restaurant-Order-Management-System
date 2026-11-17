@@ -43,8 +43,10 @@ public class SecurityConfig {
             .hasAnyRole("WAITER", "MANAGER")
             .requestMatchers("/", "/home", "/dashboard", "/logout")
             .authenticated().anyRequest().denyAll())
-        .formLogin(login -> login.loginPage("/login")
-            .defaultSuccessUrl("/home", true).permitAll())
+        .formLogin(
+            login -> login.loginPage("/login").loginProcessingUrl("/login")
+                .usernameParameter("username").passwordParameter("password")
+                .defaultSuccessUrl("/home", true).permitAll())
         .logout(logout -> logout.logoutSuccessUrl("/login?logout"))
         .exceptionHandling(errors -> errors.accessDeniedPage("/access-denied"))
         .build();

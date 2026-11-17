@@ -10,8 +10,8 @@
           <small th:text="${#strings.toUpperCase(user.role)} + ' WORKSPACE'"
             >WORKSPACE</small
           >
-          <h1 th:text="'Welcome back, ' + ${user.firstName} + '.'">
-            Welcome back.
+          <h1 th:text="'Welcome, ' + ${user.name}">
+            Welcome.
           </h1>
           <p>Your role-based workspace for smooth restaurant service.</p>
         </div>

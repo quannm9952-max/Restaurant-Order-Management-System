@@ -28,7 +28,7 @@ jobs:
         run: docker compose --env-file .env.example config --quiet
       - name: Start Spring Boot and MySQL
         run: docker compose --env-file .env.example up --build --detach
-      - name: Check application and four actors
+      - name: Check application and eight sample accounts
         shell: bash
         run: |
           for attempt in $(seq 1 90); do
@@ -44,25 +44,29 @@ jobs:
             --header 'X-Forwarded-Proto: https' http://localhost:8080/
           grep -Eqi '^location: https://restaurant\.example/login' /tmp/proxy-headers
           for role in manager waiter chef cashier; do
-            cookies=$(mktemp)
-            curl --fail --silent --cookie-jar "$cookies" http://localhost:8080/login > /tmp/login.html
-            token=$(sed -n 's/.*name="_csrf"[^>]*value="\([^" ]*\)".*/\1/p' /tmp/login.html)
-            test -n "$token"
-            code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
-              --cookie "$cookies" --cookie-jar "$cookies" \
-              --data-urlencode "_csrf=$token" \
-              --data-urlencode "username=demo_$role" \
-              --data-urlencode "password=123456" http://localhost:8080/login)
-            test "$code" = 302
             case "$role" in
               manager) path=employees ;;
               waiter) path=orders ;;
               chef) path=kitchen ;;
               cashier) path=payments ;;
             esac
-            code=$(curl --silent --output /tmp/page.html --write-out '%{http_code}' \
-              --cookie "$cookies" "http://localhost:8080/$path")
-            test "$code" = 200
+            for username in "demo_$role" "DEMO_FIXTURE_${role^^}"; do
+              cookies=$(mktemp)
+              curl --fail --silent --cookie-jar "$cookies" http://localhost:8080/login > /tmp/login.html
+              token=$(sed -n 's/.*name="_csrf"[^>]*value="\([^" ]*\)".*/\1/p' /tmp/login.html)
+              test -n "$token"
+              code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+                --cookie "$cookies" --cookie-jar "$cookies" \
+                --data-urlencode "_csrf=$token" \
+                --data-urlencode "username=$username" \
+                --data-urlencode "password=123456" http://localhost:8080/login)
+              test "$code" = 302
+              curl --fail --silent --cookie "$cookies" http://localhost:8080/home > /tmp/home.html
+              grep -q 'Welcome, DEMO ' /tmp/home.html
+              code=$(curl --silent --output /tmp/page.html --write-out '%{http_code}' \
+                --cookie "$cookies" "http://localhost:8080/$path")
+              test "$code" = 200
+            done
           done
           tables=$(docker compose --env-file .env.example exec -T db sh -c \
             'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()"')

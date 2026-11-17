@@ -39,12 +39,15 @@ docker compose down
 `down` giữ dữ liệu trong volume `mysql-data`. Không dùng `down -v` khi cần giữ
 lại dữ liệu. Đổi mật khẩu DB trong `.env` không tự đổi mật khẩu của volume đã có.
 
-| Actor | Tài khoản demo | Mật khẩu |
+| Actor | Username | Mật khẩu |
 | --- | --- | --- |
-| Manager | demo_manager | 123456 |
-| Waiter | demo_waiter | 123456 |
-| Chef | demo_chef | 123456 |
-| Cashier | demo_cashier | 123456 |
+| Manager | `demo_manager`, `DEMO_FIXTURE_MANAGER` | 123456 |
+| Waiter | `demo_waiter`, `DEMO_FIXTURE_WAITER` | 123456 |
+| Chef | `demo_chef`, `DEMO_FIXTURE_CHEF` | 123456 |
+| Cashier | `demo_cashier`, `DEMO_FIXTURE_CASHIER` | 123456 |
+
+Dùng đúng giá trị cột **Username** trong Employee Management để đăng nhập.
+Trang chủ chào **Welcome, [họ tên nhân viên]** theo tên hiện tại đã lưu.
 
 Container app dùng profile demo để tạo schema/dữ liệu còn thiếu; khởi động
 lại giữ các thay đổi và mật khẩu đã lưu. `.env` chứa cấu hình local và được
