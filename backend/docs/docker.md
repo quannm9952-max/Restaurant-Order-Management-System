@@ -84,3 +84,23 @@ bản dump vì có thể chứa dữ liệu và hash mật khẩu của người
 GitHub Actions còn kiểm tra Compose trên Linux, build/chạy app + DB, đăng nhập
 bốn actor và kiểm tra 9 bảng. Kết quả cụ thể nằm trong testing.md. Trên máy
 chưa có Docker/WSL2, cấu hình này chưa thể khởi động container local.
+
+## Link online bằng Cloudflare Tunnel
+
+Khi Docker đang chạy, có thể dùng cloudflared đã cài trên máy để tạo link demo:
+
+```powershell
+& 'C:\claude\cloudflared.exe' tunnel --url http://127.0.0.1:8080
+```
+
+Điều chỉnh đường dẫn executable nếu cài ở nơi khác. Mở URL HTTPS có đuôi
+trycloudflare.com được in trong terminal. Giữ cloudflared và Docker hoạt động;
+Quick Tunnel dừng khi process dừng và hostname đổi khi tạo tunnel mới.
+
+Compose đặt SERVER_FORWARD_HEADERS_STRATEGY=native để Tomcat nhận
+X-Forwarded-Proto từ proxy, giữ HTTPS khi chuyển hướng sang trang đăng nhập.
+Đã kiểm tra local và URL public trả HTTP 200; các trang local vẫn chạy HTTP
+bình thường. Không cần đổi Java, giao diện hoặc schema cho kết nối này.
+
+Nguồn: [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/),
+[Spring Boot behind a proxy](https://docs.spring.io/spring-boot/how-to/webserver.html#howto.webserver.use-behind-a-proxy-server).

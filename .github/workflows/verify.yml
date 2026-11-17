@@ -39,6 +39,10 @@ jobs:
           done
           curl --fail --silent http://localhost:8080/login > /tmp/login.html
           grep -q 'name="username"' /tmp/login.html
+          curl --silent --dump-header /tmp/proxy-headers --output /dev/null \
+            --header 'Host: restaurant.example' \
+            --header 'X-Forwarded-Proto: https' http://localhost:8080/
+          grep -Eqi '^location: https://restaurant\.example/login' /tmp/proxy-headers
           for role in manager waiter chef cashier; do
             cookies=$(mktemp)
             curl --fail --silent --cookie-jar "$cookies" http://localhost:8080/login > /tmp/login.html

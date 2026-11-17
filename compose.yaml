@@ -37,6 +37,7 @@ services:
       target: runtime
     environment:
       SPRING_PROFILES_ACTIVE: demo
+      SERVER_FORWARD_HEADERS_STRATEGY: native
       DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-restaurant_order_management}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Ho_Chi_Minh
       DB_USERNAME: ${MYSQL_USER:-restaurant}
       DB_PASSWORD: ${MYSQL_PASSWORD:-restaurant_local}
