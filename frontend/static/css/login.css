@@ -65,6 +65,13 @@ input {
 input::placeholder {
   color: #9aa5b4;
 }
+.username-hint {
+  display: block;
+  margin-top: 8px;
+  color: #76869b;
+  font-size: 11px;
+  line-height: 1.5;
+}
 input:focus {
   outline: 3px solid #f2652230;
   border-color: #e46329;

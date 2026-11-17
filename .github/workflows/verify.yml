@@ -68,6 +68,17 @@ jobs:
               test "$code" = 200
             done
           done
+          for username in 'demo_mánager' ' demo_manager' 'demo_manager '; do
+            cookies=$(mktemp)
+            curl --fail --silent --cookie-jar "$cookies" http://localhost:8080/login > /tmp/login.html
+            token=$(sed -n 's/.*name="_csrf"[^>]*value="\([^" ]*\)".*/\1/p' /tmp/login.html)
+            target=$(curl --silent --location --output /dev/null --write-out '%{url_effective}' \
+              --cookie "$cookies" --cookie-jar "$cookies" \
+              --data-urlencode "_csrf=$token" \
+              --data-urlencode "username=$username" \
+              --data-urlencode 'password=123456' http://localhost:8080/login)
+            test "$target" = 'http://localhost:8080/login?error'
+          done
           tables=$(docker compose --env-file .env.example exec -T db sh -c \
             'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()"')
           test "$tables" = 9

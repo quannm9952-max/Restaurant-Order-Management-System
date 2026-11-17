@@ -47,6 +47,9 @@ lại dữ liệu. Đổi mật khẩu DB trong `.env` không tự đổi mật 
 | Cashier | `demo_cashier`, `DEMO_FIXTURE_CASHIER` | 123456 |
 
 Dùng đúng giá trị cột **Username** trong Employee Management để đăng nhập.
+Username dài 1–50 ký tự, chỉ gồm A–Z, a–z, 0–9 và dấu gạch dưới `_`;
+không nhận chữ có dấu, khoảng trắng hoặc ký tự đặc biệt. Quy tắc áp dụng
+cho đăng nhập và tạo/sửa tài khoản; họ tên nhân viên vẫn dùng tiếng Việt.
 Trang chủ chào **Welcome, [họ tên nhân viên]** theo tên hiện tại đã lưu.
 
 Container app dùng profile demo để tạo schema/dữ liệu còn thiếu; khởi động

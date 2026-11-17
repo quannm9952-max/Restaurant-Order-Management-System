@@ -5,6 +5,7 @@ import com.restaurant.entity.Employee;
 import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
 import com.restaurant.repository.EmployeeRepository;
+import com.restaurant.support.Usernames;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,18 +57,21 @@ public class EmployeeService {
   @Transactional
   public void saveAccount(Integer id, String fullName, String position,
       String suppliedUsername, String password, Role role, boolean active) {
-    String username = suppliedUsername == null ? null : suppliedUsername.trim();
+    String username = suppliedUsername;
     if (fullName == null || fullName.isBlank()) {
       throw new IllegalArgumentException("Full name is required.");
     }
     if (username == null || username.isBlank()) {
       throw new IllegalArgumentException("Username is required.");
     }
+    if (!Usernames.isValid(username)) {
+      throw new IllegalArgumentException(Usernames.INVALID_MESSAGE);
+    }
     if (role == null) {
       throw new IllegalArgumentException("Role is required.");
     }
 
-    if (fullName.trim().length() > 100 || username.trim().length() > 50
+    if (fullName.trim().length() > 100
         || (position != null && position.length() > 100))
       throw new IllegalArgumentException(
           "Name, username or position exceeds its maximum length.");

@@ -2,6 +2,7 @@ package com.restaurant.security;
 
 import com.restaurant.entity.Account;
 import com.restaurant.repository.AccountRepository;
+import com.restaurant.support.Usernames;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,6 +25,8 @@ public class AccountUserDetailsService implements UserDetailsService {
   @Override
   public UserDetails loadUserByUsername(String username)
       throws UsernameNotFoundException {
+    if (!Usernames.isValid(username))
+      throw new UsernameNotFoundException("Account not found");
     Account account = accountRepository.findByUsername(username)
         .orElseThrow(() -> new UsernameNotFoundException("Account not found"));
 

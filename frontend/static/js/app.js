@@ -3,8 +3,42 @@
 document.addEventListener("DOMContentLoaded", () => {
   initDialogs();
   initPasswordToggles();
+  initUsernameInputs();
   initEmployeeFilters();
 });
+
+function initUsernameInputs() {
+  const allowed = /^[A-Za-z0-9_]*$/;
+  document.querySelectorAll("[data-username]").forEach((input) => {
+    let previous = allowed.test(input.value) ? input.value : "";
+    const validate = () => {
+      if (allowed.test(input.value)) {
+        previous = input.value;
+        return;
+      }
+      const caret = Math.min(
+        input.selectionStart ?? previous.length,
+        previous.length,
+      );
+      input.value = previous;
+      input.setSelectionRange(caret, caret);
+    };
+    input.addEventListener("beforeinput", (event) => {
+      if (!event.isComposing && event.data && !allowed.test(event.data)) {
+        event.preventDefault();
+      }
+    });
+    input.addEventListener("input", (event) => {
+      if (!event.isComposing) validate();
+    });
+    input.addEventListener("compositionend", validate);
+    input.addEventListener("paste", (event) => {
+      if (!allowed.test(event.clipboardData.getData("text"))) {
+        event.preventDefault();
+      }
+    });
+  });
+}
 
 function initDialogs() {
   document.querySelectorAll("[data-open-dialog]").forEach((button) =>

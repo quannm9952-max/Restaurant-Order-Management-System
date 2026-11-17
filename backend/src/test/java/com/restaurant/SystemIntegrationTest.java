@@ -12,6 +12,8 @@ import com.restaurant.dto.report.ReportModels.*;
 import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
 import com.restaurant.repository.EmployeeRepository;
+import com.restaurant.security.AccountUserDetailsService;
+import com.restaurant.support.Usernames;
 import com.restaurant.service.EmployeeService;
 import com.restaurant.service.MenuService;
 import com.restaurant.service.OrderService;
@@ -144,13 +146,13 @@ class SystemIntegrationTest {
     mvc.perform(
         post("/employees/save").with(user("test_manager").roles("MANAGER"))
             .with(csrf()).param("fullName", "Trần Minh Châu")
-            .param("position", "WAITER").param("username", "minh.chau")
+            .param("position", "WAITER").param("username", "Minh_Chau_01")
             .param("password", "123456").param("confirmPassword", "123456")
             .param("role", "WAITER").param("active", "on"))
         .andExpect(redirectedUrl("/employees?saved"));
-    var login = mvc.perform(formLogin().user("minh.chau").password("123456"))
+    var login = mvc.perform(formLogin().user("Minh_Chau_01").password("123456"))
         .andExpect(
-            authenticated().withUsername("minh.chau").withRoles("WAITER"))
+            authenticated().withUsername("Minh_Chau_01").withRoles("WAITER"))
         .andReturn();
     var page = mvc
         .perform(get("/home")
@@ -158,6 +160,71 @@ class SystemIntegrationTest {
         .andExpect(status().isOk()).andReturn().getResponse()
         .getContentAsString(StandardCharsets.UTF_8);
     assertThat(page).contains("Welcome, Trần Minh Châu");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"nguyễn", "đang_nhap", "ngu\u0303yen", "user name",
+      "test.manager", "test-manager", "user@name", "user/name", "user\\name",
+      "user😀", " test_manager", "test_manager ", "test\tmanager"})
+  void invalidUsernamesCannotBeCreatedUpdatedOrUsedToLogin(String username)
+      throws Exception {
+    int accountCount = jdbc.queryForObject("SELECT COUNT(*) FROM Account",
+        Integer.class);
+    int employeeCount = jdbc.queryForObject("SELECT COUNT(*) FROM Employee",
+        Integer.class);
+    for (String id : List.of("", "9702")) {
+      mvc.perform(
+          post("/employees/save").with(user("test_manager").roles("MANAGER"))
+              .with(csrf()).param("id", id).param("fullName", "Nguyễn Minh Anh")
+              .param("position", "WAITER").param("username", username)
+              .param("password", "123456").param("confirmPassword", "123456")
+              .param("role", "WAITER").param("active", "on"))
+          .andExpect(status().isOk())
+          .andExpect(model().attribute("error", Usernames.INVALID_MESSAGE));
+    }
+    entityManager.clear();
+    assertThat(
+        jdbc.queryForObject("SELECT COUNT(*) FROM Account", Integer.class))
+        .isEqualTo(accountCount);
+    assertThat(
+        jdbc.queryForObject("SELECT COUNT(*) FROM Employee", Integer.class))
+        .isEqualTo(employeeCount);
+    assertThat(accounts.findById(9702).orElseThrow().getUsername())
+        .isEqualTo("test_waiter");
+    assertThat(
+        accounts.findById(9702).orElseThrow().getEmployee().getFullName())
+        .isEqualTo("TEST WAITER");
+    mvc.perform(formLogin().user(username).password("TEST_ONLY_2026"))
+        .andExpect(unauthenticated()).andExpect(redirectedUrl("/login?error"));
+  }
+
+  @Test
+  void legacyInvalidUsernameCannotBypassLoginValidation() throws Exception {
+    jdbc.update("UPDATE Account SET username=? WHERE account_id=9702",
+        "legacy.name");
+    entityManager.clear();
+    mvc.perform(formLogin().user("legacy.name").password("TEST_ONLY_2026"))
+        .andExpect(unauthenticated());
+    var details = new AccountUserDetailsService(accounts);
+    assertThatThrownBy(() -> details.loadUserByUsername("legacy.name"))
+        .isInstanceOf(
+            org.springframework.security.core.userdetails.UsernameNotFoundException.class);
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void usernamesAcceptAsciiLettersDigitsUnderscoreAndRespectLengthLimit() {
+    for (String username : List.of("a", "123", "USER_01", "_",
+        "u".repeat(50))) {
+      employees.saveAccount(null, "Nguyễn Minh Anh", "WAITER", username,
+          "123456", Role.WAITER, true);
+      assertThat(accounts.findByUsername(username).orElseThrow().getEmployee()
+          .getFullName()).isEqualTo("Nguyễn Minh Anh");
+    }
+    assertThatThrownBy(() -> employees.saveAccount(null, "Nguyễn Minh Anh",
+        "WAITER", "u".repeat(51), "123456", Role.WAITER, true))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(Usernames.INVALID_MESSAGE);
   }
 
   @Test
@@ -388,9 +455,8 @@ class SystemIntegrationTest {
   @Test
   @WithMockUser(username = "test_manager", roles = "MANAGER")
   void employeeManagementUsesBcryptAndChecksDuplicates() {
-    employees.saveAccount(null, "TEST employee", "Waiter",
-        " test_new_employee ", "TEST_password_2026",
-        com.restaurant.entity.enums.Role.WAITER, true);
+    employees.saveAccount(null, "TEST employee", "Waiter", "test_new_employee",
+        "TEST_password_2026", com.restaurant.entity.enums.Role.WAITER, true);
     var account = accounts.findByUsername("test_new_employee").orElseThrow();
     assertThat(encoder.matches("TEST_password_2026", account.getPasswordHash()))
         .isTrue();

@@ -30,12 +30,22 @@
         ><input
           id="username"
           name="username"
+          data-username
           placeholder="Enter your username"
           autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          pattern="[A-Za-z0-9_]{1,50}"
+          title="Use 1-50 characters: A-Z, a-z, 0-9 and underscore (_)."
+          aria-describedby="usernameHelp"
           required
           maxlength="50"
           autofocus
-        /><label for="password">Password</label>
+        />
+        <small class="username-hint" id="usernameHelp">
+          A-Z, a-z, 0-9 and underscore (_) only.
+        </small>
+        <label for="password">Password</label>
         <div class="password-field">
           <input
             id="password"

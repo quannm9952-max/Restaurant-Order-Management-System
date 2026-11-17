@@ -255,11 +255,21 @@
               class="form-control"
               id="employeeUsername"
               name="username"
+              data-username
               th:value="${form.username}"
               placeholder="Enter username"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              pattern="[A-Za-z0-9_]{1,50}"
+              title="Use 1-50 characters: A-Z, a-z, 0-9 and underscore (_)."
+              aria-describedby="employeeUsernameHelp"
               maxlength="50"
               required
             />
+            <small id="employeeUsernameHelp">
+              A-Z, a-z, 0-9 and underscore (_) only.
+            </small>
           </div>
           <div class="field">
             <label for="role">Role</label

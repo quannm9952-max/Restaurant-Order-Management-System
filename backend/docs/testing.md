@@ -95,3 +95,18 @@ tài khoản mẫu cũ, tìm kiếm username và bộ lọc role của Manager.
 kích hoạt và đặt mật khẩu ban đầu; 4 tài khoản demo đang hoạt động và 8 bảng
 khác giữ nguyên. Khởi động lại app giữ nguyên fingerprint của cả 9 bảng và
 8 tài khoản. Đăng nhập qua HTTPS Cloudflare Tunnel cũng đạt.
+
+## Giới hạn ký tự username (17/11/2026)
+
+Maven `verify`: **232 test đạt, 0 failure, 0 error, 0 skipped**;
+SystemIntegrationTest có 88 ca. Tạo/sửa và đăng nhập từ chối chữ có dấu,
+dấu kết hợp Unicode, khoảng trắng, emoji, dấu chấm/gạch ngang/@/slash.
+Username 1–50 ký tự ASCII gồm chữ cái, số và gạch dưới được chấp nhận;
+họ tên tiếng Việt và quy tắc mật khẩu giữ nguyên.
+
+MySQL/Docker thật: cả 8 tài khoản đăng nhập thành công, biến thể có dấu
+`demo_mánager` và khoảng trắng đầu/cuối đều bị từ chối trước khi truy vấn
+tài khoản. Đăng nhập hợp lệ/không hợp lệ qua Cloudflare cũng đạt.
+Chrome headless kiểm tra gõ, dán, composition của IME và HTML pattern tại
+login, thêm nhân viên và sửa nhân viên. Mobile 320×568 không tràn nội dung.
+Checksum của cả 9 bảng trước/sau cập nhật không đổi.
