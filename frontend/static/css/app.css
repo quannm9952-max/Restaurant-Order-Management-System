@@ -463,6 +463,16 @@ dialog.app-dialog h2 {
   color: #8794a7;
   font-size: 11px;
 }
+.username-hint.username-error {
+  color: #b82b20;
+}
+[data-username][aria-invalid="true"] {
+  border-color: #b82b20;
+}
+[data-username][aria-invalid="true"]:focus {
+  outline: 3px solid #b82b2030;
+  box-shadow: none;
+}
 .dialog-footer {
   padding: 18px 24px;
   background: #fbfcfd;

@@ -48,8 +48,10 @@ lại dữ liệu. Đổi mật khẩu DB trong `.env` không tự đổi mật 
 
 Dùng đúng giá trị cột **Username** trong Employee Management để đăng nhập.
 Username dài 1–50 ký tự, chỉ gồm A–Z, a–z, 0–9 và dấu gạch dưới `_`;
-không nhận chữ có dấu, khoảng trắng hoặc ký tự đặc biệt. Quy tắc áp dụng
-cho đăng nhập và tạo/sửa tài khoản; họ tên nhân viên vẫn dùng tiếng Việt.
+không dùng chữ có dấu, khoảng trắng hoặc ký tự đặc biệt. Khi nhập sai định
+dạng, ô giữ nguyên nội dung và hiện cảnh báo đỏ để sửa; chỉ gửi khi username
+hợp lệ. Quy tắc áp dụng cho đăng nhập và tạo/sửa tài khoản; họ tên nhân viên
+vẫn dùng tiếng Việt.
 Trang chủ chào **Welcome, [họ tên nhân viên]** theo tên hiện tại đã lưu.
 Sai thông tin báo `Incorrect username or password.`; chỉ khi đúng username
 và mật khẩu của tài khoản khóa mới báo `Your account has been locked.`

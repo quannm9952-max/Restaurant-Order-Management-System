@@ -124,3 +124,17 @@ Chrome headless với locale vi xác nhận nhắc username/password trống v�
 tiếng Anh, focus đúng trường, sửa lại cho phép đăng nhập và lỗi sai thông tin
 chỉ có một dòng. Docker/Cloudflare kiểm tra 7 trường hợp sai/trống; cả 8
 tài khoản hiện có vẫn đăng nhập. Checksum cả 9 bảng trước/sau không đổi.
+
+## Cảnh báo username và giữ nội dung (17/11/2026)
+
+Thay đổi frontend: giữ nguyên giá trị khi nhập sai, hiện cảnh báo dưới trường
+và viền đỏ, chặn gửi đến khi sửa đúng. Bỏ xử lý xóa/khôi phục chữ và chặn
+paste/beforeinput; giới hạn 50 ký tự chuyển sang cảnh báo và kiểm tra pattern.
+Quy tắc backend giữ nguyên.
+
+Chrome headless kiểm tra login, thêm và sửa nhân viên: chữ có dấu, khoảng
+trắng, dấu chấm/gạch ngang/@, emoji và 51 ký tự không bị xóa hoặc cắt. Sự kiện
+paste và composition giữ nội dung/vị trí con trỏ. Sửa thành username hợp lệ
+xóa cảnh báo, bỏ trạng thái aria-invalid và cho qua kiểm tra form.
+Ba tình huống trường trống vẫn nhắc bằng tiếng Anh, sửa đúng đăng nhập được
+và sai mật khẩu vẫn chỉ có một dòng thông báo. `node --check` và Docker build đạt.

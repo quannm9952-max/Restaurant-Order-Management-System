@@ -13,9 +13,7 @@ function initLoginValidation() {
   if (!form) return;
   const username = form.querySelector("#username");
   const password = form.querySelector("#password");
-  [username, password].forEach((input) =>
-    input.addEventListener("input", () => input.setCustomValidity("")),
-  );
+  password.addEventListener("input", () => password.setCustomValidity(""));
   form.addEventListener("submit", (event) => {
     username.setCustomValidity(
       !username.value
@@ -32,35 +30,29 @@ function initLoginValidation() {
 }
 
 function initUsernameInputs() {
-  const allowed = /^[A-Za-z0-9_]*$/;
+  const allowed = /^[A-Za-z0-9_]{1,50}$/;
   document.querySelectorAll("[data-username]").forEach((input) => {
-    let previous = allowed.test(input.value) ? input.value : "";
+    const hint = document.getElementById(input.getAttribute("aria-describedby"));
+    const defaultHint = hint?.textContent.trim();
     const validate = () => {
-      if (allowed.test(input.value)) {
-        previous = input.value;
-        return;
+      const invalid = input.value !== "" && !allowed.test(input.value);
+      input.setCustomValidity(invalid ? input.title : "");
+      input.setAttribute("aria-invalid", String(invalid));
+      if (hint) {
+        hint.classList.toggle("username-error", invalid);
+        const message = invalid
+          ? `Invalid username. ${input.title}`
+          : defaultHint;
+        if (hint.textContent.trim() !== message) hint.textContent = message;
       }
-      const caret = Math.min(
-        input.selectionStart ?? previous.length,
-        previous.length,
-      );
-      input.value = previous;
-      input.setSelectionRange(caret, caret);
     };
-    input.addEventListener("beforeinput", (event) => {
-      if (!event.isComposing && event.data && !allowed.test(event.data)) {
-        event.preventDefault();
-      }
+    ["input", "change", "compositionend"].forEach((event) =>
+      input.addEventListener(event, validate),
+    );
+    input.addEventListener("invalid", () => {
+      if (input.value) validate();
     });
-    input.addEventListener("input", (event) => {
-      if (!event.isComposing) validate();
-    });
-    input.addEventListener("compositionend", validate);
-    input.addEventListener("paste", (event) => {
-      if (!allowed.test(event.clipboardData.getData("text"))) {
-        event.preventDefault();
-      }
-    });
+    validate();
   });
 }
 
