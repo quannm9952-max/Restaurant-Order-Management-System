@@ -4,7 +4,7 @@ Phạm vi: TV1, TV2, TV4 và TV5. TV3 chưa được tích hợp theo yêu cầu
 
 ## Kết quả
 
-Maven Wrapper `test` hoàn tất ngày 17/11/2026: **145 test, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**. Sau đó chạy `clean package -DskipTests` thành công để loại tài nguyên cũ khỏi JAR; không lặp lại kiểm thử đã đạt chỉ để đóng gói.
+Maven Wrapper `test` hoàn tất ngày 17/11/2026: **146 test, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**. Sau đó chạy `clean package -DskipTests` thành công để loại tài nguyên cũ khỏi JAR; không lặp lại kiểm thử đã đạt chỉ để đóng gói.
 
 | Bộ test | Số test đạt |
 | --- | ---: |
@@ -13,7 +13,7 @@ Maven Wrapper `test` hoàn tất ngày 17/11/2026: **145 test, 0 failure, 0 erro
 | CurrentEmployeeServiceImplTest | 4 |
 | OrderServiceImplTest | 40 |
 | TableServiceImplTest | 19 |
-| SystemIntegrationTests | 47 |
+| SystemIntegrationTests | 48 |
 | HttpSecurityIntegrationTests | 2 |
 
 Smoke test HTTP/MySQL thực tế cũng đạt:
@@ -62,3 +62,8 @@ Bổ sung kiểm thử gán vai trò/khóa tài khoản mà không đổi passwo
 Bản JAR sau sửa giao diện đã kiểm tra HTTP trên MySQL: **31 trang của 4 actor, 36 asset local đều trả thành công**, bao gồm form thêm/sửa, lọc trạng thái, đơn lịch sử, bill và hóa đơn. Các script `workspace.js`, `order-workspace.js`, `payment-workspace.js` đều qua `node --check`. Database `rom_figma_ui_check` trên MySQL demo cổng 3307 được tạo riêng cho kiểm tra trạng thái bill; database `rom_integration_demo` được giữ nguyên trong đợt kiểm tra này.
 
 Kiểm tra Chrome trên database UI riêng: Generate Bill, tiền nhận 50 USD cho bill 39 USD, tiền thừa 11 USD, bật Process Payment và mở hộp thoại Confirm Payment. Dữ liệu thử chính vẫn giữ nguyên. Đã kiểm tra JAR sạch có shell mới và không còn theme/template cũ đã loại bỏ.
+
+
+Cập nhật mật khẩu theo yêu cầu: mặc định demo `123456`, form và service chấp nhận mật khẩu từ 6 ký tự; kiểm thử tạo/đổi sang `123456` và từ chối mật khẩu 5 ký tự. Toàn bộ 146 kiểm thử đạt.
+
+Đã đổi mật khẩu 9 tài khoản hiện có trên database demo đang chạy qua endpoint quản lý nhân viên. Kiểm tra lại các trường id, họ tên, chức vụ, username, role và trạng thái đều giữ nguyên; bốn actor đăng nhập thành công bằng `123456` và bị từ chối khi dùng mật khẩu demo cũ.

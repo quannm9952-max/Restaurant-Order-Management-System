@@ -461,4 +461,41 @@ class SystemIntegrationTests {
         .andExpect(
             content().string(org.hamcrest.Matchers.containsString("TEST draft on occupied table")));
   }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void sixCharacterPasswordsWorkForNewAndExistingAccounts() {
+    employees.saveAccount(
+        null,
+        "TEST six characters",
+        "Waiter",
+        "test_six_password",
+        "123456",
+        com.restaurant.entities.enums.Role.WAITER,
+        true);
+    var created = accounts.findByUsername("test_six_password").orElseThrow();
+    assertThat(encoder.matches("123456", created.getPasswordHash())).isTrue();
+    var existing = accounts.findByUsername("test_waiter").orElseThrow();
+    employees.saveAccount(
+        existing.getId(),
+        existing.getEmployee().getFullName(),
+        existing.getEmployee().getPosition(),
+        existing.getUsername(),
+        "123456",
+        existing.getRole(),
+        existing.isActive());
+    assertThat(encoder.matches("123456", existing.getPasswordHash())).isTrue();
+    assertThatThrownBy(
+            () ->
+                employees.saveAccount(
+                    null,
+                    "TEST too short",
+                    "Waiter",
+                    "test_short_password",
+                    "12345",
+                    com.restaurant.entities.enums.Role.WAITER,
+                    true))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(accounts.findByUsername("test_short_password")).isEmpty();
+  }
 }

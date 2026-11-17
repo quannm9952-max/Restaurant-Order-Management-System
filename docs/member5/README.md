@@ -43,17 +43,17 @@ Cần Java 21 và MySQL Community 8.0+. Maven Wrapper đã có trong repository.
 
 ```powershell
 $env:DB_PASSWORD = 'mat-khau-mysql-cua-ban'
-$env:TV5_DEMO_PASSWORD = 'DEMO_TV5_2026'
+$env:DEMO_PASSWORD = '123456'
 .\run-tv5.cmd --spring.profiles.active=tv5-demo
 ```
 
-Nếu root không có mật khẩu, không cần đặt `DB_PASSWORD`. `TV5_DEMO_PASSWORD` là mật khẩu thử nghiệm do người chạy chọn, không được in vào log hoặc đưa mật khẩu thật vào Git.
+Nếu root không có mật khẩu, không cần đặt `DB_PASSWORD`. `DEMO_PASSWORD` là mật khẩu thử nghiệm do người chạy chọn, không được in vào log hoặc đưa mật khẩu thật vào Git.
 
 Script `run-tv5.cmd` chuyển thư mục làm việc vào `backend`; profile tìm script tại `../database/schema.sql` và `../database/seed.sql`.
 
 Profile `tv5-demo` kết nối database riêng **restaurant_order_management_tv5_demo**, tạo database nếu tài khoản có quyền, chạy `database/schema.sql` rồi `database/seed.sql`. Có thể đặt `TV5_DEMO_DB_URL` để trỏ tới một database **dành riêng cho demo**. Profile mặc định không chạy seed.
 
-Truy cập <http://localhost:8080/login>, đăng nhập `demo_manager` bằng giá trị `TV5_DEMO_PASSWORD`. Các tài khoản `demo_waiter`, `demo_chef`, `demo_cashier` dùng cùng mật khẩu thử nghiệm và phải bị từ chối khi truy cập `/manager/**`.
+Truy cập <http://localhost:8080/login>, đăng nhập `demo_manager` bằng giá trị `DEMO_PASSWORD`. Các tài khoản `demo_waiter`, `demo_chef`, `demo_cashier` dùng cùng mật khẩu thử nghiệm và phải bị từ chối khi truy cập `/manager/**`.
 
 Các tài khoản đăng nhập này chỉ tồn tại trong bộ nhớ khi bật profile demo; không phải phần triển khai UC01–UC03 của TV1. Bốn bản ghi `DEMO_FIXTURE_*` trong Account là dữ liệu minh họa vai trò, bị vô hiệu hóa, không dùng để đăng nhập. Tắt profile demo khi ghép phần xác thực chung.
 

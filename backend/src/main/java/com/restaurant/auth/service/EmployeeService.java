@@ -77,8 +77,8 @@ public class EmployeeService {
         || username.trim().length() > 50
         || (position != null && position.length() > 100))
       throw new IllegalArgumentException("Name, username or position exceeds its maximum length.");
-    if (password != null && !password.isBlank() && password.length() < 8)
-      throw new IllegalArgumentException("Password must have at least 8 characters.");
+    if (password != null && !password.isBlank() && password.length() < 6)
+      throw new IllegalArgumentException("Password must have at least 6 characters.");
     fullName = fullName.trim();
     Account account;
     Employee employee;

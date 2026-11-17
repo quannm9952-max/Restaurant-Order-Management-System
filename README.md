@@ -33,7 +33,7 @@ Mở **http://localhost:8080**. Có thể đổi cổng ứng dụng bằng `$en
 | Cashier | `demo_cashier` |
 | Chef | `demo_chef` |
 
-Mật khẩu demo mặc định cho cả bốn tài khoản: **`DEMO_Restaurant_2026`**. Đây là thông tin thử nghiệm công khai, chỉ tạo trong profile `demo`. Đặt `$env:DEMO_PASSWORD` trước lần tạo tài khoản đầu tiên để dùng mật khẩu thử nghiệm khác. Khởi động lại không đặt lại mật khẩu hoặc thay đổi nghiệp vụ đã lưu; tài khoản đã có có thể đổi qua trang quản lý nhân viên.
+Mật khẩu demo mặc định cho cả bốn tài khoản: **`123456`**. Đây là thông tin thử nghiệm công khai, chỉ tạo trong profile `demo`. Đặt `$env:DEMO_PASSWORD` trước lần tạo tài khoản đầu tiên để dùng mật khẩu thử nghiệm khác. Khởi động lại không đặt lại mật khẩu hoặc thay đổi nghiệp vụ đã lưu; tài khoản đã có có thể đổi qua trang quản lý nhân viên.
 
 `run.cmd` chọn profile `demo` nếu chưa đặt `SPRING_PROFILES_ACTIVE`. Cấu hình mặc định ngoài demo không tự tạo tài khoản hay nạp SQL và dùng database `restaurant_order_management`; có thể đặt `$env:SPRING_PROFILES_ACTIVE = "default"` sau khi chuẩn bị DB/tài khoản theo hướng dẫn triển khai của nhóm.
 
