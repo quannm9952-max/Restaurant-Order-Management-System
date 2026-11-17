@@ -1,7 +1,7 @@
 package com.restaurant.repository;
 
-import com.restaurant.entities.RestaurantTable;
-import com.restaurant.entities.enums.TableStatus;
+import com.restaurant.entity.RestaurantTable;
+import com.restaurant.entity.enums.TableStatus;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;

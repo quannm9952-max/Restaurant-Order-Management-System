@@ -1,9 +1,8 @@
 package com.restaurant.repository;
 
-import org.springframework.data.jpa.repository.EntityGraph;
-
-import com.restaurant.entities.Account;
+import com.restaurant.entity.Account;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AccountRepository extends JpaRepository<Account, Integer> {

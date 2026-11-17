@@ -128,7 +128,7 @@
       </section>
       <section class="panel prep-empty" th:if="${#lists.isEmpty(queue.orders)}">
         <span class="module-icon"
-          ><img src="/images/tv5/checkcircle.svg" alt=""
+          ><img src="/images/icons/check-circle.svg" alt=""
         /></span>
         <h2
           th:text="'No ' + ${#strings.toLowerCase(selectedStatus)} + ' items'"
@@ -166,7 +166,7 @@
               <div class="prep-dialog-title">
                 <span class="module-icon"
                   ><img
-                    th:src="${line.status.name() == 'PENDING' ? '/images/tv5/clock.svg' : '/images/tv5/check.svg'}"
+                    th:src="${line.status.name() == 'PENDING' ? '/images/icons/clock.svg' : '/images/icons/check.svg'}"
                     alt=""
                 /></span>
                 <div>

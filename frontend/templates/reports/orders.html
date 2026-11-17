@@ -1,15 +1,15 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head th:replace="~{reporting/fragments :: head('Restaurant Orders')}"></head>
+  <head th:replace="~{shared/reports :: head('Restaurant Orders')}"></head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <aside th:replace="~{reporting/fragments :: sidebar('orders')}"></aside>
+    <aside th:replace="~{shared/reports :: sidebar('orders')}"></aside>
     <header
-      th:replace="~{reporting/fragments :: header('Restaurant Orders')}"
+      th:replace="~{shared/reports :: header('Restaurant Orders')}"
     ></header>
     <main id="main" class="main-content">
       <section
-        th:replace="~{reporting/fragments :: heading('Restaurant Orders','Monitor restaurant orders and inspect retained order details.')}"
+        th:replace="~{shared/reports :: heading('Restaurant Orders','Monitor restaurant orders and inspect retained order details.')}"
       ></section>
       <section class="panel history-panel">
         <div class="monitoring-toolbar">
@@ -29,7 +29,7 @@
               type="hidden"
               name="status"
               th:value="${selectedStatus}"
-            /><img src="/images/tv5/search.svg" alt="" /><input
+            /><img src="/images/icons/search.svg" alt="" /><input
               class="form-control"
               name="q"
               type="search"
@@ -61,7 +61,7 @@
                 ></td>
                 <td>
                   <span
-                    th:replace="~{reporting/fragments :: status(${order.status.name()},${order.statusLabel()})}"
+                    th:replace="~{shared/reports :: status(${order.status.name()},${order.statusLabel()})}"
                   ></span>
                 </td>
                 <td

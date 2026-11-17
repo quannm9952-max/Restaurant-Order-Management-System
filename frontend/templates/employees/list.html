@@ -22,7 +22,7 @@
       <div th:replace="~{shared/shell :: flash}"></div>
       <section class="panel filter-bar">
         <div class="search-field">
-          <img src="/images/tv5/search.svg" alt="" /><input
+          <img src="/images/icons/search.svg" alt="" /><input
             class="form-control"
             data-employee-filter="query"
             type="search"
@@ -69,7 +69,7 @@
                 th:attr="data-role=${a.role.name()},data-status=${a.active ? 'active' : 'locked'}"
               >
                 <td
-                  th:text="'EMP-' + ${#numbers.formatInteger(a.employee.employeeId,3)}"
+                  th:text="'EMP-' + ${#numbers.formatInteger(a.employee.id,3)}"
                 ></td>
                 <td th:text="${a.employee.fullName}"></td>
                 <td class="muted" th:text="${a.username}"></td>
@@ -91,27 +91,27 @@
                   <div class="flex-row" style="gap: 7px">
                     <a
                       class="icon-action"
-                      th:href="@{/employees/{id}/edit(id=${a.accountId})}"
+                      th:href="@{/employees/{id}/edit(id=${a.id})}"
                       aria-label="Edit employee"
                       title="Edit employee"
                       >&#9998;</a
                     ><button
                       class="icon-action"
                       type="button"
-                      th:attr="data-open-dialog='role-' + ${a.accountId}"
+                      th:attr="data-open-dialog='role-' + ${a.id}"
                       aria-label="Assign role"
                       title="Assign role"
                     >
-                      <img src="/images/tv5/users.svg" alt="" /></button
+                      <img src="/images/icons/users.svg" alt="" /></button
                     ><button
                       class="icon-action"
                       type="button"
                       th:disabled="${!a.active}"
-                      th:attr="data-open-dialog='lock-' + ${a.accountId}"
+                      th:attr="data-open-dialog='lock-' + ${a.id}"
                       aria-label="Lock account"
                       title="Lock account"
                     >
-                      <img src="/images/tv5/lock1.svg" alt="" />
+                      <img src="/images/icons/lock-small.svg" alt="" />
                     </button>
                   </div>
                 </td>
@@ -137,11 +137,8 @@
       </div>
     </main>
     <th:block th:each="a : ${accounts}"
-      ><dialog class="app-dialog" th:id="'role-' + ${a.accountId}">
-        <form
-          th:action="@{/employees/{id}/role(id=${a.accountId})}"
-          method="post"
-        >
+      ><dialog class="app-dialog" th:id="'role-' + ${a.id}">
+        <form th:action="@{/employees/{id}/role(id=${a.id})}" method="post">
           <div class="dialog-head">
             <h2>Assign Role</h2>
             <button
@@ -159,9 +156,7 @@
               th:text="'Choose a role for ' + ${a.employee.fullName}"
             ></p>
             <div class="role-options">
-              <label
-                class="role-choice"
-                th:each="r : ${T(com.restaurant.entities.enums.Role).values()}"
+              <label class="role-choice" th:each="r : ${roles}"
                 ><input
                   type="radio"
                   name="role"
@@ -184,11 +179,8 @@
           </div>
         </form>
       </dialog>
-      <dialog class="app-dialog" th:id="'lock-' + ${a.accountId}">
-        <form
-          th:action="@{/employees/{id}/lock(id=${a.accountId})}"
-          method="post"
-        >
+      <dialog class="app-dialog" th:id="'lock-' + ${a.id}">
+        <form th:action="@{/employees/{id}/lock(id=${a.id})}" method="post">
           <div class="dialog-head">
             <h2>Lock Account</h2>
             <button

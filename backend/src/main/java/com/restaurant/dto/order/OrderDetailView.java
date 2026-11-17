@@ -1,6 +1,6 @@
 package com.restaurant.dto.order;
 
-import com.restaurant.entities.enums.OrderStatus;
+import com.restaurant.entity.enums.OrderStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;

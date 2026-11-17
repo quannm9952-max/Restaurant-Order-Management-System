@@ -1,13 +1,10 @@
 # Frontend
-Server-rendered HTML, Thymeleaf, CSS, JavaScript and Bootstrap. Maven packages templates/ and static/ into the backend JAR. No npm build or separate frontend server is required.
 
-- templates/shared: role-aware navigation.
-- templates/employees, tables, orders: member 1/2 views.
-- templates/preparation: member 3 kitchen and serving queues, confirmation dialogs and empty states.
-- templates/menu.html, payments.html, invoice.html: member 4 views.
-- templates/reports, payment-history, reporting: member 5 views.
-- static: local CSS, JavaScript, Bootstrap, fonts and menu images.
+- `templates`: màn hình Thymeleaf theo nghiệp vụ; `shared` chứa phần dùng chung.
+- `static/css`: app, login, preparation và reports; vendor giữ nguyên.
+- `static/js`: app, orders, payments, preparation và reports.
+- `static/images`: icons, ảnh đăng nhập và ảnh món đang dùng.
+- `static/fonts`: font và giấy phép OFL.
 
-Read the root README for startup and docs/INTEGRATION.md for the shared integration and complete order-to-payment workflow.
-
-The supplied Figma PNG references are documented in `docs/FIGMA-AUDIT.md`. `templates/shared/shell.html` owns navigation, header, alerts and shared document assets. `workspace.css` styles the integrated modules; the existing reporting styles cover report-specific content. Role-specific interactions live in separate local scripts, with no frontend build or CDN dependency.
+Frontend được Spring Boot render và đóng gói trong JAR. Không chạy server
+frontend riêng. Mở http://localhost:8080 sau khi chạy `run.cmd` ở gốc dự án.

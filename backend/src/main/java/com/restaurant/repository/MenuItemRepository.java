@@ -1,12 +1,10 @@
 package com.restaurant.repository;
 
-import org.springframework.data.jpa.repository.Query;
-
-import org.springframework.data.jpa.repository.EntityGraph;
-
-import com.restaurant.entities.MenuItem;
+import com.restaurant.entity.MenuItem;
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /** Shared repository - thêm method mới thì báo nhóm */
 public interface MenuItemRepository extends JpaRepository<MenuItem, Integer> {

@@ -1,6 +1,6 @@
 package com.restaurant.dto.preparation;
 
-import com.restaurant.entities.enums.CookingStatus;
+import com.restaurant.entity.enums.CookingStatus;
 import java.time.LocalDateTime;
 import java.util.Locale;
 

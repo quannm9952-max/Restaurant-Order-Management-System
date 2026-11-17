@@ -1,0 +1,64 @@
+# Kiểm chứng bản sắp xếp lại, 17/11/2026
+
+## Kết quả
+
+- Maven `verify`: **208 test, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**.
+- Cú pháp 5 JavaScript của dự án: `node --check` đạt.
+- MySQL thật: **99 mục đạt**, gồm 27 trang của 4 actor và 38 asset local.
+- JAR không còn package hoặc đường dẫn asset cũ sau khi chuyển thư mục.
+- `git diff --check` đạt; không đưa log, JAR, file tạm hoặc DB thử vào Git.
+
+| Bộ kiểm thử | Số ca đạt |
+| --- | ---: |
+| ApplicationTest | 1 |
+| CurrentEmployeeServiceTest | 4 |
+| HttpSecurityTest | 2 |
+| OrderServiceTest | 40 |
+| PreparationIntegrationTest | 45 |
+| ReportingIntegrationTest | 32 |
+| SystemIntegrationTest | 64 |
+| TableServiceTest | 20 |
+
+## Nghiệp vụ được giữ nguyên
+
+Bốn actor đăng nhập đúng quyền; CSRF, khóa tài khoản, xác nhận và mã hóa mật
+khẩu; tạo/sửa bàn; tạo đơn, giảm/hủy món Pending, hủy đơn hợp lệ và giữ giá
+lúc đặt. Chef chỉ chuyển Pending → Preparing → Ready, Waiter chỉ xác nhận
+Ready → Served. Cashier chỉ thanh toán khi các dòng còn hiệu lực đã Served.
+
+Có kiểm thử rollback và đồng thời: hai Chef, chế biến so với hủy đơn,
+phục vụ so với thanh toán, hai Cashier. Chỉ một Payment SUCCESSFUL và một
+Invoice; đơn Completed và bàn Available cùng transaction. Báo cáo đọc đúng
+Payment/Orders; lỗi đầu vào/không tồn tại/sai method trả đúng mã HTTP.
+
+Các kiểm thử tích hợp render template nên bắt được đường dẫn Java enum cũ
+trong Thymeleaf. Bản hiện tại lấy roles/statuses từ controller và dùng chung
+enum trạng thái giữa nghiệp vụ với báo cáo.
+
+## HTTP/MySQL
+
+Database riêng `rom_cleanup_verification` trên MySQL Community 8.4.13, cổng
+3307, ứng dụng 8081. Đơn thử **1101**, hai dòng **9206/9207**, tổng **138.50
+USD** đi qua toàn bộ đặt món → bếp → phục vụ → Bank Transfer → hóa đơn/báo cáo.
+Hai Chef cùng Start chỉ có một lần hợp lệ; hai Cashier cùng xác nhận chỉ tạo
+một thanh toán thành công. Các trang và ảnh/font/CSS/JS mới trả HTTP 200.
+
+Bản chính chạy **http://localhost:8080** trên DB `rom_integration_demo`.
+Đối chiếu fingerprint toàn bộ dữ liệu của **9 bảng trước và sau khởi động**
+đều khớp; bốn actor đăng nhập và mở màn hình nghiệp vụ thành công bằng
+mật khẩu demo `123456`. Không reset database chính.
+
+## Thay đổi cấu trúc
+
+251 → 186 file nguồn/cấu hình/tài liệu được quản lý; 80 → 75 file Java chính;
+5,095 → 4,368 dòng Java chính. Ảnh/icon: 74 → 34 file.
+
+Bỏ 3 interface service chỉ có một implementation; gộp controller/service
+quản lý bàn; bỏ accessor ID trùng; dùng chung enum; rút gọn form bằng Lombok
+đã có. Script demo gộp thành demo-data.sql, test-data.sql dành riêng kiểm thử.
+Tài liệu gốc, sơ đồ, bản code trước dọn và log cũ đã có bản sao lưu local bên
+ngoài thư mục dự án.
+
+Đây là kiểm chứng chức năng và cấu trúc; không phải kiểm thử tải hoặc xác
+nhận độ khớp Figma 100% bằng quan sát trình duyệt. GitHub Actions được cấu
+hình chạy verify; kết quả trên là kết quả chạy local.

@@ -1,6 +1,6 @@
 package com.restaurant.dto.order;
 
-import com.restaurant.entities.enums.CookingStatus;
+import com.restaurant.entity.enums.CookingStatus;
 import java.math.BigDecimal;
 
 /** View DTO for a single order detail line in the order detail view. */

@@ -6,9 +6,9 @@
     <title th:text="${title} + ' · Restaurant'">Restaurant</title>
     <link rel="stylesheet" href="/css/vendor/bootstrap-5.3.8.min.css" />
     <link rel="stylesheet" href="/css/fonts.css" />
-    <link rel="stylesheet" href="/css/reporting.css" />
-    <link rel="stylesheet" href="/css/workspace.css" />
-    <script defer src="/js/workspace.js"></script>
+    <link rel="stylesheet" href="/css/reports.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+    <script defer src="/js/app.js"></script>
     <link rel="stylesheet" href="/css/preparation.css" />
     <script defer src="/js/preparation.js"></script>
   </head>
@@ -20,7 +20,7 @@
     >
       <a class="brand" href="/home"
         ><span class="brand-mark"
-          ><img src="/images/tv5/utensils.svg" alt=""
+          ><img src="/images/icons/utensils.svg" alt=""
         /></span>
         <div><strong>Restaurant</strong><small>ORDER MANAGEMENT</small></div></a
       >
@@ -60,7 +60,7 @@
             class="nav-item"
             href="/serving"
             th:classappend="${section == 'serving'} ? 'active'"
-            ><img src="/images/tv5/table.svg" alt="" />Serving Management<span
+            ><img src="/images/icons/table.svg" alt="" />Serving Management<span
               class="ready-count"
               data-ready-count
               hidden
@@ -81,7 +81,7 @@
         <div class="role-card">
           <small>SIGNED IN AS</small
           ><strong th:text="${user.role}">Manager</strong
-          ><img src="/images/tv5/lock.svg" alt="" />
+          ><img src="/images/icons/lock.svg" alt="" />
         </div>
         <p>Restaurant employee workspace</p>
       </div>
@@ -106,7 +106,7 @@
       class="nav-item"
       th:classappend="${selected} ? 'active'"
       th:href="${url}"
-      ><img th:src="@{'/images/tv5/' + ${icon} + '.svg'}" alt="" /><span
+      ><img th:src="@{'/images/icons/' + ${icon} + '.svg'}" alt="" /><span
         th:text="${label}"
       ></span
     ></a>
@@ -124,7 +124,7 @@
       </div>
       <form th:action="@{/logout}" method="post">
         <button class="btn logout">
-          <img src="/images/tv5/logout.svg" alt="" />Logout
+          <img src="/images/icons/logout.svg" alt="" />Logout
         </button>
       </form>
     </header>

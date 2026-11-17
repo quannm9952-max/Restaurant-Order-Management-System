@@ -1,4 +1,4 @@
--- Shared schema copied from RestaurantOrderManagement_Database.sql (Figure 6.1, nine tables).
+-- Shared schema based on the approved nine-table ERD.
 -- Select/create the target database before executing. No Revenue or Kitchen table is added.
 CREATE TABLE IF NOT EXISTS Employee (
   employee_id INT AUTO_INCREMENT PRIMARY KEY,

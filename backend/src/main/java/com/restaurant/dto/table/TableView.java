@@ -1,6 +1,6 @@
 package com.restaurant.dto.table;
 
-import com.restaurant.entities.enums.TableStatus;
+import com.restaurant.entity.enums.TableStatus;
 
 /** View DTO for displaying a restaurant table. */
 public record TableView(Integer id, String tableName, Integer capacity,

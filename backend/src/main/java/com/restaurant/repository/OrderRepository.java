@@ -1,16 +1,13 @@
 package com.restaurant.repository;
 
-import com.restaurant.entities.enums.OrderStatus;
-
+import com.restaurant.entity.Order;
+import com.restaurant.entity.enums.OrderStatus;
 import jakarta.persistence.LockModeType;
-
-import org.springframework.data.jpa.repository.Lock;
-
-import com.restaurant.entities.Order;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 

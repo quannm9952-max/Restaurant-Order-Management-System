@@ -1,12 +1,11 @@
 # Backend
-Java 21 / Spring Boot 4.1.2. Entry point: src/main/java/com/restaurant/RestaurantApplication.java.
 
-Use run.cmd or verify.cmd at the repository root. The Maven Wrapper is in this directory.
+Java 21, Spring Boot. Điểm khởi động:
+`src/main/java/com/restaurant/RestaurantApplication.java`.
 
-- auth: shared identity, accounts and role protection.
-- controllers/services/dto: tables and orders.
-- entities/repository: the nine-table shared domain and JPA persistence.
-- checkout: menu, checkout and invoices on the same datasource.
-- ordermanagement/reporting: read-only reporting queries and DTOs.
+Mã chia theo controller, service, repository, entity, dto, config, security,
+exception và support. Kiểm thử nằm trong `src/test/java`.
 
-The frontend is packaged from ../frontend; SQL scripts are in ../database. Read the root README for MySQL and demo configuration. H2 is test-only.
+Từ gốc dự án: `run.cmd` để chạy, `verify.cmd` để kiểm thử.
+Maven đóng gói template/static từ `../frontend` vào cùng JAR.
+SQL nằm trong `../database`; tài liệu hiện tại nằm trong `docs`.

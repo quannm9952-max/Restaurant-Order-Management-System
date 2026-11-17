@@ -71,7 +71,7 @@
           </div>
           <form class="filter-bar" action="/menu" method="get">
             <div class="search-field">
-              <img src="/images/tv5/search.svg" alt="" /><input
+              <img src="/images/icons/search.svg" alt="" /><input
                 class="form-control"
                 name="search"
                 th:value="${currentSearch}"
@@ -191,8 +191,11 @@
         </p>
       </div>
     </main>
-    <dialog class="app-dialog" id="add-menu"
-      th:attr="data-auto-open=${menuDraft != null and menuDraft.id == null ? 'true' : null}">
+    <dialog
+      class="app-dialog"
+      id="add-menu"
+      th:attr="data-auto-open=${menuDraft != null and menuDraft.id == null ? 'true' : null}"
+    >
       <th:block th:replace="~{menu :: itemForm(${menuDraft})}"></th:block>
     </dialog>
     <th:block th:each="item : ${items}"
@@ -281,7 +284,8 @@
         </div>
         <div class="dialog-body">
           <div class="field">
-            <label th:for="${'food-name-' + (item == null or item.id == null ? 'new' : item.id)}"
+            <label
+              th:for="${'food-name-' + (item == null or item.id == null ? 'new' : item.id)}"
               >Food name</label
             ><input
               class="form-control"
@@ -313,7 +317,8 @@
             </select>
           </div>
           <div class="field">
-            <label th:for="${'food-price-' + (item == null or item.id == null ? 'new' : item.id)}"
+            <label
+              th:for="${'food-price-' + (item == null or item.id == null ? 'new' : item.id)}"
               >Price (USD)</label
             ><input
               class="form-control"

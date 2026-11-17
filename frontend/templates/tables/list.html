@@ -32,7 +32,7 @@
             >All Tables
             <span class="count" th:text="${#lists.size(allTables)}"></span></a
           ><a
-            th:each="s : ${T(com.restaurant.entities.enums.TableStatus).values()}"
+            th:each="s : ${statuses}"
             th:href="@{/tables(status=${s.name()})}"
             th:classappend="${filterStatus == s.name()} ? 'selected'"
             ><span
@@ -68,7 +68,7 @@
                 th:text="${t.status.name() == 'OUT_OF_SERVICE' ? 'OutOfService' : #strings.capitalize(#strings.toLowerCase(t.status.name()))}"
               ></span
               ><span class="table-symbol"
-                ><img src="/images/tv5/table.svg" alt="" /></span
+                ><img src="/images/icons/table.svg" alt="" /></span
               ><small
                 th:text="${t.currentOrderId == null ? 'No Open order' : 'Open order · ORD-' + t.currentOrderId}"
               ></small

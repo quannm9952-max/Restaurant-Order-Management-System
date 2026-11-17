@@ -1,8 +1,8 @@
 package com.restaurant.repository;
 
 import com.restaurant.dto.preparation.PreparationLine;
-import com.restaurant.entities.OrderDetail;
-import com.restaurant.entities.enums.OrderStatus;
+import com.restaurant.entity.OrderDetail;
+import com.restaurant.entity.enums.OrderStatus;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

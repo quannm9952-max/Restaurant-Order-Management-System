@@ -16,7 +16,7 @@
           <p>Your role-based workspace for smooth restaurant service.</p>
         </div>
         <div class="welcome-emblem">
-          <img src="/images/tv5/utensils.svg" alt="" />
+          <img src="/images/icons/utensils.svg" alt="" />
         </div>
       </section>
       <section class="workspace-section">
@@ -33,42 +33,42 @@
         <div class="workspace-cards" th:if="${user.role == 'Manager'}">
           <a class="workspace-card" href="/employees"
             ><span class="module-icon"
-              ><img src="/images/tv5/users.svg" alt="" /></span
+              ><img src="/images/icons/users.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Employee Management</h3>
             <p>Manage employee accounts, roles and sign-in access.</p>
             <span class="open-link">Open workspace &#8594;</span></a
           ><a class="workspace-card" href="/tables"
             ><span class="module-icon"
-              ><img src="/images/tv5/table.svg" alt="" /></span
+              ><img src="/images/icons/table.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Table Management</h3>
             <p>View table availability and manage dine-in service.</p>
             <span class="open-link">Open workspace &#8594;</span></a
           ><a class="workspace-card" href="/menu"
             ><span class="module-icon"
-              ><img src="/images/tv5/menu.svg" alt="" /></span
+              ><img src="/images/icons/menu.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Menu Management</h3>
             <p>Manage categories, prices and items available for new orders.</p>
             <span class="open-link">Open workspace &#8594;</span></a
           ><a class="workspace-card" href="/manager/orders"
             ><span class="module-icon"
-              ><img src="/images/tv5/orders.svg" alt="" /></span
+              ><img src="/images/icons/orders.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Restaurant Orders</h3>
             <p>Monitor restaurant orders and inspect saved order details.</p>
             <span class="open-link">Open workspace &#8594;</span></a
           ><a class="workspace-card" href="/manager/reports"
             ><span class="module-icon"
-              ><img src="/images/tv5/chart-inactive.svg" alt="" /></span
+              ><img src="/images/icons/chart-inactive.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Revenue Reports</h3>
             <p>Review successful payments and restaurant revenue.</p>
             <span class="open-link">Open workspace &#8594;</span></a
           ><a class="workspace-card" href="/manager/payment-history"
             ><span class="module-icon"
-              ><img src="/images/tv5/history.svg" alt="" /></span
+              ><img src="/images/icons/history.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Payment History</h3>
             <p>Search retained transactions and view payment details.</p>
@@ -78,14 +78,14 @@
         <div class="workspace-cards" th:if="${user.role == 'Waiter'}">
           <a class="workspace-card" href="/tables"
             ><span class="module-icon"
-              ><img src="/images/tv5/table.svg" alt="" /></span
+              ><img src="/images/icons/table.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Table Management</h3>
             <p>View table availability and manage dine-in service.</p>
             <span class="open-link">Open workspace &#8594;</span></a
           ><a class="workspace-card" href="/orders"
             ><span class="module-icon"
-              ><img src="/images/tv5/orders.svg" alt="" /></span
+              ><img src="/images/icons/orders.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Order Management</h3>
             <p>Create orders, add dishes and manage dine-in orders.</p>
@@ -93,7 +93,7 @@
           >
           <a class="workspace-card" href="/serving"
             ><span class="module-icon"
-              ><img src="/images/tv5/table.svg" alt="" /></span
+              ><img src="/images/icons/table.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Serving Management</h3>
             <p>View Ready dishes and confirm delivery to each table.</p>
@@ -103,7 +103,7 @@
         <div class="workspace-cards single" th:if="${user.role == 'Cashier'}">
           <a class="workspace-card" href="/payments"
             ><span class="module-icon"
-              ><img src="/images/tv5/cash.svg" alt="" /></span
+              ><img src="/images/icons/cash.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Payment & Invoice</h3>
             <p>
@@ -115,7 +115,7 @@
         <div class="workspace-cards single" th:if="${user.role == 'Chef'}">
           <a class="workspace-card" href="/kitchen"
             ><span class="module-icon"
-              ><img src="/images/tv5/utensils.svg" alt="" /></span
+              ><img src="/images/icons/utensils.svg" alt="" /></span
             ><span class="arrow">&#8599;</span>
             <h3>Kitchen Management</h3>
             <p>

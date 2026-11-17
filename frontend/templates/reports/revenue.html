@@ -1,21 +1,19 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head th:replace="~{reporting/fragments :: head('Revenue Reports')}"></head>
+  <head th:replace="~{shared/reports :: head('Revenue Reports')}"></head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <aside th:replace="~{reporting/fragments :: sidebar('revenue')}"></aside>
+    <aside th:replace="~{shared/reports :: sidebar('revenue')}"></aside>
     <header
-      th:replace="~{reporting/fragments :: header('Reports & Payment History')}"
+      th:replace="~{shared/reports :: header('Reports & Payment History')}"
     ></header>
     <main id="main" class="main-content">
       <section
-        th:replace="~{reporting/fragments :: heading('Reports & Payment History','Review restaurant revenue and retained payment records.')}"
+        th:replace="~{shared/reports :: heading('Reports & Payment History','Review restaurant revenue and retained payment records.')}"
       ></section>
-      <nav
-        th:replace="~{reporting/fragments :: tabs('revenue',${range})}"
-      ></nav>
+      <nav th:replace="~{shared/reports :: tabs('revenue',${range})}"></nav>
       <form class="filter-row" method="get" th:action="@{/manager/reports}">
-        <div th:replace="~{reporting/fragments :: dateRange(${range})}"></div>
+        <div th:replace="~{shared/reports :: dateRange(${range})}"></div>
         <label class="group-control"
           >Group by
           <select class="form-select" name="group" data-auto-submit>
@@ -42,7 +40,7 @@
       <div class="metrics">
         <section class="metric metric-primary">
           <span>Total Revenue</span
-          ><img th:src="@{/images/tv5/cash.svg}" alt="" /><strong
+          ><img th:src="@{/images/icons/cash.svg}" alt="" /><strong
             id="total-revenue"
             th:text="${@money.format(report.summary.totalRevenue)}"
             >$0.00</strong
@@ -50,14 +48,14 @@
         </section>
         <section class="metric">
           <span>Successful Payments</span
-          ><img th:src="@{/images/tv5/checkcircle.svg}" alt="" /><strong
+          ><img th:src="@{/images/icons/check-circle.svg}" alt="" /><strong
             th:text="${report.summary.successful}"
             >0</strong
           ><small>Transactions in the selected date range</small>
         </section>
         <section class="metric">
           <span>Excluded from revenue</span
-          ><img th:src="@{/images/tv5/info.svg}" alt="" /><strong
+          ><img th:src="@{/images/icons/info.svg}" alt="" /><strong
             th:text="${report.summary.excluded()}"
             >0</strong
           ><small
@@ -158,7 +156,7 @@
               th:each="payment : ${report.recentPayments}"
               th:href="@{/manager/payment-history/{id}(id=${payment.paymentId},from=${range.from},to=${range.to})}"
               ><span class="check-mark"
-                ><img th:src="@{/images/tv5/check.svg}" alt="" /></span
+                ><img th:src="@{/images/icons/check.svg}" alt="" /></span
               ><span
                 ><b th:text="${payment.code()}">PAY-0</b
                 ><small
