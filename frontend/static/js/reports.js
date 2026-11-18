@@ -170,11 +170,8 @@
       if (event.key === "Escape" && !popover.hidden) close();
     });
     document.addEventListener("click", (event) => {
-      if (
-        !popover.hidden &&
-        !popover.contains(event.target) &&
-        !trigger.contains(event.target)
-      )
+      const path = event.composedPath();
+      if (!popover.hidden && !path.includes(popover) && !path.includes(trigger))
         close(false);
     });
     [start, end].forEach((input) => input.addEventListener("change", render));

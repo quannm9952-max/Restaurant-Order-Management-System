@@ -1,5 +1,18 @@
 # Kiểm chứng hệ thống
 
+## Chọn ngày trực tiếp trên lịch (18/11/2026)
+
+Sửa lỗi nút ngày/tháng bị thay thế khi render khiến xử lý bấm ngoài lịch
+đóng popup và khôi phục ngày cũ. Kiểm tra đường đi gốc của sự kiện click
+để giữ các thao tác bên trong lịch, kể cả khi nút đã được vẽ lại.
+
+Chrome headless: **56 tình huống đạt** trên Revenue Reports và Payment
+History ở 1440/820/390/320 px. Bao gồm chọn ngày đầu/cuối, qua tháng,
+chọn ngược hoặc cùng một ngày, Apply, Cancel, bấm ngoài, Escape, nhập tay
+và sửa khoảng không hợp lệ bằng lịch. Giữ Group/keyword/status khi áp dụng.
+Không lỗi JavaScript; Node check và Docker build đạt. JS public khớp nguồn,
+checksum đủ 9 bảng không đổi; không đọc báo cáo tài chính qua Cloudflare.
+
 ## Doanh thu tháng và nhóm tự động (18/11/2026)
 
 Docker verify: **276 test đạt, 0 failure, 0 error, 0 skipped**. Kiểm thử nhóm
