@@ -12,3 +12,8 @@ frontend riêng. Mở http://localhost:8080 sau khi chạy `run.cmd` ở gốc d
 `responsive.css` dùng chung cho điện thoại, tablet và desktop. Dưới 1101 px,
 sidebar chuyển thành menu mở/đóng; dưới 601 px, bố cục xếp thành cột và các
 điều khiển được tăng kích thước. Bảng/biểu đồ rộng cuộn trong khung riêng.
+
+Serving Management dùng `status=READY|SERVED`, mặc định Ready. Mục Served
+không có form/nút xác nhận; hiển thị theo bàn và đơn, giữ bộ lọc khi chuyển
+mục. Tiến độ tính toàn đơn, không phụ thuộc từ khóa tìm kiếm. Polling giữ
+thông báo Ready riêng và cập nhật lịch sử khi món/đơn thay đổi.

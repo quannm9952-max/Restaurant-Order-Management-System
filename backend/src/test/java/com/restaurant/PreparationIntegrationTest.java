@@ -12,6 +12,7 @@ import com.restaurant.dto.report.ReportModels.DateRange;
 import com.restaurant.dto.report.ReportModels.Grouping;
 import com.restaurant.entity.OrderDetail;
 import com.restaurant.entity.enums.CookingStatus;
+import com.restaurant.entity.enums.OrderStatus;
 import com.restaurant.exception.BusinessException;
 import com.restaurant.exception.NotFoundException;
 import com.restaurant.repository.OrderDetailRepository;
@@ -256,6 +257,156 @@ class PreparationIntegrationTest {
   }
 
   @Test
+  void confirmationCanBeReviewedWithPartialProgressAndLiteralFilters() {
+    role("WAITER");
+    var before = preparation.servingUpdate();
+    var served = preparation.confirmServed(1052, 9205);
+    var history = preparation.serving("SERVED", served.tableId(), "ORD-1052");
+    assertThat(history.lineCount()).isEqualTo(1);
+    var order = history.orders().getFirst();
+    assertThat(order.lines()).extracting(PreparationLine::lineId)
+        .containsExactly(9205);
+    assertThat(order.servedLineCount()).isEqualTo(1);
+    assertThat(order.activeLineCount()).isEqualTo(2);
+    assertThat(order.allServed()).isFalse();
+    assertThat(order.orderStatus()).isEqualTo(OrderStatus.OPEN);
+    assertThat(preparation.serving(served.tableId(), "ORD-1052").orders())
+        .isEmpty();
+    assertThat(preparation.serving(null, "").tables()).extracting(t -> t.id())
+        .contains(served.tableId());
+    for (String query : List.of(served.itemName(), served.tableName(),
+        "ORD-1052", "Line 9205"))
+      assertThat(
+          preparation.serving("SERVED", served.tableId(), query).lineCount())
+          .isEqualTo(1);
+    assertThat(preparation.serving("SERVED", 9004, "ORD-1052").orders())
+        .isEmpty();
+    assertThat(preparation.serving("SERVED", null, "%").orders()).isEmpty();
+    assertThat(preparation.servingUpdate().readyLines()).isZero();
+    assertThat(history.revision())
+        .isEqualTo(preparation.servingUpdate().revision())
+        .isNotEqualTo(before.revision());
+  }
+
+  @Test
+  void filteredHistoryProgressCountsTheEntireOrder() {
+    preparation.markReady(1052, 9204);
+    role("WAITER");
+    preparation.confirmServed(1052, 9204);
+    preparation.confirmServed(1052, 9205);
+    var order = preparation.serving("SERVED", null, "Line 9205").orders()
+        .getFirst();
+    assertThat(order.lines()).hasSize(1);
+    assertThat(order.servedLineCount()).isEqualTo(2);
+    assertThat(order.activeLineCount()).isEqualTo(2);
+    assertThat(order.allServed()).isTrue();
+    assertThat(preparation.serving("SERVED", null, "").counts().get("SERVED"))
+        .isEqualTo(jdbc.queryForObject(
+            "SELECT COUNT(*) FROM Order_Detail WHERE preparation_status='SERVED'",
+            Long.class));
+  }
+
+  @Test
+  void cancelledLinesAreExcludedAndNewPendingLinesUpdateHistoryProgress() {
+    role("WAITER");
+    preparation.confirmServed(1052, 9205);
+    jdbc.update(
+        "UPDATE Order_Detail SET preparation_status='CANCELLED' WHERE order_detail_id=9204");
+    entityManager.clear();
+    var complete = preparation.serving("SERVED", null, "ORD-1052").orders()
+        .getFirst();
+    assertThat(complete.activeLineCount()).isEqualTo(1);
+    assertThat(complete.allServed()).isTrue();
+    String revision = preparation.servingUpdate().revision();
+    jdbc.update(
+        "UPDATE Order_Detail SET preparation_status='PENDING' WHERE order_detail_id=9204");
+    entityManager.clear();
+    var partial = preparation.serving("SERVED", null, "ORD-1052").orders()
+        .getFirst();
+    assertThat(partial.activeLineCount()).isEqualTo(2);
+    assertThat(partial.servedLineCount()).isEqualTo(1);
+    assertThat(partial.allServed()).isFalse();
+    assertThat(preparation.servingUpdate().revision()).isNotEqualTo(revision);
+  }
+
+  @Test
+  void closedOrdersRemainInHistoryWithoutInflatingReadyNotifications() {
+    role("WAITER");
+    preparation.confirmServed(1052, 9205);
+    jdbc.update(
+        "UPDATE Order_Detail SET preparation_status='READY' WHERE order_detail_id=9204");
+    entityManager.clear();
+    var before = preparation.servingUpdate();
+    assertThat(before.readyLines()).isEqualTo(1);
+    jdbc.update("UPDATE Orders SET status='COMPLETED' WHERE order_id=1052");
+    entityManager.clear();
+    var history = preparation.serving("SERVED", null, "ORD-1052");
+    assertThat(history.orders().getFirst().orderStatus())
+        .isEqualTo(OrderStatus.COMPLETED);
+    assertThat(preparation.serving(null, "ORD-1052").orders()).isEmpty();
+    assertThat(preparation.servingUpdate().readyLines()).isZero();
+    assertThat(preparation.servingUpdate().revision())
+        .isEqualTo(history.revision()).isNotEqualTo(before.revision());
+  }
+
+  @Test
+  void historyRendersEscapedReadOnlyCardsWithOrderDateAndProgress()
+      throws Exception {
+    role("WAITER");
+    preparation.confirmServed(1052, 9205);
+    jdbc.update(
+        "UPDATE Order_Detail SET item_name_at_order='<script>alert(1)</script>' WHERE order_detail_id=9205");
+    mvc.perform(get("/serving").param("status", "SERVED").param("q", "ORD-1052")
+        .with(user("prep_waiter").roles("WAITER"))).andExpect(status().isOk())
+        .andExpect(model().attribute("selectedStatus", "SERVED"))
+        .andExpect(content()
+            .string(org.hamcrest.Matchers.containsString("Partially served")))
+        .andExpect(content().string(
+            org.hamcrest.Matchers.containsString("1 / 2 item lines served")))
+        .andExpect(content()
+            .string(org.hamcrest.Matchers.containsString("Order created:")))
+        .andExpect(content()
+            .string(org.hamcrest.Matchers.containsString("&lt;script&gt;")))
+        .andExpect(content().string(org.hamcrest.Matchers.not(
+            org.hamcrest.Matchers.containsString("<script>alert(1)</script>"))))
+        .andExpect(content().string(org.hamcrest.Matchers.not(
+            org.hamcrest.Matchers.containsString("data-preparation-action"))))
+        .andExpect(content().string(org.hamcrest.Matchers
+            .not(org.hamcrest.Matchers.containsString("Confirm Served"))));
+  }
+
+  @Test
+  void servedConfirmationKeepsFiltersAndProvidesHistoryLink() throws Exception {
+    int tableId = jdbc.queryForObject(
+        "SELECT table_id FROM Orders WHERE order_id=1052", Integer.class);
+    mvc.perform(post("/serving/orders/1052/items/9205/served")
+        .param("tableId", Integer.toString(tableId)).param("q", "ORD-1052")
+        .with(user("prep_waiter").roles("WAITER")).with(csrf()))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/serving?tableId=" + tableId + "&q=ORD-1052"))
+        .andExpect(flash().attribute("servedTableId", tableId))
+        .andExpect(flash().attribute("servedOrderId", 1052));
+    mvc.perform(get("/serving").param("status", "SERVED")
+        .param("q", "no matching order")
+        .with(user("prep_waiter").roles("WAITER"))).andExpect(status().isOk())
+        .andExpect(content()
+            .string(org.hamcrest.Matchers.containsString("No Served items")))
+        .andExpect(content().string(
+            org.hamcrest.Matchers.containsString("/serving?status=SERVED")));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"PENDING", "PREPARING", "CANCELLED", "invalid"})
+  void invalidServingStatusIsRejected(String statusFilter) throws Exception {
+    role("WAITER");
+    assertThatThrownBy(() -> preparation.serving(statusFilter, null, ""))
+        .isInstanceOf(BusinessException.class);
+    mvc.perform(get("/serving").param("status", statusFilter)
+        .with(user("prep_waiter").roles("WAITER")))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void emptyKitchenAndServingStatesAreSupported() throws Exception {
     jdbc.update("UPDATE Order_Detail SET "
         + "preparation_status='SERVED' WHERE order_id IN (1051,1052)");
@@ -276,6 +427,8 @@ class PreparationIntegrationTest {
     mvc.perform(get("/kitchen/updates").with(who))
         .andExpect(status().is(role.equals("CHEF") ? 200 : 403));
     mvc.perform(get("/serving").with(who))
+        .andExpect(status().is(role.equals("WAITER") ? 200 : 403));
+    mvc.perform(get("/serving").param("status", "SERVED").with(who))
         .andExpect(status().is(role.equals("WAITER") ? 200 : 403));
     mvc.perform(get("/serving/updates").with(who))
         .andExpect(status().is(role.equals("WAITER") ? 200 : 403));
@@ -298,6 +451,8 @@ class PreparationIntegrationTest {
         .isInstanceOf(AccessDeniedException.class);
     assertThatThrownBy(() -> preparation.serving(null, ""))
         .isInstanceOf(AccessDeniedException.class);
+    assertThatThrownBy(() -> preparation.serving("SERVED", null, ""))
+        .isInstanceOf(AccessDeniedException.class);
     assertThatThrownBy(() -> preparation.startPreparing(1051, 9203))
         .isInstanceOf(AccessDeniedException.class);
     assertThatThrownBy(() -> preparation.confirmServed(1052, 9205))
@@ -306,6 +461,8 @@ class PreparationIntegrationTest {
 
   @Test
   void chefCannotServeAndWaiterCannotCookThroughService() {
+    assertThatThrownBy(() -> preparation.serving("SERVED", null, ""))
+        .isInstanceOf(AccessDeniedException.class);
     assertThatThrownBy(() -> preparation.confirmServed(1052, 9205))
         .isInstanceOf(AccessDeniedException.class);
     role("WAITER");
@@ -408,6 +565,24 @@ class PreparationIntegrationTest {
         "SELECT amount FROM Payment WHERE order_id=? AND status='SUCCESSFUL'",
         BigDecimal.class, orderId)).isEqualByComparingTo(saved);
     assertThat(payments.invoiceData(orderId).get("total")).isEqualTo(saved);
+    role("WAITER");
+    var history = preparation.serving("SERVED", 9004, "ORD-" + orderId);
+    assertThat(history.orders()).hasSize(1);
+    var completed = history.orders().getFirst();
+    assertThat(completed.orderStatus()).isEqualTo(OrderStatus.COMPLETED);
+    assertThat(completed.allServed()).isTrue();
+    assertThat(completed.lines()).extracting(PreparationLine::itemName)
+        .containsExactlyElementsOf(
+            lines.stream().map(l -> l.itemNameAtOrder()).toList());
+    // Checkout uses JDBC; a new HTTP request has a fresh persistence context.
+    entityManager.clear();
+    var nextOrder = orders.createOrder(9004, "TEST reused table",
+        List.of(new OrderLine(9001, 1)));
+    assertThat(preparation.serving("SERVED", 9004, "").orders())
+        .extracting(o -> o.orderId()).contains(orderId)
+        .doesNotContain(nextOrder.getId());
+    assertThat(preparation.serving("SERVED", 9004, "ORD-" + orderId).orders()
+        .getFirst().allServed()).isTrue();
     role("MANAGER");
     var range = new DateRange(LocalDate.now(), LocalDate.now());
     assertThat(reports.report(range, Grouping.DAY).summary().totalRevenue())

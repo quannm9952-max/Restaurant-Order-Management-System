@@ -37,6 +37,40 @@
 .prep-tabs [data-stage="ready"] i {
   background: #27834c;
 }
+.prep-tabs [data-stage="served"] i {
+  background: #365982;
+}
+.prep-tabs [data-stage="served"]:not(.selected) b {
+  background: #eaf1f8;
+  color: #365982;
+}
+.prep-history-link {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.prep-order-summary {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.prep-order-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.prep-order-summary .status-chip {
+  font-size: 11px;
+}
+.prep-order-progress {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.prep-order-created {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
 .prep-tabs b {
   margin-left: auto;
   font-size: 12px;

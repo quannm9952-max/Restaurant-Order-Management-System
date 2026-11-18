@@ -61,6 +61,12 @@ Trường trống được nhắc bằng tiếng Anh ở giao diện và backend
 Thanh toán và xem/in hóa đơn thuộc Cashier. Manager theo dõi doanh thu,
 đơn hàng và lịch sử thanh toán qua các module báo cáo của Manager.
 
+Serving Management của Waiter có hai mục **Ready to serve** và **Served**.
+Sau khi xác nhận, xem lại bàn, mã đơn, món/số lượng và tiến độ đã phục vụ;
+phân biệt một phần/toàn bộ, kể cả đơn đã thanh toán và bàn được dùng cho đơn
+mới. Lọc theo bàn hoặc tìm món/mã đơn/dòng món; chuyển mục giữ bộ lọc.
+Lịch sử chỉ xem, hiển thị thời gian tạo đơn; không xác nhận lại món đã Served.
+
 Revenue Reports có Auto, Day, Week và Month. Auto chọn ngày cho 1–31 ngày,
 tuần cho 32–90 ngày, tháng cho khoảng dài hơn; số ngày tính cả hai đầu.
 Biểu đồ nhiều cột giảm nhãn trục X; rê chuột, focus hoặc chạm cột để xem

@@ -1,4 +1,28 @@
+## Xem lại các món/bàn đã phục vụ (18/11/2026)
+
+Docker verify: **286 test đạt, 0 failure, 0 error, 0 skipped**.
+PreparationIntegrationTest có 55 ca, thêm 10 ca lịch sử và mở rộng luồng
+thanh toán Cash/Card/Bank Transfer, phân quyền HTTP/service cho cả 4 actor.
+Kiểm tra xác nhận từng dòng, phục vụ một phần/toàn bộ, loại dòng Cancelled
+khỏi tiến độ, bộ lọc không làm sai tổng tiến độ, giữ món theo tên lúc đặt,
+đơn Completed và dùng lại bàn vẫn giữ lịch sử theo mã đơn. Ready chỉ đếm
+đơn Open; revision của trang và API thống nhất và đổi khi tiến độ/trạng thái
+đơn đổi. Lịch sử chỉ đọc, escape tên món/ghi chú, không thêm quyền sửa.
+
+Chrome headless trên project MySQL riêng: **32 bố cục** ở 8 kích thước từ
+320 đến 1440 px, gồm Ready, Served, lọc bàn/mã đơn và danh sách rỗng. Thao
+tác nút xác nhận thật và liên kết xem lại, kiểm tra phục vụ một phần → đủ
+món → thanh toán → tạo đơn mới trên cùng bàn. Không tràn ngang toàn trang,
+không lỗi JavaScript, đã xem ảnh desktop/điện thoại. Đây là giả lập trình
+duyệt; không phải thử trên thiết bị thật. Không thêm bảng/cột/dependency;
+thời gian hiển thị là thời gian tạo đơn, không suy diễn thời gian phục vụ.
+
 # Kiểm chứng hệ thống
+
+Bản chính: Waiter mở Ready/Served/polling thành công, ba actor khác trả 403.
+Checksum đủ 9 bảng trước/sau cập nhật không đổi; CSS public qua Cloudflare
+khớp nguồn. Chỉ kiểm tra dữ liệu đã đăng nhập tại localhost. Project và hai
+volume thử riêng đã được dọn, giữ database và ảnh của bản chính.
 
 ## Chiều cao cột và chế độ nhóm doanh thu (18/11/2026)
 

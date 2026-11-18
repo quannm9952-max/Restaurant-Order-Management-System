@@ -1,6 +1,7 @@
 package com.restaurant.dto.preparation;
 
 import com.restaurant.entity.enums.CookingStatus;
+import com.restaurant.entity.enums.OrderStatus;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
@@ -9,7 +10,7 @@ import java.util.Locale;
  */
 public record PreparationLine(Integer lineId, Integer orderId, Integer tableId,
     String tableName, String itemName, Integer quantity, CookingStatus status,
-    LocalDateTime createdAt, String orderNote) {
+    LocalDateTime createdAt, String orderNote, OrderStatus orderStatus) {
   public String statusLabel() {
     return status.name().substring(0, 1)
         + status.name().substring(1).toLowerCase(Locale.ROOT);

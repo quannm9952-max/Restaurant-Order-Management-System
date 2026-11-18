@@ -32,9 +32,12 @@ public class PreparationController {
   }
 
   @GetMapping({"/serving", "/serving/"})
-  public String serving(@RequestParam(required = false) Integer tableId,
+  public String serving(@RequestParam(defaultValue = "READY") String status,
+      @RequestParam(required = false) Integer tableId,
       @RequestParam(defaultValue = "") String q, Model model) {
-    model.addAttribute("queue", service.serving(tableId, q));
+    model.addAttribute("queue", service.serving(status, tableId, q));
+    model.addAttribute("selectedStatus",
+        status.trim().toUpperCase(java.util.Locale.ROOT));
     model.addAttribute("selectedTableId", tableId);
     model.addAttribute("q", q.trim());
     return "preparation/serving";
@@ -98,8 +101,10 @@ public class PreparationController {
       @RequestParam(required = false) Integer tableId,
       @RequestParam(defaultValue = "") String q, RedirectAttributes flash) {
     try {
-      flash.addFlashAttribute("successMessage",
-          message(service.confirmServed(orderId, lineId)));
+      var line = service.confirmServed(orderId, lineId);
+      flash.addFlashAttribute("successMessage", message(line));
+      flash.addFlashAttribute("servedTableId", line.tableId());
+      flash.addFlashAttribute("servedOrderId", line.orderId());
     } catch (BusinessException | NotFoundException ex) {
       flash.addFlashAttribute("errorMessage", ex.getMessage());
     } catch (DataAccessException | TransactionException ex) {
