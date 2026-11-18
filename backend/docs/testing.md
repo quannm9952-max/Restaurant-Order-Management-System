@@ -1,3 +1,36 @@
+## In bill trước thanh toán và tiếp tục chỉnh sửa (18/11/2026)
+
+Bỏ Generate Bill; Payment chỉ có Print Bill/Print Invoice và Process Payment.
+Print Bill mở dialog ngay trên Payment, thể hiện Unpaid và Amount due; có
+nút in. Đóng dialog vẫn chỉnh số lượng và in lại được. Các ô thanh toán mở
+ngay khi đơn đủ điều kiện. Chỉ Confirm Payment mới khóa đơn và tính doanh thu.
+
+Docker verify: **350 test, 0 failure, 0 error, 0 skipped**. Kiểm tra preview
+Unpaid, đổi số lượng nhiều lần, thanh toán số lượng mới chưa in, chống tổng
+giả/phiên cũ, dữ liệu Cancelled, quyền/CSRF, rollback và Invoice cũ chưa trả.
+Hóa đơn đã trả bất biến; trường hợp OPEN nhưng đã có Successful cũng chặn sửa.
+
+MySQL riêng khôi phục từ backup chính khớp 9 bảng. Chrome kiểm tra preview
+645.000 VND, sửa/in lại 280.000 VND rồi sửa tiếp và trả 450.000 VND: số lượng
+cuối, Payment, Orders, Invoice khớp; chỉ lúc trả mới giải phóng bàn. Bank
+Transfer thanh toán được không cần in trước. Invoice chưa trả từ bản cũ
+không khóa đơn, được cập nhật đúng tổng khi trả và giữ số hóa đơn.
+
+Hai review từ cùng phiên bản bill với số lượng khác nhau có một thành công,
+một HTTP 409; xác nhận bằng phiên cũ bị chặn. Hai xác nhận thanh toán đồng
+thời chỉ có một Successful và một Invoice. Kiểm tra 16 bố cục ở 1440/820/
+390/320 px cho bill đang sửa, preview Unpaid, xác nhận Cash và preview Paid;
+không tràn trang/lỗi JavaScript, đã xem ảnh desktop/mobile. Chế độ in chỉ
+hiện bill khách hàng, ẩn Payment và nút thao tác; nút Print gọi window.print.
+Mọi ghi dữ liệu thử chỉ nằm trên database riêng. Định dạng nhập nghìn VND
+và tính tiền thừa giữ đúng quy tắc trước đó.
+
+Bản chính: 12 bố cục sửa bill/preview Unpaid/preview Paid đạt tại bốn kích
+thước; bốn actor mở trang đúng quyền. Chỉ dùng GET để xem bill trên bản
+chính, không gửi review/confirm thử; cả 9 bảng trước/sau triển khai không
+đổi. JS/CSS công khai qua Cloudflare khớp nguồn mới. Môi trường test riêng
+được dọn sau kiểm tra; backup và volume database/ảnh chính được giữ.
+
 ## Ô nhận tiền nhập theo nghìn đồng (18/11/2026)
 
 Chuyển ô nhận tiền sang text có định dạng VND; ô hidden gửi đúng số VND

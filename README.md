@@ -58,14 +58,20 @@ Sai thông tin báo `Incorrect username or password.`; chỉ khi đúng username
 và mật khẩu của tài khoản khóa mới báo `Your account has been locked.`
 Trường trống được nhắc bằng tiếng Anh ở giao diện và backend.
 
-Trong Payment & Invoice, thu ngân được tăng/giảm **số lượng nguyên từ 1**
-trên các dòng món đã Served khi đơn đủ điều kiện thanh toán. Tổng tiền xem
-trước cập nhật ngay theo đơn giá đã lưu lúc gọi món. Bấm **Generate Bill**
-để lưu số lượng và tạo bill trong cùng transaction; từ đó khóa mọi thay đổi
-đơn, kể cả tải lại trang hoặc mở ở thiết bị khác. Phần nhập và xác nhận thanh
-toán mở sau khi tạo bill. Bill chưa thanh toán không được tính doanh thu;
-Print Invoice chỉ mở sau khi thanh toán thành công. Không có thao tác mở khóa
-hoặc sửa lại bill đã tạo.
+Trong Payment & Invoice có hai thao tác **Print Bill / Print Invoice** và
+**Process Payment**. Thu ngân được chỉnh số lượng nguyên từ 1 của các dòng
+Served khi đơn đủ điều kiện thanh toán. Tổng tiền dùng đơn giá đã lưu lúc gọi
+món. Print Bill lưu số lượng đã kiểm tra và mở bản xem trước ngay trên Payment
+để khách kiểm tra hoặc in ra giấy; bill hiển thị **Unpaid**. Đóng bản xem trước
+vẫn sửa số lượng và in lại được. Có thể nhập thông tin thanh toán ngay khi mở
+Payment; không cần tạo bill trước.
+
+Sau khi thu ngân xác nhận đã nhận tiền, Confirm Payment lưu số lượng cuối
+cùng, thanh toán, hóa đơn và hoàn tất đơn trong cùng transaction. Lúc đó mới
+khóa đơn, giải phóng bàn và tính doanh thu. Bill thay đổi ở phiên khác sẽ yêu
+cầu tải lại để kiểm tra; không tự ghi đè hoặc thu theo tổng cũ. Hóa đơn đã trả
+hiển thị **Paid** và in lại được. Các bill chưa trả từ phiên bản trước cũng
+sửa được, không cần xóa dữ liệu hoặc migration.
 
 Giao dịch mới chọn **Cash** hoặc **Bank Transfer**. Cashier phải đánh dấu
 `I have received and verified the payment.`; tiền mặt cần nhập Amount Received

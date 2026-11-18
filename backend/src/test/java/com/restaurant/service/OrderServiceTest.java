@@ -706,7 +706,7 @@ class OrderServiceTest {
 
     OrderDetailView view = orderService.getOrderDetail(1);
 
-    assertTrue(view.canEdit());
+    assertFalse(view.canEdit());
     assertFalse(view.canCancelOrder());
   }
 

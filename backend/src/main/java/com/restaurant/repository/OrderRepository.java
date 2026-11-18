@@ -16,9 +16,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
   @Query("SELECT o FROM Order o WHERE o.id = :id")
   Optional<Order> lockForUpdate(@Param("id") Integer id);
 
-  @Query("SELECT COUNT(i) > 0 FROM Invoice i WHERE i.order.id = :id")
-  boolean hasGeneratedBill(@Param("id") Integer id);
-
   /** Check if a table has an OPEN order. */
   @Query("SELECT COUNT(o) > 0 FROM Order o WHERE "
       + "o.table.id = :tableId AND o.status = 'OPEN'")

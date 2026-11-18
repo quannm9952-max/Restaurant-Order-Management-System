@@ -94,11 +94,6 @@ public class CheckoutRepository extends JdbcRepositorySupport {
         Map.of("id", id)) > 0;
   }
 
-  public boolean hasBill(long id) {
-    return count("SELECT COUNT(*) FROM Invoice WHERE order_id=:id",
-        Map.of("id", id)) > 0;
-  }
-
   public void updateBillQuantity(long orderId, long detailId, int quantity) {
     if (update(
         "UPDATE Order_Detail SET quantity=:quantity "
@@ -145,6 +140,15 @@ public class CheckoutRepository extends JdbcRepositorySupport {
   }
 
   public void createInvoice(long id, BigDecimal amount) {
+    // Old unpaid generated bills remain editable; finalize their existing
+    // number.
+    if (count("SELECT COUNT(*) FROM Invoice WHERE order_id=:id",
+        Map.of("id", id)) > 0) {
+      update(
+          "UPDATE Invoice SET total_amount=:amount,issued_at=CURRENT_TIMESTAMP WHERE order_id=:id",
+          Map.of("id", id, "amount", amount));
+      return;
+    }
     update(
         "INSERT INTO Invoice(order_id,invoice_number,issued_at,total_amount) "
             + "VALUES(:id,CONCAT('INV-',:id),CURRENT_TIMESTAMP,:amount)",

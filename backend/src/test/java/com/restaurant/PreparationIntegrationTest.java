@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import com.restaurant.dto.order.OrderLine;
 import com.restaurant.dto.payment.PaymentConfirmation;
-import com.restaurant.dto.payment.BillLineQuantity;
 import com.restaurant.dto.preparation.PreparationLine;
 import com.restaurant.dto.report.ReportModels.DateRange;
 import com.restaurant.dto.report.ReportModels.Grouping;
@@ -554,11 +553,6 @@ class PreparationIntegrationTest {
     for (var line : lines)
       preparation.confirmServed(orderId, line.detailId());
     role("CASHIER");
-    payments.generateBill(orderId,
-        lines.stream()
-            .map(line -> new BillLineQuantity(line.detailId().longValue(),
-                line.quantity()))
-            .toList());
     payments.confirmPayment(orderId,
         new PaymentConfirmation(paymentMethod, true, saved));
     assertThat(jdbc.queryForObject("SELECT status FROM Orders WHERE order_id=?",
@@ -708,8 +702,6 @@ class PreparationIntegrationTest {
     try {
       var outcomes = race("WAITER", () -> preparation.confirmServed(id, id),
           "CASHIER", () -> {
-            payments.generateBill(id,
-                List.of(new BillLineQuantity((long) id, 1)));
             payments.confirmPayment(id, new PaymentConfirmation("CASH", true,
                 new BigDecimal("1000000.00")));
           });

@@ -2,9 +2,12 @@ package com.restaurant.service;
 
 import com.restaurant.repository.CheckoutRepository;
 import com.restaurant.dto.payment.PaymentConfirmation;
-import com.restaurant.dto.payment.BillLineQuantity;
+import com.restaurant.dto.payment.BillReview;
 import com.restaurant.entity.enums.PaymentMethod;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -53,10 +56,9 @@ public class PaymentService {
     boolean ready = "OPEN".equals(order.get("status")) && active > 0
         && unserved == 0 && amount.signum() > 0
         && !checkoutRepository.hasSuccessfulPayment(id);
-    boolean generated = order.get("invoice_number") != null;
     order.put("readyToPay", ready);
-    order.put("billGenerated", generated);
-    order.put("canEditQuantities", ready && !generated);
+    order.put("canEditQuantities", ready);
+    order.put("billRevision", revision(order, items));
     return order;
   }
 
@@ -78,11 +80,22 @@ public class PaymentService {
   }
 
   @Transactional
-  public void generateBill(long id, List<BillLineQuantity> quantities) {
+  public Map<String, Object> reviewBill(long id, BillReview review) {
     payableOrder(id);
-    if (checkoutRepository.hasBill(id))
+    applyReview(id, review);
+    return orderDetailForPayment(id);
+  }
+
+  private BigDecimal applyReview(long id, BillReview review) {
+    var current = orderDetailForPayment(id);
+    if (review == null || review.revision() == null
+        || review.expectedTotal() == null)
+      throw new IllegalArgumentException(
+          "Review all item quantities before continuing.");
+    if (!review.revision().equals(current.get("billRevision")))
       throw new IllegalStateException(
-          "Bill already generated. Quantities are locked.");
+          "Bill changed. Reload Payment and review the latest order.");
+    var quantities = review.lines();
     var active = checkoutRepository.lines(id).stream()
         .filter(line -> !"CANCELLED".equals(line.get("status"))).toList();
     if (quantities == null || quantities.size() != active.size())
@@ -110,6 +123,9 @@ public class PaymentService {
         || total.compareTo(new BigDecimal("9999999999.99")) > 0)
       throw new IllegalArgumentException(
           "The bill total must be positive and within the supported amount.");
+    if (total.compareTo(review.expectedTotal()) != 0)
+      throw new IllegalStateException(
+          "Bill total changed. Review the amount before continuing.");
     for (var line : active) {
       long detailId = ((Number) line.get("id")).longValue();
       int quantity = reviewed.get(detailId);
@@ -117,21 +133,33 @@ public class PaymentService {
         checkoutRepository.updateBillQuantity(id, detailId, quantity);
     }
     checkoutRepository.updateOrderTotal(id, total);
-    checkoutRepository.createInvoice(id, total);
+    return total;
   }
 
-  private void requireGeneratedBill(long id, BigDecimal amount) {
-    var order = checkoutRepository.order(id);
-    if (order.get("invoice_number") == null)
-      throw new IllegalStateException(
-          "Generate the bill before confirming payment.");
-    if (amount.compareTo((BigDecimal) order.get("billed_amount")) != 0)
-      throw new IllegalStateException(
-          "Order total no longer matches the generated bill.");
+  private String revision(Map<String, Object> order,
+      List<Map<String, Object>> items) {
+    var state = new StringBuilder().append(order.get("status"));
+    for (var item : items)
+      state.append('|').append(item.get("id")).append(':')
+          .append(item.get("quantity")).append(':')
+          .append(item.get("unit_price")).append(':')
+          .append(item.get("status"));
+    try {
+      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+          .digest(state.toString().getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException("Cannot identify the current bill.", ex);
+    }
   }
 
   @Transactional
   public long confirmPayment(long id, PaymentConfirmation confirmation) {
+    return confirmPayment(id, confirmation, null);
+  }
+
+  @Transactional
+  public long confirmPayment(long id, PaymentConfirmation confirmation,
+      BillReview review) {
     if (confirmation == null)
       throw new IllegalArgumentException("Enter payment details.");
     PaymentMethod method = PaymentMethod
@@ -140,8 +168,9 @@ public class PaymentService {
       throw new IllegalArgumentException(
           "Confirm that you have received and verified the payment.");
     var locked = payableOrder(id);
-    BigDecimal amount = (BigDecimal) locked.get("amount");
-    requireGeneratedBill(id, amount);
+    BigDecimal amount = review == null
+        ? (BigDecimal) locked.get("amount")
+        : applyReview(id, review);
     if (method == PaymentMethod.CASH) {
       BigDecimal received = confirmation.amountReceived();
       if (received == null || received.signum() < 0
@@ -158,6 +187,7 @@ public class PaymentService {
     if (checkoutRepository.completeOrder(id, amount) != 1)
       throw new IllegalStateException("Order changed during checkout.");
     checkoutRepository.releaseTable(locked.get("table_id"));
+    checkoutRepository.createInvoice(id, amount);
     return paymentId;
   }
 
@@ -165,9 +195,28 @@ public class PaymentService {
   public long recordFailedPayment(long id, String paymentMethod) {
     PaymentMethod method = PaymentMethod.forPayment(paymentMethod);
     var locked = payableOrder(id);
-    requireGeneratedBill(id, (BigDecimal) locked.get("amount"));
     return checkoutRepository.insertPayment(id,
         (BigDecimal) locked.get("amount"), method.name(), false);
+  }
+
+  @Transactional(readOnly = true,
+      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public Map<String, Object> billData(long id, String expectedRevision) {
+    var order = orderDetailForPayment(id);
+    if (!Boolean.TRUE.equals(order.get("readyToPay")))
+      throw new IllegalStateException(
+          "Only an unpaid, fully served order can be previewed.");
+    if (!Objects.equals(expectedRevision, order.get("billRevision")))
+      throw new IllegalStateException(
+          "Bill changed. Reload Payment and review the latest order.");
+    var result = new LinkedHashMap<String, Object>();
+    result.put("order", order);
+    result.put("items", orderLines(id).stream()
+        .filter(item -> !"Cancelled".equals(item.get("status"))).toList());
+    result.put("total", order.get("totalAmount"));
+    result.put("invoiceNumber", "BILL-" + id);
+    result.put("paid", false);
+    return result;
   }
 
   private Map<String, Object> payableOrder(long id) {
@@ -199,6 +248,7 @@ public class PaymentService {
     result.put("items", orderLines(id).stream()
         .filter(item -> !"Cancelled".equals(item.get("status"))).toList());
     result.put("total", payment.get("amount"));
+    result.put("paid", true);
     return result;
   }
 }

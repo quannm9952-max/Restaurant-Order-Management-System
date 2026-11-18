@@ -194,9 +194,9 @@ public class OrderService {
     if (order.getStatus() != OrderStatus.OPEN)
       throw new BusinessException(
           "Đơn không ở trạng thái OPEN, không thể " + action + ".");
-    if (orderRepository.hasGeneratedBill(id))
+    if (paymentRepository.existsSuccessfulByOrderId(id))
       throw new BusinessException(
-          "Bill already generated. This order is locked for payment.");
+          "Đơn đã có thanh toán thành công, không thể thay đổi.");
     return order;
   }
 
@@ -250,7 +250,7 @@ public class OrderService {
 
   private OrderDetailView toOrderDetailView(Order order) {
     boolean isOpen = order.getStatus() == OrderStatus.OPEN
-        && !orderRepository.hasGeneratedBill(order.getId());
+        && !paymentRepository.existsSuccessfulByOrderId(order.getId());
     List<OrderLineView> lines = order.getDetails().stream()
         .map(d -> toOrderLineView(d, isOpen)).toList();
 

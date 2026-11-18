@@ -1,25 +1,35 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-  <head th:replace="~{shared/shell :: head('Invoice')}"></head>
+  <head
+    th:replace="~{shared/shell :: head(${paid ? 'Invoice' : 'Bill Preview'})}"
+  ></head>
   <body>
     <div class="invoice-actions no-print">
       <a class="btn btn-outline-secondary" href="/payments"
         >&#8592; Back to Payment &amp; Invoice</a
       ><button class="btn btn-primary" onclick="window.print()">
-        Print Invoice
+        <span th:text="${paid ? 'Print Invoice' : 'Print Bill'}"
+          >Print Bill</span
+        >
       </button>
     </div>
     <main class="invoice-paper">
       <div class="flex-row spread">
         <div>
           <h1>Oak &amp; Ember Restaurant</h1>
-          <p>Dine-in invoice &#183; Saved order prices</p>
+          <p
+            th:text="${paid ? 'Dine-in invoice · Saved order prices' : 'Bill for customer review · Not paid'}"
+          ></p>
         </div>
-        <span class="status-chip completed">Paid</span>
+        <span
+          class="status-chip"
+          th:classappend="${paid ? 'completed' : 'open'}"
+          th:text="${paid ? 'Paid' : 'Unpaid'}"
+        ></span>
       </div>
       <dl class="invoice-meta">
         <div>
-          <dt>Invoice number</dt>
+          <dt th:text="${paid ? 'Invoice number' : 'Bill reference'}"></dt>
           <dd th:text="${invoiceNumber}"></dd>
         </div>
         <div>
@@ -31,10 +41,10 @@
           <dd th:text="${order.table_code}"></dd>
         </div>
         <div>
-          <dt>Paid at</dt>
-          <dd th:text="${payment.paid_at}"></dd>
+          <dt th:text="${paid ? 'Paid at' : 'Order created at'}"></dt>
+          <dd th:text="${paid ? payment.paid_at : order.created_at}"></dd>
         </div>
-        <div>
+        <div th:if="${paid}">
           <dt>Payment method</dt>
           <dd th:text="${payment.methodLabel}"></dd>
         </div>
@@ -57,7 +67,10 @@
             <tr th:each="line : ${items}">
               <td th:text="${line.item_name}"></td>
               <td th:text="${line.quantity}"></td>
-              <td class="right" th:text="${@money.format(line.unit_price)}"></td>
+              <td
+                class="right"
+                th:text="${@money.format(line.unit_price)}"
+              ></td>
               <td
                 class="right strong"
                 th:text="${@money.format(line.line_total)}"
@@ -67,14 +80,16 @@
         </table>
       </div>
       <div class="bill-total mt-4">
-        <span>Total paid</span
+        <span th:text="${paid ? 'Total paid' : 'Amount due'}"></span
         ><strong th:text="${@money.format(total)}"></strong>
       </div>
       <p class="tiny">All amounts in VND. Cancelled item lines are excluded.</p>
       <footer class="invoice-thanks">
         <h2>Thank you for dining with us!</h2>
         <p class="tiny">
-          This invoice retains the prices saved with your order.
+          <span
+            th:text="${paid ? 'This invoice retains the prices saved with your order.' : 'Please check the items, quantities and amount with the cashier before payment.'}"
+          ></span>
         </p>
       </footer>
     </main>

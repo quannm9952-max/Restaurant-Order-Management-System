@@ -2,6 +2,23 @@
 
 Ngày bàn giao: 18/11/2026.
 
+## Luồng hiện tại: xem bill, sửa và thanh toán (18/11/2026)
+
+Bỏ Generate Bill. Payment có Print Bill và Process Payment; thông tin thanh
+toán mở ngay khi đơn đủ điều kiện. Print Bill lưu số lượng kiểm tra và mở
+bill Unpaid trong dialog trên cùng màn hình. Customer xem/in, Cashier đóng
+dialog rồi vẫn sửa được và in lại. Preview dùng chung template hóa đơn với
+trạng thái Unpaid/Paid rõ ràng; CSS in chỉ giữ nội dung bill, ẩn Payment.
+
+Review và Confirm khóa Orders để tuần tự hóa ghi dữ liệu. Revision dựa trên
+chi tiết đơn chặn phiên cũ ghi đè hoặc xác nhận theo nội dung đã bị thay đổi.
+Confirm nhận số lượng đang xem cùng tổng để đối chiếu giá snapshot, ghi tất
+cả thay đổi và thanh toán trong một transaction. Chỉ Successful + Completed
+mới tính doanh thu/khóa đơn. Invoice cũ chưa trả không còn là mốc khóa; giữ
+số hóa đơn và cập nhật đúng tổng khi trả. Không thay schema hoặc công nghệ.
+
+Các phần bên dưới là lịch sử các phiên bản trước, không mô tả luồng hiện tại.
+
 ## Cập nhật: chỉnh số lượng và khóa bill (18/11/2026)
 
 Cashier sửa số lượng nguyên dương của các dòng Served trước khi Generate

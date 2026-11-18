@@ -115,14 +115,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     return value.replace(".", ",");
   };
-  const total = parseAmount(bill.dataset.total);
-  const generated = bill.dataset.billGenerated === "true";
-  const canPay = generated && bill.dataset.paymentReady === "true";
-  const billForm = document.querySelector("[data-bill-form]");
-  const generate = document.querySelector("[data-generate-bill]");
-  const quantities = [...billForm.querySelectorAll("[data-bill-quantity]")];
+  let total = parseAmount(bill.dataset.total);
+  const canPay = bill.dataset.paymentReady === "true";
+  const paid = bill.dataset.paid === "true";
+  const printBill = form.querySelector("[data-print-bill]");
+  const preview = document.querySelector("#bill-preview");
+  const previewError = form.querySelector("[data-preview-error]");
+  const quantities = [...form.querySelectorAll("[data-bill-quantity]")];
+  let busy = false;
+  let validQuantities = true;
   const reviewQuantities = () => {
-    if (!quantities.length) return false;
+    if (!quantities.length) return true;
     let valid = true;
     let amount = 0;
     quantities.forEach((input) => {
@@ -151,41 +154,32 @@ document.addEventListener("DOMContentLoaded", () => {
       amount > 0 &&
       Number.isSafeInteger(amount) &&
       amount <= 999999999999;
-    billForm.querySelector("[data-bill-total]").textContent = valid
+    total = valid ? amount : null;
+    form.querySelector("[name=expectedTotal]").value = valid
+      ? (amount / 100).toFixed(2)
+      : "";
+    form.querySelector("[data-bill-total]").textContent = valid
       ? money.format(amount / 100)
       : "—";
-    billForm.querySelector("[data-bill-error]").hidden = valid;
-    generate.disabled = !valid;
+    document.querySelectorAll("[data-live-total]").forEach((element) => {
+      element.textContent = valid ? money.format(amount / 100) : "—";
+    });
+    form.querySelector("[data-bill-error]").hidden = valid;
     return valid;
   };
-  quantities.forEach((input) =>
-    input.addEventListener("input", reviewQuantities),
-  );
-  let generating = false;
-  billForm.addEventListener("submit", (event) => {
-    if (
-      generating ||
-      generated ||
-      !reviewQuantities() ||
-      !billForm.reportValidity()
-    ) {
-      event.preventDefault();
-      return;
-    }
-    generating = true;
-    generate.disabled = true;
-    generate.textContent = "Generating...";
-    quantities.forEach((input) => {
-      input.readOnly = true;
-    });
-  });
   let submitting = false;
   const update = () => {
     const isCash = method.value === "CASH";
     const isBank = method.value === "BANK_TRANSFER";
     const received = parseAmount(cashAmount.value);
-    method.disabled = !canPay;
-    verified.disabled = !canPay;
+    method.disabled = !canPay || busy;
+    verified.disabled = !canPay || busy;
+    cash.readOnly = busy;
+    quantities.forEach((input) => {
+      input.readOnly = busy;
+    });
+    printBill.disabled =
+      (!canPay && !paid) || busy || submitting || !validQuantities;
     cash.disabled = !canPay || !isCash;
     cashAmount.disabled = cash.disabled;
     cash.required = canPay && isCash;
@@ -201,14 +195,82 @@ document.addEventListener("DOMContentLoaded", () => {
         received >= total &&
         received <= 999999999999 &&
         cash.validity.valid);
-    process.disabled = !canPay || !enough || !verified.checked || submitting;
+    process.disabled =
+      !canPay ||
+      !validQuantities ||
+      busy ||
+      !enough ||
+      !verified.checked ||
+      submitting;
     confirm.disabled = process.disabled;
-    error.hidden = !(generated && isCash && cash.value !== "" && !enough);
+    error.hidden = !(canPay && isCash && cash.value !== "" && !enough);
     form.querySelector("[data-cash-change]").value =
       isCash && received !== null && total !== null
         ? money.format(Math.max(0, received - total) / 100)
         : "";
   };
+  quantities.forEach((input) =>
+    input.addEventListener("input", () => {
+      validQuantities = reviewQuantities();
+      verified.checked = false;
+      previewError.hidden = true;
+      update();
+    }),
+  );
+  printBill.addEventListener("click", async () => {
+    validQuantities = reviewQuantities();
+    if (busy || !validQuantities || (!canPay && !paid)) return;
+    busy = true;
+    previewError.hidden = true;
+    update();
+    try {
+      let url = form.dataset.invoiceUrl;
+      if (!paid) {
+        const response = await fetch(form.dataset.reviewUrl, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { Accept: "application/json" },
+        });
+        const reviewed = await response.json();
+        if (!response.ok)
+          throw new Error(
+            reviewed.error || "Could not save the reviewed bill.",
+          );
+        form.querySelector("[name=billRevision]").value = reviewed.billRevision;
+        url =
+          form.dataset.previewUrl +
+          "?revision=" +
+          encodeURIComponent(reviewed.billRevision);
+      }
+      const response = await fetch(url, { headers: { Accept: "text/html" } });
+      const page = new DOMParser().parseFromString(
+        await response.text(),
+        "text/html",
+      );
+      const paper = page.querySelector(".invoice-paper");
+      if (!response.ok || !paper)
+        throw new Error(
+          "Bill changed or is unavailable. Reload Payment and review the latest order.",
+        );
+      preview
+        .querySelector("[data-bill-preview-content]")
+        .replaceChildren(paper);
+      preview.querySelector("h2").textContent = paid
+        ? "Invoice Preview"
+        : "Bill Preview";
+      document.body.classList.add("bill-preview-open");
+      preview.showModal();
+    } catch (error) {
+      previewError.textContent = error.message;
+      previewError.hidden = false;
+    } finally {
+      busy = false;
+      update();
+    }
+  });
+  preview.addEventListener("close", () =>
+    document.body.classList.remove("bill-preview-open"),
+  );
   method.addEventListener("change", () => {
     verified.checked = false;
     update();
@@ -243,8 +305,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   verified.addEventListener("change", update);
   process.addEventListener("click", () => {
+    validQuantities = reviewQuantities();
     update();
-    if (process.disabled) return;
+    if (process.disabled || !form.reportValidity()) return;
     form.querySelector("[data-confirm-method]").textContent =
       `Payment method: ${method.options[method.selectedIndex].text}`;
     const cashSummary = form.querySelector("[data-confirm-cash]");
@@ -256,6 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("confirm-payment").showModal();
   });
   form.addEventListener("submit", (event) => {
+    validQuantities = reviewQuantities();
     update();
     if (process.disabled || !form.reportValidity()) {
       event.preventDefault();

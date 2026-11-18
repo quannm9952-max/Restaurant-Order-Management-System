@@ -1238,7 +1238,7 @@ dialog.app-dialog h2 {
 }
 .payment-actions {
   display: grid;
-  grid-template-columns: 1fr 1.1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin: 18px 0 22px;
 }
@@ -1553,5 +1553,36 @@ dialog.app-dialog h2 {
   }
   .bill-items tr {
     break-inside: avoid;
+  }
+}
+
+.bill-preview {
+  width: min(880px, calc(100vw - 24px));
+  padding: 0;
+}
+.bill-preview .invoice-paper {
+  margin: 0 auto;
+  border: 0;
+  box-shadow: none;
+}
+@media print {
+  body.bill-preview-open > :not(#bill-preview) {
+    display: none !important;
+  }
+  body.bill-preview-open > #bill-preview {
+    display: block;
+    position: static;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    height: auto;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  #bill-preview::backdrop {
+    display: none;
   }
 }

@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.restaurant.config.DemoAccounts;
 import com.restaurant.dto.order.OrderLine;
 import com.restaurant.dto.payment.PaymentConfirmation;
-import com.restaurant.dto.payment.BillLineQuantity;
 import com.restaurant.dto.report.ReportModels.*;
 import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
@@ -444,7 +443,6 @@ class SystemIntegrationTest {
   @Test
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
   void checkoutCreatesOnePaymentAndInvoiceAndReleasesTable() throws Exception {
-    payments.generateBill(1100, List.of(new BillLineQuantity(4100L, 2)));
     long id = payments.confirmPayment(1100,
         new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00")));
     assertThat(id).isPositive();
@@ -484,7 +482,6 @@ class SystemIntegrationTest {
   @Test
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
   void recordsFailedPaymentForAServedOrderWithoutClosingIt() {
-    payments.generateBill(1100, List.of(new BillLineQuantity(4100L, 2)));
     payments.recordFailedPayment(1100, "CASH");
     assertThat(jdbc.queryForObject(
         "SELECT status FROM Orders WHERE order_id=1100", String.class))
@@ -510,30 +507,23 @@ class SystemIntegrationTest {
   }
 
   @Test
-  @Transactional(propagation = Propagation.NOT_SUPPORTED)
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
-  void mismatchedGeneratedBillCannotBePaid() {
-    long count = jdbc.queryForObject(
-        "SELECT COUNT(*) FROM Payment WHERE order_id=1100", Long.class);
+  void oldUnpaidGeneratedBillIsFinalizedUsingTheActualPaidTotal() {
     jdbc.update(
-        "INSERT INTO Invoice(order_id,invoice_number,issued_at,total_amount)"
-            + " VALUES(1100,'TEST-CONFLICT',CURRENT_TIMESTAMP,390001)");
-    try {
-      assertThatThrownBy(() -> payments.confirmPayment(1100,
-          new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
-          .isInstanceOf(IllegalStateException.class);
-      assertThat(jdbc.queryForObject(
-          "SELECT COUNT(*) FROM Payment WHERE order_id=1100", Long.class))
-          .isEqualTo(count);
-      assertThat(jdbc.queryForObject(
-          "SELECT status FROM Orders WHERE order_id=1100", String.class))
-          .isEqualTo("OPEN");
-      assertThat(jdbc.queryForObject(
-          "SELECT status FROM Restaurant_tables WHERE table_id=9010",
-          String.class)).isEqualTo("OCCUPIED");
-    } finally {
-      jdbc.update("DELETE FROM Invoice WHERE order_id=1100");
-    }
+        "INSERT INTO Invoice(order_id,invoice_number,issued_at,total_amount) VALUES(1100,'TEST-OLD-BILL',CURRENT_TIMESTAMP,390001)");
+    assertThat(payments.orderDetailForPayment(1100).get("canEditQuantities"))
+        .isEqualTo(true);
+    payments.confirmPayment(1100,
+        new PaymentConfirmation("CASH", true, new BigDecimal("1000000")));
+    assertThat(jdbc.queryForObject(
+        "SELECT total_amount FROM Invoice WHERE order_id=1100",
+        BigDecimal.class)).isEqualByComparingTo("390000");
+    assertThat(jdbc.queryForObject(
+        "SELECT invoice_number FROM Invoice WHERE order_id=1100", String.class))
+        .isEqualTo("TEST-OLD-BILL");
+    assertThat(jdbc.queryForObject(
+        "SELECT COUNT(*) FROM Invoice WHERE order_id=1100", Integer.class))
+        .isEqualTo(1);
   }
 
   @Test

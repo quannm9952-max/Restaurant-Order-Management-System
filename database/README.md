@@ -76,13 +76,15 @@ trong 29/10–04/11/2026 có tổng **18.920.000 VND**.
 Migration `migrations/20261118_vnd_labels.sql` trước đó chỉ sửa mô tả demo
 gốc của món 9111–9118 sang VND; không nhân tiền và vẫn chạy lại an toàn.
 
-## Bill được tạo trước thanh toán
+## Bill xem trước và hóa đơn đã thanh toán
 
-Generate Bill lưu số lượng đã được thu ngân kiểm tra, tổng Orders và bản ghi
-Invoice trong một transaction có khóa Orders. Sự tồn tại của Invoice khóa
-thay đổi đơn ở backend; dùng lại schema 9 bảng, không cần migration. Invoice
-của đơn Open là bill chưa thanh toán. Chỉ xác nhận Successful mới hoàn tất
-đơn và giải phóng bàn; báo cáo vẫn tính Successful + Completed. Trang in
-chỉ cho xem đơn Completed có Successful, không hiển thị bill chưa thu tiền
-như hóa đơn đã thanh toán. `issued_at` là lúc tạo bill; thời gian thanh toán
-lấy từ `Payment.payment_time`.
+Print Bill cập nhật số lượng và tổng Orders trong transaction có khóa Orders,
+không thêm Payment/Invoice. Bản in trước thanh toán ghi Unpaid; in lại/sửa lại
+được khi đơn chưa trả. Revision từ dữ liệu chi tiết đơn phát hiện sửa đổi từ
+phiên khác; không thêm bảng/cột hoặc migration.
+
+Confirm Payment ghi số lượng cuối, Payment Successful, Orders Completed,
+Invoice và giải phóng bàn trong cùng transaction. Chỉ khi này đơn bị khóa
+và khoản tiền được tính doanh thu. Invoice chưa trả do phiên bản Generate
+Bill trước đây không còn khóa đơn: khi thanh toán sẽ cập nhật đúng tổng,
+thời gian phát hành và giữ số hóa đơn cũ. Không cập nhật hóa đơn đã thanh toán.

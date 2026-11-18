@@ -3,6 +3,7 @@ package com.restaurant.controller;
 import com.restaurant.exception.NotFoundException;
 import com.restaurant.dto.payment.PaymentConfirmation;
 import com.restaurant.dto.payment.BillLineQuantity;
+import com.restaurant.dto.payment.BillReview;
 import java.math.BigDecimal;
 import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.TransactionException;
@@ -64,36 +65,53 @@ public class PaymentController {
     }
   }
 
-  @PostMapping("/payments/{orderId}/bill")
-  public String generateBill(@PathVariable long orderId,
+  private BillReview review(List<Long> detailId, List<Integer> quantity,
+      String revision, BigDecimal expectedTotal) {
+    if (detailId == null || quantity == null
+        || detailId.size() != quantity.size() || revision == null
+        || revision.isBlank() || expectedTotal == null)
+      throw new IllegalArgumentException(
+          "Review all item quantities before continuing.");
+    return new BillReview(IntStream.range(0, detailId.size()).mapToObj(
+        index -> new BillLineQuantity(detailId.get(index), quantity.get(index)))
+        .toList(), revision, expectedTotal);
+  }
+
+  @PostMapping("/payments/{orderId}/review")
+  @ResponseBody
+  public ResponseEntity<?> reviewBill(@PathVariable long orderId,
       @RequestParam(required = false) List<Long> detailId,
       @RequestParam(required = false) List<Integer> quantity,
-      @RequestParam(defaultValue = "") String search,
-      RedirectAttributes flash) {
+      @RequestParam(required = false) String billRevision,
+      @RequestParam(required = false) BigDecimal expectedTotal) {
     try {
-      if (detailId == null || quantity == null
-          || detailId.size() != quantity.size())
-        throw new IllegalArgumentException(
-            "Review all item quantities before generating the bill.");
-      service.generateBill(orderId,
-          IntStream.range(0, detailId.size())
-              .mapToObj(index -> new BillLineQuantity(detailId.get(index),
-                  quantity.get(index)))
-              .toList());
-      flash.addFlashAttribute("success",
-          "Bill generated. Quantities are locked. You can now collect and confirm payment.");
-    } catch (IllegalArgumentException | IllegalStateException
-        | com.restaurant.exception.BusinessException | NotFoundException ex) {
-      flash.addFlashAttribute("error", ex.getMessage());
+      return ResponseEntity.ok(service.reviewBill(orderId,
+          review(detailId, quantity, billRevision, expectedTotal)));
+    } catch (IllegalArgumentException
+        | com.restaurant.exception.BusinessException ex) {
+      return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    } catch (IllegalStateException ex) {
+      return ResponseEntity.status(409).body(Map.of("error", ex.getMessage()));
+    } catch (NotFoundException ex) {
+      return ResponseEntity.status(404).body(Map.of("error", ex.getMessage()));
     } catch (DataAccessException | TransactionException ex) {
-      LOG.error("Bill generation failed; transaction rolled back", ex);
-      flash.addFlashAttribute("error",
-          "Could not generate the bill. Reload the order and check its bill status before retrying.");
+      LOG.error("Bill review failed; transaction rolled back", ex);
+      return ResponseEntity.internalServerError().body(Map.of("error",
+          "Could not save the reviewed bill. Reload Payment before retrying."));
     }
-    flash.addAttribute("orderId", orderId);
-    if (!search.isBlank())
-      flash.addAttribute("search", search);
-    return "redirect:/payments";
+  }
+
+  @GetMapping("/payments/{orderId}/bill")
+  public String billPreview(@PathVariable long orderId,
+      @RequestParam String revision, Model model, RedirectAttributes flash) {
+    try {
+      model.addAllAttributes(service.billData(orderId, revision));
+      return "invoice";
+    } catch (IllegalStateException | NotFoundException ex) {
+      flash.addFlashAttribute("error", ex.getMessage());
+      flash.addAttribute("orderId", orderId);
+      return "redirect:/payments";
+    }
   }
 
   /** Confirm payment with transaction lock and duplicate protection */
@@ -102,10 +120,16 @@ public class PaymentController {
       @RequestParam(defaultValue = "") String paymentMethod,
       @RequestParam(defaultValue = "false") boolean paymentVerified,
       @RequestParam(required = false) BigDecimal amountReceived,
+      @RequestParam(required = false) List<Long> detailId,
+      @RequestParam(required = false) List<Integer> quantity,
+      @RequestParam(required = false) String billRevision,
+      @RequestParam(required = false) BigDecimal expectedTotal,
       RedirectAttributes redirectAttrs) {
     try {
-      long paymentId = service.confirmPayment(orderId, new PaymentConfirmation(
-          paymentMethod, paymentVerified, amountReceived));
+      long paymentId = service.confirmPayment(orderId,
+          new PaymentConfirmation(paymentMethod, paymentVerified,
+              amountReceived),
+          review(detailId, quantity, billRevision, expectedTotal));
       redirectAttrs.addFlashAttribute("success",
           "Payment successfully recorded for Order #" + orderId + " (Txn #"
               + paymentId + ", method: " + paymentMethod
@@ -156,6 +180,7 @@ public class PaymentController {
       model.addAttribute("items", invoice.get("items"));
       model.addAttribute("total", invoice.get("total"));
       model.addAttribute("invoiceNumber", invoice.get("invoiceNumber"));
+      model.addAttribute("paid", true);
       return "invoice";
     } catch (IllegalArgumentException
         | com.restaurant.exception.BusinessException | NotFoundException

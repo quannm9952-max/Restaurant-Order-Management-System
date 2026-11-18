@@ -1,5 +1,5 @@
 package com.restaurant.dto.payment;
 
-/** Quantity reviewed by the cashier before the bill is generated. */
+/** Quantity reviewed by the cashier before payment. */
 public record BillLineQuantity(Long detailId, Integer quantity) {
 }

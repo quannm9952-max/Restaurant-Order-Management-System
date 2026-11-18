@@ -78,7 +78,7 @@
           class="panel bill-panel"
           th:if="${selectedOrder != null}"
           th:with="o=${selectedOrder}"
-          th:attr="data-payment-ready=${o.readyToPay and user.role == 'Cashier'},data-total=${o.totalAmount},data-bill-generated=${o.billGenerated}"
+          th:attr="data-payment-ready=${o.readyToPay and user.role == 'Cashier'},data-total=${o.totalAmount},data-order-id=${o.id},data-paid=${o.status == 'COMPLETED'}"
         >
           <div class="flex-row spread">
             <div>
@@ -90,7 +90,7 @@
               <p
                 class="tiny strong mt-1"
                 data-bill-state
-                th:text="${o.billGenerated ? o.invoice_number : 'Preview · Review quantities'}"
+                th:text="${o.status == 'COMPLETED' ? o.invoice_number : 'Unpaid · Review quantities'}"
               ></p>
             </div>
           </div>
@@ -104,12 +104,22 @@
             ></span>
           </div>
           <form
-            id="generate-bill-form"
-            th:action="@{/payments/{id}/bill(id=${o.id})}"
+            th:action="@{/payments/{id}/confirm(id=${o.id})}"
+            th:attr="data-review-url=@{/payments/{id}/review(id=${o.id})},data-preview-url=@{/payments/{id}/bill(id=${o.id})},data-invoice-url=@{/invoices/{id}(id=${o.id})}"
             method="post"
-            data-bill-form
+            data-payment-form
           >
             <input type="hidden" name="search" th:value="${currentSearch}" />
+            <input
+              type="hidden"
+              name="billRevision"
+              th:value="${o.billRevision}"
+            />
+            <input
+              type="hidden"
+              name="expectedTotal"
+              th:value="${o.totalAmount}"
+            />
             <div class="table-responsive">
               <table class="bill-items">
                 <thead>
@@ -182,23 +192,14 @@
               Cancelled lines are excluded. All amounts are in VND.
             </p>
             <p class="tiny muted" th:if="${o.canEditQuantities}">
-              Review and edit quantities before generating the bill. Generating
-              the bill saves and locks all quantities.
+              Review quantities and print a bill for the customer. You can keep
+              editing until payment is confirmed.
             </p>
             <p class="form-error" data-bill-error hidden>
               Enter a whole quantity of at least 1 for each item. The total must
               not exceed 9.999.999.999,99 VND.
             </p>
-          </form>
-          <form
-            th:action="@{/payments/{id}/confirm(id=${o.id})}"
-            method="post"
-            data-payment-form
-          >
-            <section
-              class="payment-information"
-              th:hidden="${!o.billGenerated}"
-            >
+            <section class="payment-information">
               <div class="flex-row spread">
                 <strong>Payment information</strong
                 ><span
@@ -215,7 +216,7 @@
                     data-payment-method
                     aria-describedby="payment-hint"
                     required
-                    th:disabled="${!o.readyToPay or !o.billGenerated or user.role != 'Cashier'}"
+                    th:disabled="${!o.readyToPay or user.role != 'Cashier'}"
                   >
                     <option value="">Select a method</option>
                     <option value="CASH">Cash</option>
@@ -258,8 +259,11 @@
                 <strong>Use the printed bank QR at the counter.</strong>
                 <p class="tiny">
                   Ask the customer to scan the fixed QR and transfer
-                  <b th:text="${@money.format(o.totalAmount)}"></b> with
-                  reference <b th:text="'ORD-' + ${o.id}"></b>.
+                  <b
+                    data-live-total
+                    th:text="${@money.format(o.totalAmount)}"
+                  ></b>
+                  with reference <b th:text="'ORD-' + ${o.id}"></b>.
                 </p>
                 <p class="tiny">
                   Check the restaurant's bank account on your own phone. Verify
@@ -274,7 +278,7 @@
                   value="true"
                   data-payment-verified
                   required
-                  th:disabled="${!o.readyToPay or !o.billGenerated}"
+                  th:disabled="${!o.readyToPay}"
                 />
                 <span>I have received and verified the payment.</span>
               </label>
@@ -282,7 +286,7 @@
                 class="tiny muted"
                 id="payment-hint"
                 data-payment-hint
-                th:text="${o.readyToPay ? 'Quantities are locked. Select a method, collect payment and verify receipt.' : (o.status == 'COMPLETED' ? 'Payment is completed. View or print the invoice below.' : 'Payment becomes available when the order is Open and every active item is Served.')}"
+                th:text="${o.readyToPay ? 'Check the bill with the customer, collect payment and verify receipt before confirming.' : (o.status == 'COMPLETED' ? 'Payment is completed. View or print the invoice below.' : 'Payment becomes available when the order is Open and every active item is Served.')}"
               ></p>
               <p class="form-error" data-payment-error hidden>
                 Enter a valid Amount Received that covers the total amount (up
@@ -291,34 +295,24 @@
             </section>
             <div class="payment-actions">
               <button
-                class="btn btn-primary"
-                type="submit"
-                form="generate-bill-form"
-                data-generate-bill
-                th:disabled="${!o.canEditQuantities or user.role != 'Cashier'}"
+                class="btn btn-outline-secondary"
+                type="button"
+                data-print-bill
+                th:disabled="${!o.readyToPay and o.status != 'COMPLETED'}"
+                th:text="${o.status == 'COMPLETED' ? 'Print Invoice' : 'Print Bill'}"
               >
-                Generate Bill</button
-              ><button
+                Print Bill
+              </button>
+              <button
                 class="btn btn-primary"
                 type="button"
                 data-process-payment
                 disabled
               >
-                Process Payment</button
-              ><a
-                th:if="${o.status == 'COMPLETED'}"
-                class="btn btn-outline-secondary"
-                th:href="@{/invoices/{id}(id=${o.id})}"
-                >Print Invoice</a
-              ><button
-                th:unless="${o.status == 'COMPLETED'}"
-                class="btn btn-outline-secondary"
-                type="button"
-                disabled
-              >
-                Print Invoice
+                Process Payment
               </button>
             </div>
+            <p class="form-error" data-preview-error role="alert" hidden></p>
             <dialog class="app-dialog" id="confirm-payment">
               <div class="dialog-head">
                 <h2>Confirm Payment</h2>
@@ -335,12 +329,15 @@
                 <h3 th:text="'ORD-' + ${o.id} + ' · ' + ${o.table_code}"></h3>
                 <p class="mt-3">
                   Record the payment collected at the restaurant. Confirming
-                  completes the order, releases its table and marks the
-                  generated bill as paid.
+                  saves the reviewed quantities, completes the order, releases
+                  its table and creates the paid invoice.
                 </p>
                 <div class="bill-total">
                   <span>Amount collected</span
-                  ><strong th:text="${@money.format(o.totalAmount)}"></strong>
+                  ><strong
+                    data-live-total
+                    th:text="${@money.format(o.totalAmount)}"
+                  ></strong>
                 </div>
                 <p class="tiny muted" data-confirm-method></p>
                 <p class="tiny" data-confirm-cash hidden></p>
@@ -371,7 +368,7 @@
             ></strong>
             <p
               class="tiny"
-              th:text="${o.readyToPay ? (o.billGenerated ? 'Bill generated. Quantities are locked. Verify receipt before confirming payment.' : 'Review quantities, then generate the bill to lock them and enable payment.') : (o.status == 'COMPLETED' ? 'The order is closed and its table has been released.' : 'Payment requires an Open order with at least one item and all non-cancelled lines Served.')}"
+              th:text="${o.readyToPay ? 'Print a bill for the customer to check. Quantities remain editable until payment is confirmed.' : (o.status == 'COMPLETED' ? 'The order is closed and its table has been released.' : 'Payment requires an Open order with at least one item and all non-cancelled lines Served.')}"
             ></p>
           </div>
           <p class="tiny muted mt-2">
@@ -391,6 +388,36 @@
         </section>
       </div>
     </main>
+    <dialog
+      class="app-dialog bill-preview"
+      id="bill-preview"
+      aria-labelledby="bill-preview-title"
+    >
+      <div class="dialog-head no-print">
+        <h2 id="bill-preview-title">Bill Preview</h2>
+        <button
+          class="close-dialog"
+          type="button"
+          data-close-dialog
+          aria-label="Close"
+        >
+          &#215;
+        </button>
+      </div>
+      <div class="bill-preview-content" data-bill-preview-content></div>
+      <div class="dialog-footer no-print">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          data-close-dialog
+        >
+          Back to Payment
+        </button>
+        <button class="btn btn-primary" type="button" onclick="window.print()">
+          Print
+        </button>
+      </div>
+    </dialog>
     <script defer src="/js/payments.js"></script>
   </body>
 </html>
