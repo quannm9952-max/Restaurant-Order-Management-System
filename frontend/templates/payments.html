@@ -224,20 +224,30 @@
                 ><label data-cash-field hidden
                   >Amount Received<input
                     class="form-control"
-                    type="number"
+                    type="text"
                     data-cash-received
+                    inputmode="decimal"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-describedby="cash-amount-hint"
+                    placeholder="0 VND"
+                    disabled
+                  />
+                  <input
+                    type="hidden"
                     name="amountReceived"
-                    step="0.01"
-                    max="9999999999.99"
-                    min="0"
-                    placeholder="&#8212;"
-                    disabled /></label
+                    data-cash-amount
+                    disabled
+                  />
+                  <small class="tiny muted" id="cash-amount-hint">
+                    Enter thousands: 10 → 10.000 VND; 380 → 380.000 VND.
+                  </small></label
                 ><label data-cash-field hidden
                   >Change Amount<input
                     class="form-control"
                     data-cash-change
                     readonly
-                    placeholder="&#8212;"
+                    placeholder="0 VND"
                 /></label>
               </div>
               <div

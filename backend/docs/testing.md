@@ -1,3 +1,23 @@
+## Ô nhận tiền nhập theo nghìn đồng (18/11/2026)
+
+Chuyển ô nhận tiền sang text có định dạng VND; ô hidden gửi đúng số VND
+thực tế về backend. Gõ 10 → 10.000 VND; 380 → 380.000 VND; 10,5 →
+10.500 VND. Tiền thừa readonly, dùng cùng định dạng. Có hướng dẫn đơn vị
+ngay dưới ô; không thay đổi giá hoặc dữ liệu đã lưu.
+
+Docker verify: **348 test đạt**, Node syntax và Prettier check đạt.
+Chrome + MySQL riêng: gõ từng phím, Backspace, chọn hết rồi thay thế, dán
+380 / 380.000 / 380.000 VND (cả NBSP) đều đúng, không nhân lặp. Kiểm tra
+phần lẻ, số tiền tối đa DECIMAL, vượt giới hạn và thiếu tiền; FormData gửi
+380000.00 thay vì chuỗi có VND hoặc 380. Cash/Bank Transfer thanh toán
+thành công với đúng tổng bill; Bank không gửi ô tiền mặt bị vô hiệu hóa.
+Bốn bố cục 1440/820/390/320 px giữ đủ ô tiền nhận, tiền thừa và modal xác
+nhận, không tràn toàn trang hoặc lỗi JavaScript. Mọi thanh toán thử chỉ
+trên database riêng.
+Sau triển khai: kiểm tra chỉ đọc bản chính tại bốn kích thước đạt; nhập
+10/380 gửi đúng số VND thực tế, không tạo bill/thanh toán thử. Đối chiếu
+9 bảng trước/sau không đổi. JS công khai qua Cloudflare khớp bản mới.
+
 ## Thu ngân sửa số lượng và khóa bill (18/11/2026)
 
 Docker verify bản cuối: **348 test, 0 failure, 0 error, 0 skipped**.

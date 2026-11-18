@@ -85,7 +85,11 @@ ví dụ `85000` → `85.000 VND`. Dữ liệu cũ được chuyển một lần
 món, giá lưu trong chi tiết đơn, tổng đơn, mọi thanh toán và hóa đơn cũ.
 Đây là hệ số chuyển dữ liệu của đồ án, không phải tỷ giá tự cập nhật.
 Menu, giỏ món, bill, hóa đơn, lịch sử, báo cáo và tiền thừa dùng cùng quy tắc.
-Giá/số tiền nhận nhập dạng số; độ chính xác hai chữ số thập phân được giữ.
+Giá món nhập dạng số. Ô **Amount Received** nhập theo nghìn đồng: gõ `10`
+hiện `10.000 VND`, gõ `380` hiện `380.000 VND`; tiền thừa tự tính và hiển thị
+cùng định dạng. Có thể dùng dấu phẩy cho phần lẻ của nghìn đồng, ví dụ `10,5`
+hiện `10.500 VND`, hoặc dán số đã định dạng kèm VND. Backend nhận số tiền VND
+thực tế; độ chính xác hai chữ số thập phân vẫn được giữ.
 Dữ liệu demo/test đã dùng mức tiền VND mới. Database cũ cần chuyển theo
 [hướng dẫn có sao lưu và chống nhân lặp](database/README.md); không chạy
 chuyển đổi trên database mới tạo từ seed hiện tại.
