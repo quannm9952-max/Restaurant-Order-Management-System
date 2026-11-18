@@ -1,6 +1,9 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
+  initNavigation();
+  initCategoryPanel();
+  initScrollableRegions();
   initDialogs();
   initPasswordToggles();
   initUsernameInputs();
@@ -8,6 +11,125 @@ document.addEventListener("DOMContentLoaded", () => {
   initMenuImages();
   initEmployeeFilters();
 });
+
+function initNavigation() {
+  const sidebar = document.getElementById("workspace-navigation");
+  const toggle = document.querySelector("[data-nav-toggle]");
+  if (!sidebar || !toggle) return;
+  const compact = window.matchMedia("(max-width: 1100px)");
+  const header = document.querySelector(".topbar");
+  const main = document.querySelector("main");
+  const notice = sidebar.querySelector("[data-serving-notice]");
+  if (notice) sidebar.after(notice);
+  const backdrop = document.createElement("button");
+  backdrop.className = "navigation-backdrop";
+  backdrop.type = "button";
+  backdrop.tabIndex = -1;
+  backdrop.setAttribute("aria-label", "Close navigation");
+  backdrop.hidden = true;
+  document.body.append(backdrop);
+  let open = false;
+  const setOpen = (value, restoreFocus = false) => {
+    open = compact.matches && value;
+    document.body.classList.toggle("navigation-open", open);
+    backdrop.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute(
+      "aria-label",
+      open ? "Close navigation" : "Open navigation",
+    );
+    sidebar.inert = compact.matches && !open;
+    if (compact.matches) sidebar.setAttribute("aria-hidden", String(!open));
+    else sidebar.removeAttribute("aria-hidden");
+    if (open) {
+      sidebar.setAttribute("role", "dialog");
+      sidebar.setAttribute("aria-modal", "true");
+    } else {
+      sidebar.removeAttribute("role");
+      sidebar.removeAttribute("aria-modal");
+    }
+    if (header) header.inert = open;
+    if (main) main.inert = open;
+    if (open) sidebar.querySelector("[data-nav-close]").focus();
+    else if (restoreFocus) toggle.focus();
+  };
+  toggle.addEventListener("click", () => setOpen(!open));
+  backdrop.addEventListener("click", () => setOpen(false, true));
+  sidebar
+    .querySelector("[data-nav-close]")
+    .addEventListener("click", () => setOpen(false, true));
+  sidebar.addEventListener("click", (event) => {
+    if (event.target.closest("a")) setOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (!open) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false, true);
+    } else if (event.key === "Tab") {
+      const controls = [
+        ...sidebar.querySelectorAll("a[href], button:not(:disabled)"),
+      ].filter((element) => element.getClientRects().length);
+      const target = event.shiftKey ? controls.at(-1) : controls[0];
+      if (
+        document.activeElement ===
+        (event.shiftKey ? controls[0] : controls.at(-1))
+      ) {
+        event.preventDefault();
+        target.focus();
+      }
+    }
+  });
+  compact.addEventListener("change", () => setOpen(false));
+  setOpen(false);
+}
+
+function initCategoryPanel() {
+  const panel = document.querySelector("[data-category-panel]");
+  if (!panel) return;
+  const phone = window.matchMedia("(max-width: 600px)");
+  const update = () => {
+    panel.open = !phone.matches;
+  };
+  phone.addEventListener("change", update);
+  update();
+}
+
+function initScrollableRegions() {
+  document
+    .querySelectorAll(".table-wrap, .table-responsive, .chart-scroll")
+    .forEach((region) => {
+      const hint = document.createElement("p");
+      hint.className = "table-scroll-hint";
+      const chart = region.classList.contains("chart-scroll");
+      hint.textContent = chart
+        ? "Scroll sideways to see all chart periods."
+        : "Scroll sideways to see all columns.";
+      hint.hidden = true;
+      region.before(hint);
+      const update = () => {
+        const scrollable = region.scrollWidth > region.clientWidth + 1;
+        hint.hidden = !scrollable;
+        if (scrollable) {
+          region.tabIndex = 0;
+          region.setAttribute("role", "region");
+          region.setAttribute(
+            "aria-label",
+            chart ? "Scrollable revenue chart" : "Scrollable data table",
+          );
+        } else {
+          region.removeAttribute("tabindex");
+          region.removeAttribute("role");
+          region.removeAttribute("aria-label");
+        }
+      };
+      const observer = new ResizeObserver(update);
+      observer.observe(region);
+      if (region.querySelector("table"))
+        observer.observe(region.querySelector("table"));
+      update();
+    });
+}
 
 function initMenuImages() {
   document.querySelectorAll("[data-menu-image]").forEach((input) => {

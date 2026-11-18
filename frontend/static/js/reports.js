@@ -116,7 +116,10 @@
       selectingStart = true;
       month = new Date(`${start.value}T12:00:00`);
       render();
-      start.focus();
+      popover.scrollTop = 0;
+      popover
+        .querySelector("[data-close-dates]")
+        .focus({ preventScroll: true });
     });
     popover
       .querySelectorAll("[data-close-dates]")

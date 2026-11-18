@@ -89,32 +89,37 @@
             </p>
           </div>
           <div
+            class="chart-scroll"
             th:unless="${report.summary.successful == 0}"
-            class="bar-chart"
-            role="img"
-            aria-label="Revenue from successful payments in the selected date range"
           >
-            <div class="chart-axis" aria-hidden="true">
-              <span
-                th:each="tick : ${report.axisTicks()}"
-                th:text="${@money.axis(tick)}"
-              ></span>
-            </div>
-            <div class="chart-grid" aria-hidden="true">
-              <span></span><span></span><span></span><span></span><span></span>
-            </div>
-            <div class="chart-bars">
-              <div class="bar-column" th:each="point : ${report.points}">
-                <div class="bar-space">
-                  <div
-                    class="revenue-bar"
-                    th:style="'height:' + ${point.heightPercent} + '%'"
-                    th:title="${point.display()} + ': ' + ${@money.format(point.amount)}"
-                  >
-                    <b th:text="${@money.format(point.amount)}">$0</b>
+            <div
+              class="bar-chart"
+              role="img"
+              aria-label="Revenue from successful payments in the selected date range"
+            >
+              <div class="chart-axis" aria-hidden="true">
+                <span
+                  th:each="tick : ${report.axisTicks()}"
+                  th:text="${@money.axis(tick)}"
+                ></span>
+              </div>
+              <div class="chart-grid" aria-hidden="true">
+                <span></span><span></span><span></span><span></span
+                ><span></span>
+              </div>
+              <div class="chart-bars">
+                <div class="bar-column" th:each="point : ${report.points}">
+                  <div class="bar-space">
+                    <div
+                      class="revenue-bar"
+                      th:style="'height:' + ${point.heightPercent} + '%'"
+                      th:title="${point.display()} + ': ' + ${@money.format(point.amount)}"
+                    >
+                      <b th:text="${@money.format(point.amount)}">$0</b>
+                    </div>
                   </div>
+                  <span th:text="${point.display()}">Date</span>
                 </div>
-                <span th:text="${point.display()}">Date</span>
               </div>
             </div>
           </div>

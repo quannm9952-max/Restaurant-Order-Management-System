@@ -76,6 +76,10 @@ MySQL Docker mặc định ở **localhost:3308** để không trùng MySQL/XAMP
 DBeaver kết nối bằng MYSQL_DATABASE/MYSQL_USER/MYSQL_PASSWORD trong `.env`.
 Trong mạng Docker, app kết nối `db:3306`.
 
+Giao diện dùng được trên điện thoại và iPad với cùng link website: menu
+điều hướng mở/đóng trên màn hình nhỏ, bố cục tự xếp lại, bảng và biểu đồ rộng
+cuộn trong khung riêng. Form/lịch có giới hạn chiều cao và nút dễ chạm.
+
 ## Kiểm thử
 
 ```powershell

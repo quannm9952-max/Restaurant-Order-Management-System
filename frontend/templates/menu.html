@@ -26,41 +26,43 @@
       </section>
       <div th:replace="~{shared/shell :: flash}"></div>
       <div class="menu-layout">
-        <aside class="panel categories-panel">
-          <h2>Food categories</h2>
-          <div
-            class="category-row"
-            th:classappend="${currentCategory == 'All'} ? 'selected'"
-          >
-            <a href="/menu"
-              ><span>&#9638; &nbsp; All items</span
-              ><span th:text="${stats.totalItems}"></span
-            ></a>
-          </div>
-          <div
-            class="category-row"
-            th:each="c : ${categoryRows}"
-            th:classappend="${currentCategory == c.name} ? 'selected'"
-          >
-            <a th:href="@{/menu(category=${c.name})}"
-              ><span th:text="${c.name}"></span
-              ><span class="tiny" th:text="${c.item_count}"></span></a
-            ><button
-              type="button"
-              class="icon-action"
-              th:attr="data-open-dialog='category-' + ${c.id}"
-              aria-label="Edit category"
+        <details class="panel categories-panel" data-category-panel open>
+          <summary><h2>Food categories</h2></summary>
+          <div class="category-list">
+            <div
+              class="category-row"
+              th:classappend="${currentCategory == 'All'} ? 'selected'"
             >
-              &#9998;</button
-            ><button
-              type="button"
-              class="icon-action"
-              th:attr="data-open-dialog='delete-category-' + ${c.id}"
-              aria-label="Delete category"
-              title="Delete category"
+              <a href="/menu"
+                ><span>&#9638; &nbsp; All items</span
+                ><span th:text="${stats.totalItems}"></span
+              ></a>
+            </div>
+            <div
+              class="category-row"
+              th:each="c : ${categoryRows}"
+              th:classappend="${currentCategory == c.name} ? 'selected'"
             >
-              <img src="/images/icons/trash.svg" alt="" />
-            </button>
+              <a th:href="@{/menu(category=${c.name})}"
+                ><span th:text="${c.name}"></span
+                ><span class="tiny" th:text="${c.item_count}"></span></a
+              ><button
+                type="button"
+                class="icon-action"
+                th:attr="data-open-dialog='category-' + ${c.id}"
+                aria-label="Edit category"
+              >
+                &#9998;</button
+              ><button
+                type="button"
+                class="icon-action"
+                th:attr="data-open-dialog='delete-category-' + ${c.id}"
+                aria-label="Delete category"
+                title="Delete category"
+              >
+                <img src="/images/icons/trash.svg" alt="" />
+              </button>
+            </div>
           </div>
           <div class="category-footer">
             <span
@@ -68,7 +70,7 @@
             ></span
             ><br />Select a category to narrow<br />the menu item list.
           </div>
-        </aside>
+        </details>
         <section class="panel menu-items-panel">
           <div class="flex-row spread">
             <h2>Menu items</h2>

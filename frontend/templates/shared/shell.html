@@ -10,14 +10,25 @@
     <link rel="stylesheet" href="/css/app.css" />
     <script defer src="/js/app.js"></script>
     <link rel="stylesheet" href="/css/preparation.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
     <script defer src="/js/preparation.js"></script>
   </head>
   <body>
     <aside
       th:fragment="sidebar(section)"
+      id="workspace-navigation"
       class="sidebar"
+      aria-label="Workspace navigation"
       th:if="${user != null and !#maps.isEmpty(user)}"
     >
+      <button
+        type="button"
+        class="navigation-close"
+        data-nav-close
+        aria-label="Close navigation"
+      >
+        <img src="/images/icons/close.svg" alt="" />
+      </button>
       <a class="brand" href="/home"
         ><span class="brand-mark"
           ><img src="/images/icons/utensils.svg" alt=""
@@ -115,6 +126,16 @@
       class="topbar"
       th:if="${user != null and !#maps.isEmpty(user)}"
     >
+      <button
+        type="button"
+        class="navigation-toggle"
+        data-nav-toggle
+        aria-label="Open navigation"
+        aria-controls="workspace-navigation"
+        aria-expanded="false"
+      >
+        <img src="/images/icons/navigation.svg" alt="" />
+      </button>
       <strong th:text="${title}"></strong>
       <div class="profile">
         <span class="avatar" th:text="${user.initials}"></span>
@@ -123,8 +144,8 @@
         </div>
       </div>
       <form th:action="@{/logout}" method="post">
-        <button class="btn logout">
-          <img src="/images/icons/logout.svg" alt="" />Logout
+        <button class="btn logout" aria-label="Logout" title="Logout">
+          <img src="/images/icons/logout.svg" alt="" /><span>Logout</span>
         </button>
       </form>
     </header>

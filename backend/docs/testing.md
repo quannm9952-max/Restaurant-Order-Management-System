@@ -1,5 +1,27 @@
 # Kiểm chứng hệ thống
 
+## Giao diện điện thoại và iPad (18/11/2026)
+
+Docker `verify`: **263 test đạt, 0 failure, 0 error, 0 skipped**. Chỉ thay
+frontend và tài liệu; Java, Spring Boot, MySQL, schema, nghiệp vụ giữ nguyên.
+`node --check` cho app.js/reports.js và `git diff --check` đạt.
+
+Chrome headless kiểm tra **189 bố cục** của 21 trang thuộc cả 4 actor ở
+9 kích thước: 320×740, 390×844, 768×1024, 820×1180, 844×390, 1024×768,
+1180×820, 1366×1024 và 1440×900. Không tràn ngang toàn trang và không lỗi
+JavaScript. Có bảng cuộn riêng; không coi việc bảng cuộn là lỗi tràn trang.
+
+Kiểm tra menu mở/đóng, nền che, xử lý Tab/Shift+Tab/Escape và khôi phục focus;
+4 actor đều chọn được liên kết menu và chuyển qua lại mobile/desktop khi
+menu đang mở. Form thêm/sửa nhân viên, món, chi tiết thanh toán, danh mục
+thu gọn và lịch được kiểm tra giới hạn viewport. Nút form giữ trong vùng
+nhìn; lịch mở ở đầu nội dung. Đã xem ảnh chụp điện thoại/iPad để kiểm tra bố cục.
+
+Cloudflare đăng nhập đủ 4 actor và mở trang đúng quyền. CSS/JS/icon public
+khớp byte với nguồn bản cuối. Checksum đủ 9 bảng chính trước/sau cập nhật
+không đổi. Đây là kiểm tra bằng giả lập trình duyệt; chưa kiểm tra trên
+thiết bị iPhone/iPad thật hoặc Safari iOS.
+
 ## Menu Management: xóa danh mục, xóa món và tải ảnh
 
 Docker build stage `verify`: **263 test đạt, 0 failure, 0 error, 0 skipped;
