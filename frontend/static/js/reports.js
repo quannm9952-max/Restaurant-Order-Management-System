@@ -1,5 +1,47 @@
 (() => {
   "use strict";
+  const chart = document.querySelector("[data-revenue-chart]");
+  const tooltip = document.getElementById("revenue-tooltip");
+  if (chart && tooltip) {
+    const hide = () => {
+      tooltip.hidden = true;
+    };
+    const show = (point) => {
+      tooltip.textContent = point.dataset.revenuePoint.replaceAll(" · ", "\n");
+      tooltip.hidden = false;
+      const bar = point.querySelector(".revenue-bar").getBoundingClientRect();
+      const box = tooltip.getBoundingClientRect();
+      const left = Math.max(
+        12,
+        Math.min(
+          window.innerWidth - box.width - 12,
+          bar.left + bar.width / 2 - box.width / 2,
+        ),
+      );
+      let top = bar.top - box.height - 10;
+      if (top < 12) top = bar.bottom + 10;
+      top = Math.max(12, Math.min(window.innerHeight - box.height - 12, top));
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    };
+    chart.querySelectorAll("[data-revenue-point]").forEach((point) => {
+      point.addEventListener("pointerenter", () => show(point));
+      point.addEventListener("focus", () => show(point));
+      point.addEventListener("click", () => show(point));
+      point.addEventListener("blur", hide);
+      point.addEventListener("pointerleave", () => {
+        if (document.activeElement !== point) hide();
+      });
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (!chart.contains(event.target)) hide();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") hide();
+    });
+    window.addEventListener("resize", hide);
+    window.addEventListener("scroll", hide, true);
+  }
   document
     .querySelectorAll("[data-auto-submit]")
     .forEach((select) =>

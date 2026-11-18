@@ -20,12 +20,13 @@ public class ReportController {
   @GetMapping("/manager/reports")
   String revenue(@RequestParam(required = false) String from,
       @RequestParam(required = false) String to,
-      @RequestParam(defaultValue = "DAY") String group, Model model) {
+      @RequestParam(defaultValue = "AUTO") String group, Model model) {
     Grouping grouping = filters.status(group, Grouping.class);
     if (grouping == null)
-      grouping = Grouping.DAY;
+      grouping = Grouping.AUTO;
     DateRange range = filters.range(from, to);
     model.addAttribute("range", range);
+    model.addAttribute("selectedGroup", grouping.name());
     model.addAttribute("report", reports.report(range, grouping));
     model.addAttribute("section", "revenue");
     return "reports/revenue";

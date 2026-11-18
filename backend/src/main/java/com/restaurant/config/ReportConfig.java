@@ -29,8 +29,9 @@ public class ReportConfig {
 
     public String axis(BigDecimal amount) {
       NumberFormat format = NumberFormat.getCurrencyInstance(Locale.US);
-      format.setMinimumFractionDigits(0);
-      format.setMaximumFractionDigits(0);
+      int decimals = amount.stripTrailingZeros().scale() > 0 ? 2 : 0;
+      format.setMinimumFractionDigits(decimals);
+      format.setMaximumFractionDigits(decimals);
       return format.format(amount);
     }
   }

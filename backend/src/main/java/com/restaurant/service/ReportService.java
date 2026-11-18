@@ -29,13 +29,18 @@ public class ReportService {
   // payments.
   @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public RevenueReport report(DateRange range, Grouping grouping) {
+    Grouping effective = (grouping == null ? Grouping.AUTO : grouping)
+        .resolve(range);
     RevenueSummary summary = payments.revenueSummary(range);
     List<DailyRevenue> daily = payments.dailyRevenue(range);
     Map<LocalDate, DailyRevenue> grouped = new TreeMap<>();
     for (DailyRevenue day : daily) {
-      LocalDate key = grouping == Grouping.WEEK
-          ? day.date().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-          : day.date();
+      LocalDate key = switch (effective) {
+        case MONTH -> day.date().withDayOfMonth(1);
+        case WEEK ->
+          day.date().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        default -> day.date();
+      };
       grouped.merge(key,
           new DailyRevenue(key, day.transactions(), day.amount()),
           (left, right) -> new DailyRevenue(key,
@@ -51,18 +56,23 @@ public class ReportService {
           ? BigDecimal.ZERO
           : value.amount().multiply(BigDecimal.valueOf(100)).divide(ceiling, 2,
               RoundingMode.HALF_UP);
-      points.add(new ChartPoint(value.date(),
-          grouping == Grouping.WEEK ? value.date().plusDays(6) : value.date(),
-          value.transactions(), value.amount(), height));
+      LocalDate end = switch (effective) {
+        case MONTH -> value.date().with(TemporalAdjusters.lastDayOfMonth());
+        case WEEK -> value.date().plusDays(6);
+        default -> value.date();
+      };
+      points.add(new ChartPoint(value.date(), end, value.transactions(),
+          value.amount(), height));
     }
-    return new RevenueReport(range, grouping, summary, points,
+    return new RevenueReport(range, effective, summary, points,
         payments.recentSuccessful(range), ceiling);
   }
 
   private BigDecimal chartCeiling(BigDecimal maximum) {
     if (maximum.signum() == 0)
       return BigDecimal.valueOf(400);
-    BigDecimal targetStep = maximum.divide(BigDecimal.valueOf(4));
+    BigDecimal targetStep = maximum.divide(BigDecimal.valueOf(4))
+        .max(new BigDecimal("0.01"));
     BigDecimal magnitude = BigDecimal.ONE
         .scaleByPowerOfTen(targetStep.precision() - targetStep.scale() - 1);
     for (int factor : new int[]{1, 2, 3, 5, 10}) {

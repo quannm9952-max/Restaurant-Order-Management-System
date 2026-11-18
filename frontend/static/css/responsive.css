@@ -534,7 +534,7 @@ dialog .dialog-footer {
     min-width: 0;
   }
   .bar-chart {
-    min-width: 440px;
+    min-width: var(--chart-min-width, 440px);
   }
   .calendar-grid > button {
     width: 100%;

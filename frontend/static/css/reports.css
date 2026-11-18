@@ -538,6 +538,75 @@ select:focus-visible {
   font-size: 11px;
   margin-top: 28px;
 }
+.grouping-guide {
+  margin: -12px 0 24px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.chart-scroll {
+  overflow-y: hidden;
+  padding-bottom: 8px;
+}
+.bar-chart {
+  min-width: var(--chart-min-width, 0px);
+  padding-right: 24px;
+}
+button.bar-column {
+  display: block;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.bar-column:focus-visible {
+  border-radius: 6px;
+}
+.bar-column .axis-label-hidden {
+  visibility: hidden;
+}
+.bar-chart.is-dense .chart-bars {
+  gap: 4px;
+}
+.bar-chart.is-dense .bar-column {
+  min-width: 12px;
+  max-width: none;
+}
+.bar-chart.is-dense .revenue-bar b {
+  display: none;
+}
+.bar-column > span {
+  position: relative;
+  left: 50%;
+  width: max-content;
+  transform: translateX(-50%);
+}
+.revenue-tooltip {
+  position: fixed;
+  z-index: 35;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #172638;
+  color: white;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-line;
+  box-shadow: 0 6px 20px #17263833;
+  pointer-events: none;
+}
+.revenue-tooltip[hidden] {
+  display: none;
+}
+@media (pointer: coarse) {
+  .bar-chart.is-dense {
+    min-width: max(
+      var(--chart-min-width, 440px),
+      calc(var(--chart-points, 1) * 28px + 80px)
+    );
+  }
+}
 .chart-data {
   margin-top: 12px;
   font-size: 11px;

@@ -61,6 +61,11 @@ Trường trống được nhắc bằng tiếng Anh ở giao diện và backend
 Thanh toán và xem/in hóa đơn thuộc Cashier. Manager theo dõi doanh thu,
 đơn hàng và lịch sử thanh toán qua các module báo cáo của Manager.
 
+Revenue Reports có Auto, Day, Week và Month. Auto chọn ngày cho 1–31 ngày,
+tuần cho 32–90 ngày, tháng cho khoảng dài hơn; số ngày tính cả hai đầu.
+Biểu đồ nhiều cột giảm nhãn trục X; rê chuột, focus hoặc chạm cột để xem
+doanh thu và số giao dịch chính xác. Nhóm tuần/tháng chỉ cộng ngày được lọc.
+
 Menu Management cho Manager thêm/sửa món và tải ảnh JPG/PNG tối đa 5 MB.
 Khi sửa, không chọn ảnh mới sẽ giữ ảnh hiện tại. Nút Delete xóa món khỏi thực
 đơn và danh sách đặt món mới, giữ nguyên dữ liệu trong các đơn trước đó.

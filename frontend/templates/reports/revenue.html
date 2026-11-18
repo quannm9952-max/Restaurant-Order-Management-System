@@ -17,17 +17,17 @@
         <label class="group-control"
           >Group by
           <select class="form-select" name="group" data-auto-submit>
-            <option
-              value="DAY"
-              th:selected="${report.grouping.name() == 'DAY'}"
-            >
+            <option value="AUTO" th:selected="${selectedGroup == 'AUTO'}">
+              Auto
+            </option>
+            <option value="DAY" th:selected="${selectedGroup == 'DAY'}">
               Day
             </option>
-            <option
-              value="WEEK"
-              th:selected="${report.grouping.name() == 'WEEK'}"
-            >
+            <option value="WEEK" th:selected="${selectedGroup == 'WEEK'}">
               Week
+            </option>
+            <option value="MONTH" th:selected="${selectedGroup == 'MONTH'}">
+              Month
             </option>
           </select></label
         >
@@ -37,6 +37,10 @@
           </button></noscript
         >
       </form>
+      <p class="grouping-guide">
+        Auto: Day for 1–31 days, Week for 32–90 days, Month for longer ranges.
+        You can also choose a grouping.
+      </p>
       <div class="metrics">
         <section class="metric metric-primary">
           <span>Total Revenue</span
@@ -72,11 +76,7 @@
           <div class="panel-heading">
             <div>
               <h2>Revenue over time</h2>
-              <p
-                th:text="${report.grouping.name() == 'DAY' ? 'Daily revenue · USD' : 'Weekly revenue · USD'}"
-              >
-                Daily revenue · USD
-              </p>
+              <p th:text="${report.chartTitle()}">Daily revenue · USD</p>
             </div>
             <span class="chart-legend"><i></i>Successful</span>
           </div>
@@ -94,7 +94,10 @@
           >
             <div
               class="bar-chart"
-              role="img"
+              data-revenue-chart
+              th:classappend="${report.dense()} ? 'is-dense'"
+              th:style="|--chart-min-width: ${report.minimumChartWidth()}px; --chart-points: ${#lists.size(report.points)}|"
+              role="group"
               aria-label="Revenue from successful payments in the selected date range"
             >
               <div class="chart-axis" aria-hidden="true">
@@ -108,25 +111,45 @@
                 ><span></span>
               </div>
               <div class="chart-bars">
-                <div class="bar-column" th:each="point : ${report.points}">
+                <button
+                  type="button"
+                  class="bar-column"
+                  th:each="point, stat : ${report.points}"
+                  th:with="details=|${report.periodLabel(point)} · ${report.coveredDates(point)} · Revenue: ${@money.format(point.amount)} · Successful payments: ${point.transactions}|"
+                  th:attr="data-revenue-point=${details},aria-label=${details}"
+                  aria-describedby="revenue-tooltip"
+                >
                   <div class="bar-space">
                     <div
                       class="revenue-bar"
                       th:style="'height:' + ${point.heightPercent} + '%'"
-                      th:title="${point.display()} + ': ' + ${@money.format(point.amount)}"
                     >
                       <b th:text="${@money.format(point.amount)}">$0</b>
                     </div>
                   </div>
-                  <span th:text="${point.display()}">Date</span>
-                </div>
+                  <span
+                    th:classappend="${!report.showAxisLabel(stat.index)} ? 'axis-label-hidden'"
+                    th:text="${report.axisLabel(point)}"
+                    aria-hidden="true"
+                    >Date</span
+                  >
+                </button>
               </div>
             </div>
           </div>
+          <div
+            id="revenue-tooltip"
+            class="revenue-tooltip"
+            role="tooltip"
+            hidden
+          ></div>
           <p
             class="chart-note"
-            th:text="${report.grouping.name() == 'WEEK' ? 'Only dates within the selected range are included.' : 'Pending and Failed transactions are excluded.'}"
+            th:text="${report.grouping.name() == 'DAY' ? 'Pending and Failed transactions are excluded.' : 'Only dates within the selected range are included. Pending and Failed transactions are excluded.'}"
           ></p>
+          <p class="chart-note" th:if="${report.summary.successful > 0}">
+            Hover, focus or tap a column to see exact revenue and payment count.
+          </p>
           <div
             class="chart-data visually-hidden"
             th:if="${report.summary.successful > 0}"
@@ -144,7 +167,7 @@
               </thead>
               <tbody>
                 <tr th:each="point : ${report.points}">
-                  <td th:text="${point.display()}"></td>
+                  <td th:text="${report.periodLabel(point)}"></td>
                   <td th:text="${point.transactions}"></td>
                   <td th:text="${@money.format(point.amount)}"></td>
                 </tr>

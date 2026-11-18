@@ -4,6 +4,14 @@ Nguồn: Figma Restaurant Order Management · Role Dashboards và ZIP PNG do
 nhóm cung cấp. [Mở Figma](https://www.figma.com/design/wxeNfF4bp5NJLf0F6t4zgE/Restaurant-Order-Management-%C2%B7-Role-Dashboards?node-id=32-59163).
 Giao diện gồm bốn actor: Manager, Waiter, Chef, Cashier.
 
+Revenue Reports cho chọn Auto/Day/Week/Month. Auto dùng Day đến 31 ngày,
+Week cho 32–90 ngày và Month từ 91 ngày; vẫn cho chọn thủ công. Tuần bắt đầu
+thứ Hai, tháng theo tháng dương lịch. Tooltip nêu rõ các ngày thực tế được
+tính trong kỳ, doanh thu và số thanh toán. Trên 7 cột, giữ toàn bộ cột dữ
+liệu nhưng hiển thị tối đa 7 nhãn X và chuyển số tiền sang tooltip để dễ đọc.
+Tooltip hỗ trợ chuột, focus bàn phím và chạm; bảng dữ liệu cho trình đọc màn
+hình vẫn giữ đủ các kỳ. Khoảng dài cuộn trong khung biểu đồ trên điện thoại.
+
 - `shared/shell.html`: sidebar, header, tài khoản và liên kết theo quyền.
 - `shared/reports.html`: bộ lọc ngày và phần dùng chung của báo cáo.
 - Màn hình nằm theo nghiệp vụ: employees, tables, orders, preparation, reports.

@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 
@@ -17,7 +18,13 @@ public final class ReportModels {
   }
 
   public enum Grouping {
-    DAY, WEEK
+    AUTO, DAY, WEEK, MONTH;
+
+    public Grouping resolve(DateRange range) {
+      if (this != AUTO)
+        return this;
+      return range.days() <= 31 ? DAY : range.days() <= 90 ? WEEK : MONTH;
+    }
   }
 
   public static String label(Enum<?> value) {
@@ -36,6 +43,10 @@ public final class ReportModels {
 
     public LocalDateTime start() {
       return from.atStartOfDay();
+    }
+
+    public long days() {
+      return ChronoUnit.DAYS.between(from, to) + 1;
     }
 
     public LocalDateTime endExclusive() {
@@ -178,6 +189,61 @@ public final class ReportModels {
       BigDecimal step = chartCeiling.divide(BigDecimal.valueOf(4));
       return List.of(chartCeiling, step.multiply(BigDecimal.valueOf(3)),
           step.multiply(BigDecimal.valueOf(2)), step, BigDecimal.ZERO);
+    }
+
+    public String chartTitle() {
+      return switch (grouping) {
+        case MONTH -> "Monthly revenue · USD";
+        case WEEK -> "Weekly revenue · USD";
+        default -> "Daily revenue · USD";
+      };
+    }
+
+    public String periodLabel(ChartPoint point) {
+      return grouping == Grouping.MONTH
+          ? point.start()
+              .format(DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH))
+          : point.display();
+    }
+
+    public String axisLabel(ChartPoint point) {
+      return grouping == Grouping.MONTH
+          ? periodLabel(point)
+          : point.start()
+              .format(DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH));
+    }
+
+    public String coveredDates(ChartPoint point) {
+      LocalDate start = point.start().isBefore(range.from())
+          ? range.from()
+          : point.start();
+      LocalDate end = point.end().isAfter(range.to())
+          ? range.to()
+          : point.end();
+      var format = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
+      return start.equals(end)
+          ? start.format(format)
+          : start.format(format) + " – " + end.format(format);
+    }
+
+    public boolean dense() {
+      return points.size() > 7;
+    }
+
+    public boolean showAxisLabel(int index) {
+      int stride = Math.max(1, (points.size() + 4) / 6);
+      if (!dense())
+        return true;
+      int last = points.size() - 1;
+      return index == 0 || index == last
+          || (index % stride == 0 && index <= last - stride);
+    }
+
+    public int minimumChartWidth() {
+      if (dense())
+        return Math.max(440, points.size() * 16 + 80);
+      int slot = grouping == Grouping.MONTH ? 72 : 50;
+      return Math.max(240, points.size() * slot + 80);
     }
   }
 }

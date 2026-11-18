@@ -1,5 +1,24 @@
 # Kiểm chứng hệ thống
 
+## Doanh thu tháng và nhóm tự động (18/11/2026)
+
+Docker verify: **276 test đạt, 0 failure, 0 error, 0 skipped**. Kiểm thử nhóm
+tháng qua năm, tháng không trọn vẹn và cuối ngày; tổng các cột khớp tổng
+doanh thu. Kiểm tra đủ các ngưỡng 7/8/31/32/90/91 ngày, lựa chọn thủ công,
+31 số liệu vẫn đầy đủ khi giảm nhãn và nhãn trục tiền không bị làm tròn
+trùng nhau, kể cả doanh thu 0.01 USD. Không thêm bảng, cột hoặc dependency.
+
+Chrome headless trên MySQL thử riêng: **36 bố cục biểu đồ** ở 1440, 820,
+390 và 320 px. Kiểm tra 1/7/8/31/32/91 ngày, tháng không trọn vẹn, chọn Day
+thủ công và tháng không có dữ liệu; hover/focus/chạm/Escape, đổi Month vẫn
+giữ ngày lọc. Đủ 31 cột được giữ khi chỉ hiện 7 nhãn; một cột không tạo cuộn
+ngang thừa. Không lỗi JavaScript hoặc tràn toàn trang; đã xem ảnh biểu đồ.
+
+Bản chính được đối chiếu tổng, số thanh toán và từng tháng với MySQL tại
+localhost. Đủ 9 bảng giữ nguyên checksum trước/sau cập nhật. Trên Cloudflare
+chỉ kiểm tra CSS/JS public khớp nguồn; không tải payload báo cáo tài chính.
+Dữ liệu 31 thanh toán thử nằm trong project Docker riêng và được dọn sau kiểm tra.
+
 ## Giao diện điện thoại và iPad (18/11/2026)
 
 Docker `verify`: **263 test đạt, 0 failure, 0 error, 0 skipped**. Chỉ thay

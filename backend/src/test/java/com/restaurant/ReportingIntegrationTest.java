@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -105,6 +106,108 @@ class ReportingIntegrationTest {
     assertThat(report.points().stream().map(ChartPoint::amount)
         .reduce(BigDecimal.ZERO, BigDecimal::add))
         .isEqualByComparingTo(report.summary().totalRevenue());
+  }
+
+  @Test
+  void monthlyRevenueIncludesOnlySelectedDaysOfEachCalendarMonth() {
+    var report = reports.report(RANGE, Grouping.MONTH);
+    assertThat(report.grouping()).isEqualTo(Grouping.MONTH);
+    assertThat(report.points()).extracting(ChartPoint::amount)
+        .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+        .containsExactly(new BigDecimal("756"), new BigDecimal("1136"));
+    assertThat(report.points().getFirst().start())
+        .isEqualTo(LocalDate.of(2026, 10, 1));
+    assertThat(report.points().getFirst().end())
+        .isEqualTo(LocalDate.of(2026, 10, 31));
+    assertThat(report.periodLabel(report.points().getFirst()))
+        .isEqualTo("Oct 2026");
+    assertThat(report.coveredDates(report.points().getFirst()))
+        .isEqualTo("29 Oct 2026 – 31 Oct 2026");
+    assertThat(report.coveredDates(report.points().getLast()))
+        .isEqualTo("01 Nov 2026 – 04 Nov 2026");
+    assertThat(report.points().stream().map(ChartPoint::amount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add))
+        .isEqualByComparingTo(report.summary().totalRevenue());
+  }
+
+  @Test
+  void monthlyReportSeparatesYearsAndIncludesTheWholeLastDay() {
+    completedPayment(1060, 2060, "2026-12-31 23:59:59", "10.00");
+    completedPayment(1061, 2061, "2027-01-01 00:00:00", "20.00");
+    completedPayment(1062, 2062, "2027-01-31 23:59:59", "30.00");
+    completedPayment(1063, 2063, "2027-02-01 00:00:00", "40.00");
+    var report = reports.report(
+        new DateRange(LocalDate.of(2026, 12, 15), LocalDate.of(2027, 1, 31)),
+        Grouping.MONTH);
+    assertThat(report.points()).extracting(report::periodLabel)
+        .containsExactly("Dec 2026", "Jan 2027");
+    assertThat(report.points()).extracting(ChartPoint::amount)
+        .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+        .containsExactly(new BigDecimal("10"), new BigDecimal("50"));
+    assertThat(report.summary().totalRevenue()).isEqualByComparingTo("60");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"7,DAY", "8,DAY", "31,DAY", "32,WEEK", "90,WEEK", "91,MONTH"})
+  void automaticGroupingUsesInclusiveRangeLength(int days, Grouping expected)
+      throws Exception {
+    LocalDate start = LocalDate.of(2026, 9, 1);
+    DateRange range = new DateRange(start, start.plusDays(days - 1));
+    assertThat(reports.report(range, Grouping.AUTO).grouping())
+        .isEqualTo(expected);
+    var result = mvc
+        .perform(get("/manager/reports").param("from", range.from().toString())
+            .param("to", range.to().toString()))
+        .andExpect(status().isOk())
+        .andExpect(model().attribute("selectedGroup", "AUTO")).andReturn();
+    var rendered = (RevenueReport) result.getModelAndView().getModel()
+        .get("report");
+    assertThat(rendered.grouping()).isEqualTo(expected);
+  }
+
+  @Test
+  void dailyDetailCanStillBeSelectedForLongRanges() {
+    var range = new DateRange(LocalDate.of(2026, 8, 1),
+        LocalDate.of(2026, 11, 4));
+    assertThat(reports.report(range, Grouping.AUTO).grouping())
+        .isEqualTo(Grouping.MONTH);
+    assertThat(reports.report(range, Grouping.DAY).grouping())
+        .isEqualTo(Grouping.DAY);
+  }
+
+  @Test
+  void all31DailyAmountsRemainAvailableWhenAxisLabelsAreReduced() {
+    LocalDate start = LocalDate.of(2027, 1, 1);
+    for (int day = 0; day < 31; day++)
+      completedPayment(1100 + day, 2100 + day,
+          start.plusDays(day) + " 12:00:00", "1.25");
+    var report = reports.report(new DateRange(start, start.plusDays(30)),
+        Grouping.AUTO);
+    assertThat(report.grouping()).isEqualTo(Grouping.DAY);
+    assertThat(report.points()).hasSize(31);
+    assertThat(report.summary().totalRevenue()).isEqualByComparingTo("38.75");
+    assertThat(java.util.stream.IntStream.range(0, 31)
+        .filter(report::showAxisLabel).count()).isBetween(2L, 7L);
+    assertThat(report.showAxisLabel(0)).isTrue();
+    assertThat(report.showAxisLabel(30)).isTrue();
+    var money = new com.restaurant.config.ReportConfig.MoneyFormatter();
+    assertThat(report.axisTicks().stream().map(money::axis).toList())
+        .doesNotHaveDuplicates();
+    assertThat(report.points()).allSatisfy(point -> {
+      assertThat(point.transactions()).isEqualTo(1);
+      assertThat(point.amount()).isEqualByComparingTo("1.25");
+    });
+  }
+
+  @Test
+  void centRevenueStillHasDistinctAndAccurateCurrencyAxisLabels() {
+    completedPayment(1060, 2060, "2027-02-01 12:00:00", "0.01");
+    LocalDate day = LocalDate.of(2027, 2, 1);
+    var report = reports.report(new DateRange(day, day), Grouping.DAY);
+    var money = new com.restaurant.config.ReportConfig.MoneyFormatter();
+    assertThat(report.summary().totalRevenue()).isEqualByComparingTo("0.01");
+    assertThat(report.axisTicks().stream().map(money::axis).toList())
+        .containsExactly("$0.04", "$0.03", "$0.02", "$0.01", "$0");
   }
 
   @Test
@@ -203,6 +306,7 @@ class ReportingIntegrationTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"/manager/reports", "/manager/reports?group=WEEK",
+      "/manager/reports?group=MONTH", "/manager/reports?group=AUTO",
       "/manager/payment-history", "/manager/payment-history/2046",
       "/manager/payment-history/2047", "/manager/payment-history/2045",
       "/manager/orders", "/manager/orders/1042"})
@@ -246,7 +350,7 @@ class ReportingIntegrationTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"/manager/reports?from=2026-11-05&to=2026-11-04",
-      "/manager/reports?from=not-a-date", "/manager/reports?group=MONTH",
+      "/manager/reports?from=not-a-date", "/manager/reports?group=YEAR",
       "/manager/payment-history?status=PAID", "/manager/orders?page=-1",
       "/manager/payment-history?page=invalid"})
   void invalidFiltersAreRejectedBeforeQuerying(String path) throws Exception {
