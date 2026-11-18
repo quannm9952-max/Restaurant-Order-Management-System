@@ -347,7 +347,7 @@ public class OrderServiceImpl implements IOrderService {
     @Override
     @Transactional(readOnly = true)
     public List<MenuItemOption> listAvailableItems() {
-        return menuItemRepository.findByIsAvailableTrue()
+        return menuItemRepository.findByIsAvailableTrueWithCategory()
                 .stream()
                 .map(this::toMenuItemOption)
                 .toList();
@@ -417,6 +417,9 @@ public class OrderServiceImpl implements IOrderService {
         boolean canCancelOrder = isOpen && !hasInProgressDetails(order)
                 && !paymentRepository.existsSuccessfulByOrderId(order.getId());
 
+        // Recalculate total from details, excluding CANCELLED lines
+        BigDecimal recalculatedTotal = calculateTotalAmount(order.getDetails());
+
         return new OrderDetailView(
                 order.getId(),
                 order.getTable().getId(),
@@ -425,7 +428,7 @@ public class OrderServiceImpl implements IOrderService {
                 order.getCreatedAt(),
                 order.getEmployee() != null ? order.getEmployee().getFullName() : "(Không rõ)",
                 order.getNote(),
-                order.getTotalAmount(),
+                recalculatedTotal,
                 isOpen,
                 canCancelOrder,
                 lines
@@ -449,7 +452,11 @@ public class OrderServiceImpl implements IOrderService {
     }
 
     private MenuItemOption toMenuItemOption(MenuItem item) {
-        return new MenuItemOption(item.getId(), item.getItemName(), item.getPrice());
+        String categoryName = null;
+        if (item.getMenuCategory() != null) {
+            categoryName = item.getMenuCategory().getCategoryName();
+        }
+        return new MenuItemOption(item.getId(), item.getItemName(), item.getPrice(), categoryName);
     }
 
     /**

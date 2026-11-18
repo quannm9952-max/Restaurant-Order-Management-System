@@ -8,10 +8,12 @@ import com.example.restaurantmanagement.dto.UpdateQuantityForm;
 import com.example.restaurantmanagement.dto.order.OrderDetailView;
 import com.example.restaurantmanagement.dto.order.OrderSummaryView;
 import com.example.restaurantmanagement.dto.table.MenuItemOption;
+import com.example.restaurantmanagement.dto.table.TableView;
 import com.example.restaurantmanagement.exeptions.BusinessException;
 import com.example.restaurantmanagement.exeptions.NotFoundException;
 import com.example.restaurantmanagement.services.order.IOrderService;
 import com.example.restaurantmanagement.services.order.OrderLine;
+import com.example.restaurantmanagement.services.table.ITableService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -36,18 +38,53 @@ import java.util.List;
 public class OrderController {
 
     private final IOrderService orderService;
+    private final ITableService tableService;
 
-    public OrderController(IOrderService orderService) {
+    public OrderController(IOrderService orderService, ITableService tableService) {
         this.orderService = orderService;
+        this.tableService = tableService;
     }
 
     /**
-     * List all OPEN orders.
+     * List all OPEN orders — Order Management page with 3-column layout.
      */
     @GetMapping
-    public String listOrders(Model model) {
+    public String listOrders(
+            @RequestParam(required = false) Integer selectedTable,
+            Model model) {
         List<OrderSummaryView> orders = orderService.listOpenOrders();
+        List<TableView> tables = tableService.listTables();
+        List<MenuItemOption> availableItems = orderService.listAvailableItems();
+
+        // Find the open order for the selected table
+        TableView selectedTableView = null;
+        if (selectedTable != null) {
+            for (TableView tv : tables) {
+                if (tv.id().equals(selectedTable)) {
+                    selectedTableView = tv;
+                    break;
+                }
+            }
+        }
+        // Default: select first available table
+        if (selectedTableView == null) {
+            for (TableView tv : tables) {
+                if (tv.status().name().equals("AVAILABLE")) {
+                    selectedTableView = tv;
+                    break;
+                }
+            }
+        }
+        // If still null, select first table
+        if (selectedTableView == null && !tables.isEmpty()) {
+            selectedTableView = tables.get(0);
+        }
+
         model.addAttribute("orders", orders);
+        model.addAttribute("tables", tables);
+        model.addAttribute("availableItems", availableItems);
+        model.addAttribute("selectedTable", selectedTableView);
+        model.addAttribute("pageTitle", "Order Management");
         return "orders/list";
     }
 
@@ -65,6 +102,7 @@ public class OrderController {
         List<MenuItemOption> availableItems = orderService.listAvailableItems();
         model.addAttribute("form", form);
         model.addAttribute("availableItems", availableItems);
+        model.addAttribute("pageTitle", "Order Management");
         return "orders/new";
     }
 
@@ -136,6 +174,7 @@ public class OrderController {
             OrderDetailView order = orderService.getOrderDetail(id);
             model.addAttribute("order", order);
             model.addAttribute("availableItems", orderService.listAvailableItems());
+            model.addAttribute("pageTitle", "Order Management");
             return "orders/detail";
         } catch (NotFoundException e) {
             model.addAttribute("errorMessage", e.getMessage());

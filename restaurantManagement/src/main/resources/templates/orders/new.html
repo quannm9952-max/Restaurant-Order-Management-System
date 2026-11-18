@@ -3,82 +3,97 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Tạo đơn mới - Quản lý nhà hàng</title>
+    <title>Create New Order - Restaurant Order Management</title>
     <th:block th:replace="~{fragments/layout :: head}"></th:block>
 </head>
-<body>
-<nav th:replace="~{fragments/layout :: navbar}"></nav>
-<div th:replace="~{fragments/layout :: flashMessages}"></div>
+<body class="app-body">
 
-<div class="container-fluid mt-3">
-    <a href="/tables" class="btn btn-outline-secondary btn-sm mb-3">&larr; Quay lại danh sách bàn</a>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
 
-    <h2>Tạo đơn mới</h2>
+<div class="app-wrapper">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
 
-    <div class="alert alert-info" role="alert">
-        <strong>Bàn:</strong> <span th:text="${param.tableId}"></span>
-    </div>
+    <main class="app-content">
+        <div th:replace="~{fragments/layout :: flashMessages}"></div>
 
-    <!-- Validation errors -->
-    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
-
-    <form th:action="@{/orders}" method="post" th:object="${form}">
-        <!-- Hidden tableId -->
-        <input type="hidden" th:field="*{tableId}">
-
-        <!-- Note -->
-        <div class="mb-3">
-            <label for="note" class="form-label">Ghi chú (tùy chọn)</label>
-            <textarea id="note" class="form-control" th:field="*{note}" rows="2"
-                      placeholder="Ghi chú cho đơn hàng..."></textarea>
-        </div>
-
-        <!-- Order lines -->
-        <h5>Danh sách món</h5>
-        <div id="orderLinesContainer">
-            <div th:each="line, iterStat : *{lines}" class="order-line-row row g-2 align-items-end mb-2">
-                <div class="col-md-6">
-                    <label th:for="'itemId-' + ${iterStat.index}" class="form-label">Món</label>
-                    <select th:id="'itemId-' + ${iterStat.index}"
-                            class="form-select"
-                            th:field="*{lines[__${iterStat.index}__].itemId}">
-                        <option value="">-- Chọn món --</option>
-                        <option th:each="item : ${availableItems}"
-                                th:value="${item.id}"
-                                th:text="${item.itemName} + ' - ' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-                        </option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label th:for="'quantity-' + ${iterStat.index}" class="form-label">Số lượng</label>
-                    <input th:id="'quantity-' + ${iterStat.index}"
-                           type="number"
-                           class="form-control"
-                           th:field="*{lines[__${iterStat.index}__].quantity}"
-                           min="1"
-                           value="1"
-                           placeholder="Số lượng">
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderLine(this)">
-                        Xóa dòng
-                    </button>
-                </div>
+        <div class="page-header">
+            <div>
+                <h2 class="page-heading">Create New Order</h2>
+                <p class="page-subheading">Add items to create a new order for the selected table.</p>
             </div>
         </div>
 
         <div class="mb-3">
-            <button type="button" class="btn btn-outline-success btn-sm" onclick="addOrderLine()">
-                + Thêm món
-            </button>
+            <a href="/tables" class="back-link">
+                <i class="bi bi-arrow-left me-1"></i>Back to Table Management
+            </a>
         </div>
 
-        <!-- Submit -->
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Tạo đơn</button>
-            <a href="/tables" class="btn btn-secondary">Hủy</a>
+        <div class="card" style="border-radius:12px; border:1px solid var(--color-gray-border); max-width:700px;">
+            <div class="card-body p-4">
+                <div class="alert alert-info" role="alert" style="border-radius:8px; border:none;">
+                    <i class="bi bi-grid-3x3-gap me-2"></i>
+                    <strong>Table ID:</strong> <span th:text="${param.tableId}"></span>
+                </div>
+
+                <div th:if="${errorMessage}" class="alert alert-danger" role="alert" style="border-radius:8px; border:none;" th:text="${errorMessage}"></div>
+
+                <form th:action="@{/orders}" method="post" th:object="${form}">
+                    <input type="hidden" th:field="*{tableId}">
+
+                    <div class="mb-3">
+                        <label for="note" class="form-label">Note (optional)</label>
+                        <textarea id="note" class="form-control" th:field="*{note}" rows="2"
+                                  placeholder="Order note..."></textarea>
+                    </div>
+
+                    <h5 class="mb-3">Menu Items</h5>
+                    <div id="orderLinesContainer">
+                        <div th:each="line, iterStat : *{lines}" class="order-line-row row g-2 align-items-end mb-2">
+                            <div class="col-md-6">
+                                <label th:for="'itemId-' + ${iterStat.index}" class="form-label">Item</label>
+                                <select th:id="'itemId-' + ${iterStat.index}"
+                                        class="form-select"
+                                        th:field="*{lines[__${iterStat.index}__].itemId}">
+                                    <option value="">-- Select item --</option>
+                                    <option th:each="item : ${availableItems}"
+                                            th:value="${item.id}"
+                                            th:text="${item.itemName} + ' - ' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label th:for="'quantity-' + ${iterStat.index}" class="form-label">Quantity</label>
+                                <input th:id="'quantity-' + ${iterStat.index}"
+                                       type="number"
+                                       class="form-control"
+                                       th:field="*{lines[__${iterStat.index}__].quantity}"
+                                       min="1"
+                                       value="1"
+                                       placeholder="Qty">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOrderLine(this)">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="addOrderLine()">
+                            <i class="bi bi-plus-circle me-1"></i>Add Item
+                        </button>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-orange">Create Order</button>
+                        <a href="/tables" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
         </div>
-    </form>
+    </main>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

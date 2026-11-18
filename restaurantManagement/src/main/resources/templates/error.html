@@ -1,26 +1,30 @@
-<!-- Figma frame: (chưa gán) -->
+<!-- Figma frame: Table Management · Roles and modals -->
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Lỗi - Quản lý nhà hàng</title>
+    <title>Error - Restaurant Order Management</title>
     <th:block th:replace="~{fragments/layout :: head}"></th:block>
 </head>
-<body>
-<nav th:replace="~{fragments/layout :: navbar}"></nav>
-<div th:replace="~{fragments/layout :: flashMessages}"></div>
+<body class="app-body">
 
-<div class="container-fluid mt-3">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="alert alert-danger" role="alert">
-                <h4 class="alert-heading">Đã xảy ra lỗi</h4>
-                <p th:text="${errorMessage}">Có lỗi xảy ra.</p>
-                <hr>
-                <a class="btn btn-primary btn-sm" href="/tables">Quay lại danh sách bàn</a>
-                <a class="btn btn-secondary btn-sm" href="/orders">Danh sách đơn</a>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<div class="app-wrapper">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="app-content">
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-6">
+                <div class="alert alert-danger" role="alert" style="border-radius:12px;">
+                    <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Something went wrong</h4>
+                    <p th:text="${errorMessage}">An error occurred.</p>
+                    <hr>
+                    <a class="btn btn-primary btn-orange me-2" href="/tables">Back to Tables</a>
+                    <a class="btn btn-outline-secondary" href="/orders">Orders</a>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

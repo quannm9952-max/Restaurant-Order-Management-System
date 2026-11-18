@@ -22,4 +22,15 @@ public interface TableRepository extends JpaRepository<RestaurantTable, Integer>
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM RestaurantTable t WHERE t.id = :id")
     Optional<RestaurantTable> findByIdWithPessimisticLock(@Param("id") Integer id);
+
+    /**
+     * Find a table by name (case-insensitive) for duplicate name checking.
+     */
+    Optional<RestaurantTable> findByTableNameIgnoreCase(String tableName);
+
+    /**
+     * Find a table by name excluding a specific table ID (for edit duplicate check).
+     */
+    @Query("SELECT t FROM RestaurantTable t WHERE LOWER(t.tableName) = LOWER(:name) AND t.id != :id")
+    Optional<RestaurantTable> findByTableNameIgnoreCaseAndIdNot(@Param("name") String name, @Param("id") Integer id);
 }

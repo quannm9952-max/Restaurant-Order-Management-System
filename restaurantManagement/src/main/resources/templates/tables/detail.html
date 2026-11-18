@@ -1,95 +1,174 @@
-<!-- Figma frame: (chưa gán) -->
-<!-- TODO: Đối chiếu Figma khi có thiết kế -->
+<!-- Figma frame: Table Management / Waiter Open Order -->
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Chi tiết bàn - Quản lý nhà hàng</title>
+    <title th:text="${pageTitle} + ' - Restaurant Order Management'">Table Detail</title>
     <th:block th:replace="~{fragments/layout :: head}"></th:block>
 </head>
-<body>
-<nav th:replace="~{fragments/layout :: navbar}"></nav>
-<div th:replace="~{fragments/layout :: flashMessages}"></div>
+<body class="app-body">
 
-<div class="container-fluid mt-3">
-    <a href="/tables" class="btn btn-outline-secondary btn-sm mb-3">&larr; Quay lại danh sách</a>
+<!-- Sidebar -->
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
 
-    <h2 th:text="'Bàn ' + ${table.tableName}"></h2>
+<div class="app-wrapper">
+    <!-- Top bar -->
+    <header th:replace="~{fragments/layout :: topbar}"></header>
 
-    <!-- Table info -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <dl class="row mb-0">
-                <dt class="col-sm-3">Tên bàn</dt>
-                <dd class="col-sm-9" th:text="${table.tableName}"></dd>
+    <!-- Main content -->
+    <main class="app-content">
+        <div th:replace="~{fragments/layout :: flashMessages}"></div>
 
-                <dt class="col-sm-3">Sức chứa</dt>
-                <dd class="col-sm-9" th:text="${table.capacity} + ' người'"></dd>
-
-                <dt class="col-sm-3">Trạng thái</dt>
-                <dd class="col-sm-9">
-                    <span th:class="'status-' + ${#strings.toLowerCase(table.status.name())}"
-                          th:text="${#strings.capitalize(#strings.toLowerCase(table.status.name()))}">
-                    </span>
-                </dd>
-            </dl>
+        <div class="page-header">
+            <div>
+                <h2 class="page-heading" th:text="${pageTitle}">Table Detail</h2>
+                <p class="page-subheading">View table information and current order.</p>
+            </div>
         </div>
-    </div>
 
-    <!-- Open order info -->
-    <div class="card mb-4" th:if="${openOrder != null}">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Đơn hàng đang mở</span>
-            <a th:href="@{/orders/{id}(id=${openOrder.id})}" class="btn btn-sm btn-outline-primary">
-                Xem chi tiết đơn #<span th:text="${openOrder.id}"></span>
-            </a>
-        </div>
-        <div class="card-body">
-            <dl class="row mb-0">
-                <dt class="col-sm-3">Mã đơn</dt>
-                <dd class="col-sm-9" th:text="${openOrder.id}"></dd>
+        <div class="tables-content">
+            <!-- Back link -->
+            <div class="mb-3">
+                <a href="/tables" class="back-link">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Table Management
+                </a>
+            </div>
 
-                <dt class="col-sm-3">Ngày tạo</dt>
-                <dd class="col-sm-9" th:text="${#temporals.format(openOrder.createdAt, 'dd/MM/yyyy HH:mm')}"></dd>
-
-                <dt class="col-sm-3">Tổng tiền</dt>
-                <dd class="col-sm-9" th:text="${#numbers.formatDecimal(openOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></dd>
-
-                <dt class="col-sm-3">Số dòng món</dt>
-                <dd class="col-sm-9" th:text="${openOrder.itemCount}"></dd>
-            </dl>
-        </div>
-    </div>
-
-    <!-- Create order button (only if canCreateOrder) -->
-    <div class="mb-4" th:if="${table.canCreateOrder}">
-        <a th:href="@{/orders/new(tableId=${table.id})}" class="btn btn-success">
-            Tạo đơn mới cho bàn này
-        </a>
-    </div>
-
-    <!-- Update status form (only if canChangeStatus) -->
-    <div class="card" th:if="${table.canChangeStatus}">
-        <div class="card-header">Cập nhật trạng thái bàn</div>
-        <div class="card-body">
-            <form th:action="@{/tables/{id}/status(id=${table.id})}" method="post">
-                <div class="row g-2 align-items-end">
-                    <div class="col-auto">
-                        <label for="newStatus" class="form-label">Trạng thái mới</label>
-                        <select id="newStatus" name="newStatus" class="form-select">
-                            <option value="AVAILABLE" th:selected="${table.status.name() == 'AVAILABLE'}">AVAILABLE (Sẵn sàng)</option>
-                            <option value="OUT_OF_SERVICE" th:selected="${table.status.name() == 'OUT_OF_SERVICE'}">OUT_OF_SERVICE (Ngoài dịch vụ)</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-warning">Cập nhật</button>
+            <!-- Detail panel (standalone, full width) -->
+            <div class="detail-panel detail-panel-standalone">
+                <div class="detail-panel-header">
+                    <span class="detail-label">TABLE DETAILS</span>
+                    <div class="detail-title-row">
+                        <h3 class="detail-title" th:text="${table.tableName}">Table 01</h3>
+                        <span class="status-pill"
+                              th:classappend="'pill-' + ${#strings.toLowerCase(table.status.name())}"
+                              th:text="${table.status.name() == 'AVAILABLE'} ? 'Available' : (${table.status.name() == 'OCCUPIED'} ? 'Occupied' : 'OutOfService')">
+                            Available
+                        </span>
                     </div>
                 </div>
-            </form>
-            <small class="text-muted d-block mt-2">
-                Chỉ có thể chuyển giữa AVAILABLE và OUT_OF_SERVICE. Bàn có đơn OPEN không thể thay đổi trạng thái.
-            </small>
+
+                <div class="detail-info">
+                    <div class="detail-row">
+                        <span class="detail-info-label">Seating capacity</span>
+                        <span class="detail-info-value" th:text="${table.capacity} + ' seats'">4 seats</span>
+                    </div>
+                </div>
+
+                <!-- Open order section -->
+                <div class="detail-section">
+                    <div class="detail-section-label">
+                        <i class="bi bi-receipt"></i>
+                        Open order
+                    </div>
+                    <th:block th:if="${openOrder != null}">
+                        <div class="order-card">
+                            <div class="order-card-left">
+                                <a th:href="@{/orders/{id}(id=${openOrder.id})}"
+                                   class="order-card-code"
+                                   th:text="'ORD-' + ${#strings.padLeft(openOrder.id.toString(), 4, '0')}">ORD-0001</a>
+                            </div>
+                            <span class="status-pill pill-occupied pill-small">Open</span>
+                        </div>
+                        <div class="info-box info-box-warning">
+                            <div class="info-box-title">
+                                <i class="bi bi-lock"></i>
+                                Status changes restricted
+                            </div>
+                            <div class="info-box-text">Available and OutOfService cannot be set while this order is Open.</div>
+                        </div>
+                        <!-- Order summary -->
+                        <div class="order-summary-card">
+                            <div class="order-summary-row">
+                                <span class="order-summary-label">Created</span>
+                                <span class="order-summary-value" th:text="${#temporals.format(openOrder.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025 12:00</span>
+                            </div>
+                            <div class="order-summary-row">
+                                <span class="order-summary-label">Total amount</span>
+                                <span class="order-summary-value" th:text="${#numbers.formatDecimal(openOrder.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                            </div>
+                            <div class="order-summary-row">
+                                <span class="order-summary-label">Items</span>
+                                <span class="order-summary-value" th:text="${openOrder.itemCount}">0</span>
+                            </div>
+                            <a th:href="@{/orders/{id}(id=${openOrder.id})}" class="btn btn-primary btn-orange w-100 mt-3">
+                                Open Order Management
+                            </a>
+                        </div>
+                    </th:block>
+                    <th:block th:unless="${openOrder != null}">
+                        <div class="order-info-box order-info-none">
+                            <i class="bi bi-check-circle me-2"></i>
+                            None
+                        </div>
+                        <div class="info-box info-box-info">
+                            <div class="info-box-title">
+                                <i class="bi bi-check-circle me-1"></i>
+                                No Open order linked
+                            </div>
+                            <div class="info-box-text">Only one Open order is allowed per table at a time.</div>
+                        </div>
+                    </th:block>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="detail-actions">
+                    <th:block th:if="${table.canCreateOrder}">
+                        <a th:href="@{/orders/new(tableId=${table.id})}"
+                           class="btn btn-primary btn-orange w-100">
+                            Open Order Management
+                        </a>
+                    </th:block>
+
+                    <th:block th:if="${table.canChangeStatus}">
+                        <button type="button"
+                                class="btn btn-outline w-100 mt-2"
+                                data-bs-toggle="modal"
+                                data-bs-target="#statusModal">
+                            <i class="bi bi-arrow-repeat me-2"></i>Update Status
+                        </button>
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form th:action="@{/tables/{id}/status(id=${table.id})}" method="post">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Update Table Status</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Table: <strong th:text="${table.tableName}">Table 01</strong></p>
+                                            <div class="mb-3">
+                                                <label class="form-label">New Status</label>
+                                                <select name="newStatus" class="form-select" required>
+                                                    <option value="">-- Select --</option>
+                                                    <option value="AVAILABLE" th:selected="${table.status.name() == 'OUT_OF_SERVICE'}">
+                                                        Available
+                                                    </option>
+                                                    <option value="OUT_OF_SERVICE" th:selected="${table.status.name() == 'AVAILABLE'}">
+                                                        Out of Service
+                                                    </option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary btn-orange">Update</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </th:block>
+                </div>
+
+                <div class="detail-note">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Creating an order automatically sets this table to Occupied.
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>

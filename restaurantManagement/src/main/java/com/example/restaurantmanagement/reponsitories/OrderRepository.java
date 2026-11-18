@@ -26,15 +26,15 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     Optional<Integer> findOpenOrderIdByTableId(@Param("tableId") Integer tableId);
 
     /**
-     * Find orders by status with JOIN FETCH to avoid N+1 for details.
+     * Find orders by status with JOIN FETCH to avoid N+1 for details and employee.
      */
-    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.details WHERE o.status = :status")
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.details LEFT JOIN FETCH o.employee WHERE o.status = :status")
     List<Order> findByStatusWithDetails(@Param("status") OrderStatus status);
 
     /**
      * Find an order by ID with JOIN FETCH for details, table, and employee.
      */
-    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.details WHERE o.id = :id")
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.details LEFT JOIN FETCH o.employee LEFT JOIN FETCH o.table WHERE o.id = :id")
     Optional<Order> findByIdWithDetails(@Param("id") Integer id);
 
     /**

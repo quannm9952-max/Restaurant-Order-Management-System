@@ -790,7 +790,7 @@ class OrderServiceImplTest {
 
     @Test
     void listAvailableItems_shouldReturnMenuItemOptions() {
-        when(menuItemRepository.findByIsAvailableTrue()).thenReturn(List.of(menuItem));
+        when(menuItemRepository.findByIsAvailableTrueWithCategory()).thenReturn(List.of(menuItem));
 
         List<MenuItemOption> result = orderService.listAvailableItems();
 
@@ -799,5 +799,343 @@ class OrderServiceImplTest {
         assertEquals(1, opt.id());
         assertEquals("Phở bò", opt.itemName());
         assertEquals(0, new BigDecimal("55000").compareTo(opt.price()));
+    }
+
+    // ==================== TOTAL AMOUNT EXCLUDES CANCELLED LINES ====================
+
+    /**
+     * Simulates order #1 from seed data:
+     * - Phở bò 2 x 55,000 (PENDING) = 110,000
+     * - Gỏi cuốn 1 x 35,000 (PREPARING) = 35,000
+     * - Cơm gà 1 x 50,000 (READY) = 50,000
+     * - Trà đá 2 x 5,000 (SERVED) = 10,000
+     * - Cà phê sữa 1 x 25,000 (CANCELLED) = 25,000 (excluded)
+     * Total should be 205,000 (not 230,000).
+     * Even if order.totalAmount in DB is wrong (230,000), the view should recalculate correctly.
+     */
+    @Test
+    void getOrderDetail_totalAmount_excludesCancelledLines() {
+        Order order = createOpenOrder();
+        // Simulate DB totalAmount that incorrectly includes CANCELLED lines
+        order.setTotalAmount(new BigDecimal("230000"));
+
+        // Phở bò 2 x 55,000 (PENDING)
+        OrderDetail detail1 = new OrderDetail();
+        detail1.setId(1);
+        detail1.setOrder(order);
+        detail1.setQuantity(2);
+        detail1.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail1.setItemNameAtOrder("Phở bò");
+        detail1.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail1);
+
+        // Gỏi cuốn 1 x 35,000 (PREPARING)
+        OrderDetail detail2 = new OrderDetail();
+        detail2.setId(2);
+        detail2.setOrder(order);
+        detail2.setQuantity(1);
+        detail2.setUnitPriceAtOrder(new BigDecimal("35000"));
+        detail2.setItemNameAtOrder("Gỏi cuốn");
+        detail2.setCookingStatus(CookingStatus.PREPARING);
+        order.getDetails().add(detail2);
+
+        // Cơm gà 1 x 50,000 (READY)
+        OrderDetail detail3 = new OrderDetail();
+        detail3.setId(3);
+        detail3.setOrder(order);
+        detail3.setQuantity(1);
+        detail3.setUnitPriceAtOrder(new BigDecimal("50000"));
+        detail3.setItemNameAtOrder("Cơm gà");
+        detail3.setCookingStatus(CookingStatus.READY);
+        order.getDetails().add(detail3);
+
+        // Trà đá 2 x 5,000 (SERVED)
+        OrderDetail detail4 = new OrderDetail();
+        detail4.setId(4);
+        detail4.setOrder(order);
+        detail4.setQuantity(2);
+        detail4.setUnitPriceAtOrder(new BigDecimal("5000"));
+        detail4.setItemNameAtOrder("Trà đá");
+        detail4.setCookingStatus(CookingStatus.SERVED);
+        order.getDetails().add(detail4);
+
+        // Cà phê sữa 1 x 25,000 (CANCELLED) — should be excluded
+        OrderDetail detail5 = new OrderDetail();
+        detail5.setId(5);
+        detail5.setOrder(order);
+        detail5.setQuantity(1);
+        detail5.setUnitPriceAtOrder(new BigDecimal("25000"));
+        detail5.setItemNameAtOrder("Cà phê sữa");
+        detail5.setCookingStatus(CookingStatus.CANCELLED);
+        order.getDetails().add(detail5);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        lenient().when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(false);
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+
+        // Total should exclude CANCELLED line: 110,000 + 35,000 + 50,000 + 10,000 = 205,000
+        assertEquals(0, new BigDecimal("205000").compareTo(view.totalAmount()));
+        // Subtotal of CANCELLED line should still be shown
+        OrderLineView cancelledLine = view.lines().stream()
+                .filter(l -> l.cookingStatus() == CookingStatus.CANCELLED)
+                .findFirst().orElseThrow();
+        assertEquals(0, new BigDecimal("25000").compareTo(cancelledLine.subtotal()));
+        assertFalse(cancelledLine.canEdit());
+    }
+
+    /**
+     * After adding 1 Phở bò (55,000) to the order above, total should be 260,000.
+     */
+    @Test
+    void addItemToOrder_withCancelledLines_totalExcludesCancelled() {
+        Order order = createOpenOrder();
+        order.setTotalAmount(new BigDecimal("230000"));
+
+        // Phở bò 2 x 55,000 (PENDING)
+        OrderDetail detail1 = new OrderDetail();
+        detail1.setId(1);
+        detail1.setOrder(order);
+        detail1.setQuantity(2);
+        detail1.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail1.setItemNameAtOrder("Phở bò");
+        detail1.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail1);
+
+        // Gỏi cuốn 1 x 35,000 (PREPARING)
+        OrderDetail detail2 = new OrderDetail();
+        detail2.setId(2);
+        detail2.setOrder(order);
+        detail2.setQuantity(1);
+        detail2.setUnitPriceAtOrder(new BigDecimal("35000"));
+        detail2.setItemNameAtOrder("Gỏi cuốn");
+        detail2.setCookingStatus(CookingStatus.PREPARING);
+        order.getDetails().add(detail2);
+
+        // Cơm gà 1 x 50,000 (READY)
+        OrderDetail detail3 = new OrderDetail();
+        detail3.setId(3);
+        detail3.setOrder(order);
+        detail3.setQuantity(1);
+        detail3.setUnitPriceAtOrder(new BigDecimal("50000"));
+        detail3.setItemNameAtOrder("Cơm gà");
+        detail3.setCookingStatus(CookingStatus.READY);
+        order.getDetails().add(detail3);
+
+        // Trà đá 2 x 5,000 (SERVED)
+        OrderDetail detail4 = new OrderDetail();
+        detail4.setId(4);
+        detail4.setOrder(order);
+        detail4.setQuantity(2);
+        detail4.setUnitPriceAtOrder(new BigDecimal("5000"));
+        detail4.setItemNameAtOrder("Trà đá");
+        detail4.setCookingStatus(CookingStatus.SERVED);
+        order.getDetails().add(detail4);
+
+        // Cà phê sữa 1 x 25,000 (CANCELLED)
+        OrderDetail detail5 = new OrderDetail();
+        detail5.setId(5);
+        detail5.setOrder(order);
+        detail5.setQuantity(1);
+        detail5.setUnitPriceAtOrder(new BigDecimal("25000"));
+        detail5.setItemNameAtOrder("Cà phê sữa");
+        detail5.setCookingStatus(CookingStatus.CANCELLED);
+        order.getDetails().add(detail5);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+
+        MenuItem newItem = new MenuItem();
+        newItem.setId(1);
+        newItem.setItemName("Phở bò");
+        newItem.setPrice(new BigDecimal("55000"));
+        newItem.setIsAvailable(true);
+        when(menuItemRepository.findById(1)).thenReturn(Optional.of(newItem));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderLine line = new OrderLine(1, 1);
+        Order result = orderService.addItemToOrder(1, List.of(line));
+
+        // 205,000 + 55,000 = 260,000 (CANCELLED still excluded)
+        assertEquals(0, new BigDecimal("260000").compareTo(result.getTotalAmount()));
+    }
+
+    /**
+     * Reduce quantity of a PENDING line: total should recalculate correctly, excluding CANCELLED.
+     */
+    @Test
+    void reduceItemQuantity_withCancelledLines_totalRecalculated() {
+        Order order = createOpenOrder();
+        order.setTotalAmount(new BigDecimal("230000"));
+
+        // Phở bò 2 x 55,000 (PENDING)
+        OrderDetail detail1 = new OrderDetail();
+        detail1.setId(1);
+        detail1.setOrder(order);
+        detail1.setQuantity(2);
+        detail1.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail1.setItemNameAtOrder("Phở bò");
+        detail1.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail1);
+
+        // Cà phê sữa 1 x 25,000 (CANCELLED)
+        OrderDetail detail5 = new OrderDetail();
+        detail5.setId(5);
+        detail5.setOrder(order);
+        detail5.setQuantity(1);
+        detail5.setUnitPriceAtOrder(new BigDecimal("25000"));
+        detail5.setItemNameAtOrder("Cà phê sữa");
+        detail5.setCookingStatus(CookingStatus.CANCELLED);
+        order.getDetails().add(detail5);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderDetail result = orderService.reduceItemQuantity(1, 1, 1);
+
+        assertEquals(1, result.getQuantity());
+        // 55,000 (1 Phở bò) — CANCELLED excluded
+        assertEquals(0, new BigDecimal("55000").compareTo(order.getTotalAmount()));
+    }
+
+    /**
+     * Cancel the last detail line of an order: total should become 0.
+     */
+    @Test
+    void cancelOrderDetail_lastLine_totalBecomesZero() {
+        Order order = createOpenOrder();
+        order.setTotalAmount(new BigDecimal("110000"));
+
+        OrderDetail detail = new OrderDetail();
+        detail.setId(1);
+        detail.setOrder(order);
+        detail.setQuantity(2);
+        detail.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail.setItemNameAtOrder("Phở bò");
+        detail.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderDetail result = orderService.cancelOrderDetail(1, 1);
+
+        assertEquals(CookingStatus.CANCELLED, result.getCookingStatus());
+        assertEquals(0, BigDecimal.ZERO.compareTo(order.getTotalAmount()));
+    }
+
+    /**
+     * Cancel the last non-cancelled line when there are already CANCELLED lines:
+     * total should be 0 (all lines are CANCELLED).
+     */
+    @Test
+    void cancelOrderDetail_lastNonCancelledLine_totalBecomesZero() {
+        Order order = createOpenOrder();
+        order.setTotalAmount(new BigDecimal("135000"));
+
+        // Phở bò 2 x 55,000 (PENDING)
+        OrderDetail detail1 = new OrderDetail();
+        detail1.setId(1);
+        detail1.setOrder(order);
+        detail1.setQuantity(2);
+        detail1.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail1.setItemNameAtOrder("Phở bò");
+        detail1.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail1);
+
+        // Gỏi cuốn 1 x 35,000 (CANCELLED)
+        OrderDetail detail2 = new OrderDetail();
+        detail2.setId(2);
+        detail2.setOrder(order);
+        detail2.setQuantity(1);
+        detail2.setUnitPriceAtOrder(new BigDecimal("35000"));
+        detail2.setItemNameAtOrder("Gỏi cuốn");
+        detail2.setCookingStatus(CookingStatus.CANCELLED);
+        order.getDetails().add(detail2);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        OrderDetail result = orderService.cancelOrderDetail(1, 1);
+
+        assertEquals(CookingStatus.CANCELLED, result.getCookingStatus());
+        // All lines are now CANCELLED: total = 0
+        assertEquals(0, BigDecimal.ZERO.compareTo(order.getTotalAmount()));
+    }
+
+    /**
+     * Create order: total should be calculated correctly from scratch.
+     */
+    @Test
+    void createOrder_totalAmount_calculatedCorrectly() {
+        OrderLine line1 = new OrderLine(1, 2); // Phở bò 2 x 55,000
+        OrderLine line2 = new OrderLine(2, 1); // Cà phê 1 x 25,000
+        List<OrderLine> lines = List.of(line1, line2);
+
+        MenuItem item2 = new MenuItem();
+        item2.setId(2);
+        item2.setItemName("Cà phê");
+        item2.setPrice(new BigDecimal("25000"));
+        item2.setIsAvailable(true);
+
+        when(tableRepository.findByIdWithPessimisticLock(1)).thenReturn(Optional.of(table));
+        when(orderRepository.existsOpenByTableId(1)).thenReturn(false);
+        when(menuItemRepository.findById(1)).thenReturn(Optional.of(menuItem));
+        when(menuItemRepository.findById(2)).thenReturn(Optional.of(item2));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tableRepository.save(any(RestaurantTable.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Order order = orderService.createOrder(1, null, lines);
+
+        // 2 x 55,000 + 1 x 25,000 = 135,000
+        assertEquals(0, new BigDecimal("135000").compareTo(order.getTotalAmount()));
+        assertEquals(2, order.getDetails().size());
+    }
+
+    /**
+     * getOrderDetail view DTO: verify total recalculated even when DB total is wrong.
+     */
+    @Test
+    void getOrderDetail_viewTotal_recalculatedRegardlessOfDbValue() {
+        Order order = createOpenOrder();
+        // DB total is intentionally wrong (includes CANCELLED)
+        order.setTotalAmount(new BigDecimal("160000"));
+
+        // Phở bò 2 x 55,000 (PENDING) = 110,000
+        OrderDetail detail1 = new OrderDetail();
+        detail1.setId(1);
+        detail1.setOrder(order);
+        detail1.setQuantity(2);
+        detail1.setUnitPriceAtOrder(new BigDecimal("55000"));
+        detail1.setItemNameAtOrder("Phở bò");
+        detail1.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail1);
+
+        // Cà phê 1 x 25,000 (CANCELLED) = 25,000 (excluded)
+        OrderDetail detail2 = new OrderDetail();
+        detail2.setId(2);
+        detail2.setOrder(order);
+        detail2.setQuantity(1);
+        detail2.setUnitPriceAtOrder(new BigDecimal("25000"));
+        detail2.setItemNameAtOrder("Cà phê");
+        detail2.setCookingStatus(CookingStatus.CANCELLED);
+        order.getDetails().add(detail2);
+
+        // Trà đá 1 x 5,000 (PENDING) = 5,000
+        OrderDetail detail3 = new OrderDetail();
+        detail3.setId(3);
+        detail3.setOrder(order);
+        detail3.setQuantity(1);
+        detail3.setUnitPriceAtOrder(new BigDecimal("5000"));
+        detail3.setItemNameAtOrder("Trà đá");
+        detail3.setCookingStatus(CookingStatus.PENDING);
+        order.getDetails().add(detail3);
+
+        when(orderRepository.findByIdWithDetails(1)).thenReturn(Optional.of(order));
+        when(paymentRepository.existsSuccessfulByOrderId(1)).thenReturn(false);
+
+        OrderDetailView view = orderService.getOrderDetail(1);
+
+        // Recalculated: 110,000 + 5,000 = 115,000 (not 160,000 from DB)
+        assertEquals(0, new BigDecimal("115000").compareTo(view.totalAmount()));
     }
 }

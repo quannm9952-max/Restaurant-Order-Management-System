@@ -1,52 +1,190 @@
-<!-- Figma frame: (chưa gán) -->
-<!-- TODO: Đối chiếu Figma khi có thiết kế -->
+<!-- Figma frame: Order Management / Waiter New Order -->
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Danh sách đơn - Quản lý nhà hàng</title>
+    <title>Order Management - Restaurant Order Management</title>
     <th:block th:replace="~{fragments/layout :: head}"></th:block>
 </head>
-<body>
-<nav th:replace="~{fragments/layout :: navbar}"></nav>
-<div th:replace="~{fragments/layout :: flashMessages}"></div>
+<body class="app-body">
 
-<div class="container-fluid mt-3">
-    <h2>Đơn hàng đang mở</h2>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
 
-    <table class="table table-striped table-hover">
-        <thead class="table-light">
-        <tr>
-            <th>STT</th>
-            <th>Mã đơn</th>
-            <th>Bàn</th>
-            <th>Ngày tạo</th>
-            <th>Người tạo</th>
-            <th>Số dòng món</th>
-            <th>Tổng tiền</th>
-            <th>Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="order, iter : ${orders}">
-            <td th:text="${iter.count}"></td>
-            <td>
-                <a th:href="@{/orders/{id}(id=${order.id})}" th:text="${order.id}"></a>
-            </td>
-            <td th:text="${order.tableName}"></td>
-            <td th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
-            <td th:text="${order.employeeName}"></td>
-            <td th:text="${order.itemCount}"></td>
-            <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-            <td>
-                <a th:href="@{/orders/{id}(id=${order.id})}" class="btn btn-sm btn-outline-primary">Chi tiết</a>
-            </td>
-        </tr>
-        <tr th:if="${#lists.isEmpty(orders)}">
-            <td colspan="8" class="text-center text-muted">Không có đơn hàng đang mở.</td>
-        </tr>
-        </tbody>
-    </table>
+<div class="app-wrapper">
+    <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    <main class="app-content">
+        <div th:replace="~{fragments/layout :: flashMessages}"></div>
+
+        <!-- Page header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-heading">Restaurant Order Management</h1>
+                <p class="page-subheading">Select a table, add dishes and manage its dine-in order.</p>
+            </div>
+        </div>
+
+        <!-- 3-column layout -->
+        <div class="orders-management-layout">
+
+            <!-- LEFT COLUMN: Tables + Selected Table -->
+            <div class="orders-left-column">
+                <!-- Tables section -->
+                <div class="orders-section">
+                    <div class="orders-section-header">
+                        <h3 class="orders-section-title">Tables</h3>
+                        <span class="orders-section-count" th:text="${#lists.size(tables)} + ' total'">12 total</span>
+                    </div>
+
+                    <!-- Filter dropdown -->
+                    <div class="orders-table-filter">
+                        <select class="form-select form-select-sm" id="tableFilter" onchange="filterTables(this.value)">
+                            <option value="ALL" th:selected="${filterStatus == null or filterStatus == 'ALL'}">All tables</option>
+                            <option value="AVAILABLE" th:selected="${filterStatus == 'AVAILABLE'}">Available</option>
+                            <option value="OCCUPIED" th:selected="${filterStatus == 'OCCUPIED'}">Occupied</option>
+                            <option value="OUT_OF_SERVICE" th:selected="${filterStatus == 'OUT_OF_SERVICE'}">OutOfService</option>
+                        </select>
+                    </div>
+
+                    <!-- Tables grid -->
+                    <div class="orders-tables-grid">
+                        <div th:each="table : ${tables}"
+                             class="orders-table-card"
+                             th:classappend="${table.id == selectedTable.id} ? ' orders-table-card--selected'"
+                             th:attr="data-status=${table.status.name()}, data-id=${table.id}"
+                             th:data-table-name="${table.tableName}"
+                             th:data-capacity="${table.capacity}"
+                             th:data-order-id="${table.currentOrderId}"
+                             th:data-order-code="${table.orderCode}"
+                             onclick="selectTable(this)"
+                             role="button"
+                             tabindex="0">
+                            <div class="orders-table-card-name" th:text="${table.tableName}"></div>
+                            <div class="orders-table-card-status">
+                                <span class="tab-dot"
+                                      th:classappend="${table.status.name() == 'AVAILABLE'} ? ' tab-dot--green' : (${table.status.name() == 'OCCUPIED'} ? ' tab-dot--orange' : ' tab-dot--gray')"></span>
+                                <span th:text="${table.status.name()}"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Table detail -->
+                <div class="orders-section orders-selected-table">
+                    <h3 class="orders-section-title">SELECTED TABLE</h3>
+                    <div class="orders-selected-table-name" id="selectedTableName">-</div>
+                    <div class="orders-selected-table-status" id="selectedTableStatus">
+                        <span class="tab-dot" id="selectedTableDot"></span>
+                        <span id="selectedTableStatusText">-</span>
+                    </div>
+
+                    <div class="orders-current-open-order">
+                        <div class="orders-current-open-label">CURRENT OPEN ORDER</div>
+                        <div id="selectedTableOrderInfo">
+                            <span class="text-muted">No Open order</span>
+                        </div>
+                    </div>
+                    <div class="orders-selected-table-note">
+                        One Open order maximum.<br>
+                        This table is eligible for a new order.
+                    </div>
+                </div>
+            </div>
+
+            <!-- MIDDLE COLUMN: Food Menu -->
+            <div class="orders-middle-column">
+                <div class="orders-section">
+                    <div class="orders-section-header">
+                        <h3 class="orders-section-title">Food menu</h3>
+                        <span class="orders-section-count" id="menuItemCount">0 items · Current prices in USD</span>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="orders-menu-search">
+                        <i class="bi bi-search"></i>
+                        <input type="text" class="form-control" placeholder="Search menu items..." id="menuSearch" oninput="filterMenuItems(this.value)">
+                    </div>
+
+                    <!-- Category tabs -->
+                    <div class="orders-category-tabs" id="categoryTabs">
+                        <button class="orders-category-tab active" data-category="ALL" onclick="selectCategory('ALL', this)">
+                            All Items
+                        </button>
+                        <!-- Categories will be populated by JS -->
+                    </div>
+
+                    <!-- Menu items grid -->
+                    <div class="orders-menu-grid" id="menuGrid">
+                        <!-- Menu items will be rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Current Order -->
+            <div class="orders-right-column">
+                <div class="orders-section orders-current-order-section">
+                    <div class="orders-section-header">
+                        <h3 class="orders-section-title">Current order</h3>
+                        <div class="orders-table-badge" id="ordersTableBadge">
+                            <span>Table</span>
+                            <span class="orders-table-badge-name" id="ordersTableBadgeName">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Order state -->
+                    <div class="orders-order-state" id="ordersOrderState">
+                        <div class="orders-order-state-label">New order</div>
+                        <div class="orders-order-state-note">Order ID is assigned after creation</div>
+                    </div>
+
+                    <!-- Order lines -->
+                    <div class="orders-order-lines" id="ordersOrderLines">
+                        <!-- Order lines will be rendered by JS -->
+                    </div>
+
+                    <!-- Price note -->
+                    <div class="orders-price-note">
+                        <i class="bi bi-info-circle"></i>
+                        Prices are saved when you create the order.<br>
+                        Creating it sets this table to Occupied.
+                    </div>
+
+                    <!-- Order total -->
+                    <div class="orders-order-total">
+                        <div class="orders-order-total-label">Order total</div>
+                        <div class="orders-order-total-amount" id="ordersOrderTotal">$0.00</div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="orders-action-buttons">
+                        <button class="btn-orders-primary" id="btnCreateOrder" onclick="createOrder()">
+                            Create Order
+                        </button>
+                        <button class="btn-orders-secondary" id="btnUpdateOrder" disabled>
+                            Update Order
+                        </button>
+                        <button class="btn-orders-secondary" id="btnCancelOrder" disabled>
+                            Cancel Order
+                        </button>
+                        <a class="btn-orders-secondary" id="btnViewDetails" href="#" disabled>
+                            View Details
+                        </a>
+                    </div>
+
+                    <div class="orders-footer-note">
+                        Create an order before using the other actions.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
+
+<!-- Hidden data for JS -->
+<script th:inline="javascript">
+    var MENU_ITEMS_DATA = /*[[${availableItems}]]*/ [];
+    var SELECTED_TABLE_DATA = /*[[${selectedTable}]]*/ null;
+    var TABLES_DATA = /*[[${tables}]]*/ [];
+</script>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>

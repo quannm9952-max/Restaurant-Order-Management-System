@@ -1,17 +1,25 @@
 package com.example.restaurantmanagement.services.table.impl;
 
+import com.example.restaurantmanagement.dto.table.CreateTableForm;
+import com.example.restaurantmanagement.dto.table.EditTableForm;
 import com.example.restaurantmanagement.dto.table.TableView;
+import com.example.restaurantmanagement.entities.Employee;
 import com.example.restaurantmanagement.entities.RestaurantTable;
+import com.example.restaurantmanagement.entities.enums.Role;
 import com.example.restaurantmanagement.entities.enums.TableStatus;
 import com.example.restaurantmanagement.exeptions.BusinessException;
 import com.example.restaurantmanagement.exeptions.NotFoundException;
 import com.example.restaurantmanagement.reponsitories.OrderRepository;
 import com.example.restaurantmanagement.reponsitories.TableRepository;
+import com.example.restaurantmanagement.services.employee.ICurrentEmployeeService;
 import com.example.restaurantmanagement.services.table.ITableService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing restaurant tables (UC04).
@@ -22,10 +30,13 @@ public class TableServiceImpl implements ITableService {
 
     private final TableRepository tableRepository;
     private final OrderRepository orderRepository;
+    private final ICurrentEmployeeService currentEmployeeService;
 
-    public TableServiceImpl(TableRepository tableRepository, OrderRepository orderRepository) {
+    public TableServiceImpl(TableRepository tableRepository, OrderRepository orderRepository,
+                            ICurrentEmployeeService currentEmployeeService) {
         this.tableRepository = tableRepository;
         this.orderRepository = orderRepository;
+        this.currentEmployeeService = currentEmployeeService;
     }
 
     /**
@@ -112,6 +123,20 @@ public class TableServiceImpl implements ITableService {
         return orderRepository.existsOpenByTableId(tableId);
     }
 
+    /**
+     * Count tables by status for filter tabs display.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> countByStatus() {
+        List<RestaurantTable> all = tableRepository.findAll();
+        return all.stream()
+                .collect(Collectors.groupingBy(
+                        t -> t.getStatus().name(),
+                        Collectors.counting()
+                ));
+    }
+
     // ==================== Entity to View DTO mapping ====================
 
     private TableView toTableView(RestaurantTable table) {
@@ -119,6 +144,21 @@ public class TableServiceImpl implements ITableService {
         boolean hasOpen = currentOrderId != null;
         boolean canCreateOrder = table.getStatus() == TableStatus.AVAILABLE && !hasOpen;
         boolean canChangeStatus = !hasOpen && table.getStatus() != TableStatus.OCCUPIED;
+        String orderCode = (currentOrderId != null)
+                ? String.format("ORD-%04d", currentOrderId)
+                : null;
+
+        // Determine current user role for permission flags
+        boolean isManager = false;
+        try {
+            Employee emp = currentEmployeeService.getCurrentEmployee();
+            isManager = emp.getAccount().getRole() == Role.MANAGER;
+        } catch (Exception ignored) {
+            // If we can't determine the role, default to false
+        }
+
+        boolean canAddTable = isManager;
+        boolean canEditTable = isManager;
 
         return new TableView(
                 table.getId(),
@@ -126,8 +166,89 @@ public class TableServiceImpl implements ITableService {
                 table.getCapacity(),
                 table.getStatus(),
                 currentOrderId,
+                orderCode,
                 canCreateOrder,
-                canChangeStatus
+                canChangeStatus,
+                canAddTable,
+                canEditTable
         );
+    }
+
+    // ==================== Add / Edit Table (MANAGER only) ====================
+
+    /**
+     * Check if the current employee is a MANAGER.
+     * // TODO(auth): Replace with real auth-based role check when TV1 is merged.
+     */
+    private void checkManagerRole() {
+        Employee emp = currentEmployeeService.getCurrentEmployee();
+        if (emp.getAccount().getRole() != Role.MANAGER) {
+            throw new BusinessException("Bạn không có quyền thực hiện thao tác này.");
+        }
+    }
+
+    @Override
+    @Transactional
+    public RestaurantTable addTable(CreateTableForm form) {
+        checkManagerRole();
+
+        String name = form.tableName().trim();
+        if (name.isBlank()) {
+            throw new BusinessException("Tên bàn không được để trống.");
+        }
+        if (name.length() > 50) {
+            throw new BusinessException("Tên bàn tối đa 50 ký tự.");
+        }
+        if (form.capacity() == null || form.capacity() < 1) {
+            throw new BusinessException("Sức chứa phải lớn hơn 0.");
+        }
+        if (form.capacity() > 200) {
+            throw new BusinessException("Sức chứa tối đa 200 chỗ.");
+        }
+
+        // Check duplicate name (case-insensitive)
+        Optional<RestaurantTable> existing = tableRepository.findByTableNameIgnoreCase(name);
+        if (existing.isPresent()) {
+            throw new BusinessException("Tên bàn '" + name + "' đã tồn tại.");
+        }
+
+        RestaurantTable table = new RestaurantTable();
+        table.setTableName(name);
+        table.setCapacity(form.capacity());
+        table.setStatus(TableStatus.AVAILABLE);
+        return tableRepository.save(table);
+    }
+
+    @Override
+    @Transactional
+    public RestaurantTable editTable(Integer id, EditTableForm form) {
+        checkManagerRole();
+
+        RestaurantTable table = tableRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy bàn với mã: " + id));
+
+        String name = form.tableName().trim();
+        if (name.isBlank()) {
+            throw new BusinessException("Tên bàn không được để trống.");
+        }
+        if (name.length() > 50) {
+            throw new BusinessException("Tên bàn tối đa 50 ký tự.");
+        }
+        if (form.capacity() == null || form.capacity() < 1) {
+            throw new BusinessException("Sức chứa phải lớn hơn 0.");
+        }
+        if (form.capacity() > 200) {
+            throw new BusinessException("Sức chứa tối đa 200 chỗ.");
+        }
+
+        // Check duplicate name excluding self (case-insensitive)
+        Optional<RestaurantTable> existing = tableRepository.findByTableNameIgnoreCaseAndIdNot(name, id);
+        if (existing.isPresent()) {
+            throw new BusinessException("Tên bàn '" + name + "' đã tồn tại.");
+        }
+
+        table.setTableName(name);
+        table.setCapacity(form.capacity());
+        return tableRepository.save(table);
     }
 }
