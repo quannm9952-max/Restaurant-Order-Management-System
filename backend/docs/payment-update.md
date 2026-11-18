@@ -2,6 +2,24 @@
 
 Ngày bàn giao: 18/11/2026.
 
+## Cập nhật: chỉnh số lượng và khóa bill (18/11/2026)
+
+Cashier sửa số lượng nguyên dương của các dòng Served trước khi Generate
+Bill; đơn giá giữ theo Order_Detail, dòng Cancelled không chỉnh và không tính
+tiền. Preview cập nhật ngay; Generate Bill lưu toàn bộ số lượng, tổng Orders
+và Invoice cùng một transaction. Khóa Orders tuần tự hóa các yêu cầu cạnh
+tranh. Bill đã có thì cả Cashier và Waiter không thay đổi được đơn; trạng
+thái khóa đọc từ database nên giữ khi refresh/đổi thiết bị.
+
+Phần nhập phương thức/tiền nhận và xác nhận chỉ mở sau khi Generate Bill
+thành công. Backend từ chối thanh toán chưa có bill hoặc tổng khác bill đã
+lưu. Thanh toán thành công cập nhật Payment/Orders/Table trong transaction,
+sử dụng bill đã lưu; không tạo Invoice lần hai. Invoice chỉ được in sau
+Successful + Completed. Bill chưa thanh toán không làm tăng doanh thu.
+Không thêm bảng/cột, công nghệ hay migration; không chỉnh dữ liệu cũ.
+
+Các phần bên dưới là ghi nhận triển khai ở phiên bản trước cập nhật này.
+
 ## Chức năng đã triển khai
 
 - Giao dịch mới chỉ nhận mã `CASH` hoặc `BANK_TRANSFER`; không tự mặc định Cash khi thiếu phương thức.

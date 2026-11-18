@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import com.restaurant.dto.order.OrderLine;
 import com.restaurant.dto.payment.PaymentConfirmation;
+import com.restaurant.dto.payment.BillLineQuantity;
 import com.restaurant.dto.preparation.PreparationLine;
 import com.restaurant.dto.report.ReportModels.DateRange;
 import com.restaurant.dto.report.ReportModels.Grouping;
@@ -553,6 +554,11 @@ class PreparationIntegrationTest {
     for (var line : lines)
       preparation.confirmServed(orderId, line.detailId());
     role("CASHIER");
+    payments.generateBill(orderId,
+        lines.stream()
+            .map(line -> new BillLineQuantity(line.detailId().longValue(),
+                line.quantity()))
+            .toList());
     payments.confirmPayment(orderId,
         new PaymentConfirmation(paymentMethod, true, saved));
     assertThat(jdbc.queryForObject("SELECT status FROM Orders WHERE order_id=?",
@@ -701,9 +707,12 @@ class PreparationIntegrationTest {
     raceFixture(id, "READY");
     try {
       var outcomes = race("WAITER", () -> preparation.confirmServed(id, id),
-          "CASHIER",
-          () -> payments.confirmPayment(id, new PaymentConfirmation("CASH",
-              true, new BigDecimal("1000000.00"))));
+          "CASHIER", () -> {
+            payments.generateBill(id,
+                List.of(new BillLineQuantity((long) id, 1)));
+            payments.confirmPayment(id, new PaymentConfirmation("CASH", true,
+                new BigDecimal("1000000.00")));
+          });
       assertThat(outcomes.getFirst().success()).isTrue();
       if (!outcomes.get(1).success())
         assertThat(outcomes.get(1).error())

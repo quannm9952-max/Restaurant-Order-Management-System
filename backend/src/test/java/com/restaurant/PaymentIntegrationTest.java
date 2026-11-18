@@ -8,11 +8,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.restaurant.dto.payment.PaymentConfirmation;
+import com.restaurant.dto.payment.BillLineQuantity;
 import com.restaurant.dto.report.ReportModels.*;
 import com.restaurant.entity.enums.PaymentMethod;
 import com.restaurant.entity.enums.PaymentStatus;
 import com.restaurant.repository.CheckoutRepository;
 import com.restaurant.service.PaymentService;
+import com.restaurant.service.OrderService;
+import com.restaurant.dto.order.OrderLine;
 import com.restaurant.service.ReportService;
 import com.restaurant.service.HistoryService;
 import java.math.BigDecimal;
@@ -60,6 +63,8 @@ class PaymentIntegrationTest {
   @Autowired
   PaymentService payments;
   @Autowired
+  OrderService orders;
+  @Autowired
   ReportService reports;
   @Autowired
   HistoryService history;
@@ -96,7 +101,18 @@ class PaymentIntegrationTest {
         received == null ? null : new BigDecimal(received));
   }
 
+  private void generateBill(long id) {
+    payments.generateBill(id, jdbc.query(
+        "SELECT order_detail_id,quantity FROM Order_Detail WHERE order_id=? AND preparation_status<>'CANCELLED' ORDER BY order_detail_id",
+        (row, index) -> new BillLineQuantity(row.getLong(1), row.getInt(2)),
+        id));
+  }
+
   private void unpaid(long id, long table) {
+    unpaid(id, table, false);
+  }
+
+  private void unpaid(long id, long table, boolean generated) {
     assertThat(jdbc.queryForObject("SELECT status FROM Orders WHERE order_id=?",
         String.class, id)).isEqualTo("OPEN");
     assertThat(jdbc.queryForObject(
@@ -107,7 +123,7 @@ class PaymentIntegrationTest {
         .isZero();
     assertThat(jdbc.queryForObject(
         "SELECT COUNT(*) FROM Invoice WHERE order_id=?", Integer.class, id))
-        .isZero();
+        .isEqualTo(generated ? 1 : 0);
   }
 
   @ParameterizedTest
@@ -115,6 +131,7 @@ class PaymentIntegrationTest {
   void successfulPaymentUsesSavedAmountAndCanonicalMethodAndCreatesInvoice(
       String method) throws Exception {
     var old = jdbc.queryForList("SELECT * FROM Payment ORDER BY payment_id");
+    generateBill(1100);
     long id = payments.confirmPayment(1100,
         confirmed(method, method.equals("CASH") ? "500000.00" : null));
     assertThat(jdbc.queryForObject(
@@ -184,6 +201,7 @@ class PaymentIntegrationTest {
   @NullSource
   @ValueSource(strings = {"389999.99", "0", "-1", "390000.001", "10000000000"})
   void cashMustHaveSufficientValidTender(String received) throws Exception {
+    generateBill(1100);
     assertThatThrownBy(
         () -> payments.confirmPayment(1100, confirmed("CASH", received)))
         .isInstanceOf(IllegalArgumentException.class);
@@ -193,7 +211,7 @@ class PaymentIntegrationTest {
       request.param("amountReceived", received);
     mvc.perform(request).andExpect(redirectedUrl("/payments?orderId=1100"))
         .andExpect(flash().attributeExists("error"));
-    unpaid(1100, 9010);
+    unpaid(1100, 9010, true);
   }
 
   @Test
@@ -213,6 +231,7 @@ class PaymentIntegrationTest {
   @ValueSource(strings = {"CASH", "BANK_TRANSFER"})
   void verifiedHttpPaymentIgnoresForgedTotalsAndRendersInvoice(String method)
       throws Exception {
+    generateBill(1100);
     mvc.perform(post("/payments/1100/confirm").with(csrf())
         .param("paymentMethod", method).param("paymentVerified", "true")
         .param("amountReceived", "390000.00").param("totalAmount", "0.01"))
@@ -276,6 +295,178 @@ class PaymentIntegrationTest {
     role("CASHIER");
     assertThatThrownBy(() -> reports.report(RANGE, Grouping.DAY))
         .isInstanceOf(AccessDeniedException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, 3})
+  void generatingBillSavesReviewedQuantitiesAndLocksThemAcrossReloads(
+      int quantity) throws Exception {
+    jdbc.update("UPDATE Menu_item SET unit_price=1 WHERE item_id=9001");
+    mvc.perform(post("/payments/1100/bill").with(csrf())
+        .param("detailId", "4100").param("quantity", String.valueOf(quantity)))
+        .andExpect(redirectedUrl("/payments?orderId=1100"))
+        .andExpect(flash().attributeExists("success"));
+    var total = new BigDecimal("195000.00")
+        .multiply(BigDecimal.valueOf(quantity));
+    assertThat(jdbc.queryForObject(
+        "SELECT quantity FROM Order_Detail WHERE order_detail_id=4100",
+        Integer.class)).isEqualTo(quantity);
+    assertThat(jdbc.queryForObject(
+        "SELECT total_amount FROM Orders WHERE order_id=1100",
+        BigDecimal.class)).isEqualByComparingTo(total);
+    assertThat(jdbc.queryForObject(
+        "SELECT total_amount FROM Invoice WHERE order_id=1100",
+        BigDecimal.class)).isEqualByComparingTo(total);
+    unpaid(1100, 9010, true);
+    mvc.perform(get("/payments").param("orderId", "1100"))
+        .andExpect(status().isOk())
+        .andExpect(content().string(org.hamcrest.Matchers
+            .containsString("data-bill-generated=\"true\"")))
+        .andExpect(content().string(org.hamcrest.Matchers
+            .not(org.hamcrest.Matchers.containsString("data-bill-quantity"))));
+    role("CASHIER");
+    assertThatThrownBy(() -> payments.generateBill(1100,
+        List.of(new BillLineQuantity(4100L, 4))))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("locked");
+    assertThat(jdbc.queryForObject(
+        "SELECT quantity FROM Order_Detail WHERE order_detail_id=4100",
+        Integer.class)).isEqualTo(quantity);
+    assertThat(jdbc.queryForObject(
+        "SELECT COUNT(*) FROM Invoice WHERE order_id=1100", Integer.class))
+        .isEqualTo(1);
+    payments.confirmPayment(1100, confirmed("BANK_TRANSFER", null));
+    assertThat(jdbc.queryForObject(
+        "SELECT amount FROM Payment WHERE order_id=1100", BigDecimal.class))
+        .isEqualByComparingTo(total);
+  }
+
+  @Test
+  void confirmingPaymentCannotSkipBillGeneration() throws Exception {
+    mvc.perform(post("/payments/1100/confirm").with(csrf())
+        .param("paymentMethod", "BANK_TRANSFER")
+        .param("paymentVerified", "true"))
+        .andExpect(redirectedUrl("/payments?orderId=1100"))
+        .andExpect(flash().attribute("error",
+            org.hamcrest.Matchers.containsString("Generate the bill")));
+    unpaid(1100, 9010);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1, 2147483647})
+  void invalidOrOverflowingQuantitiesCannotChangeAnyBillData(int quantity) {
+    assertThatThrownBy(() -> payments.generateBill(1100,
+        List.of(new BillLineQuantity(4100L, quantity))))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(jdbc.queryForObject(
+        "SELECT quantity FROM Order_Detail WHERE order_detail_id=4100",
+        Integer.class)).isEqualTo(2);
+    assertThat(jdbc.queryForObject(
+        "SELECT total_amount FROM Orders WHERE order_id=1100",
+        BigDecimal.class)).isEqualByComparingTo("390000");
+    unpaid(1100, 9010);
+  }
+
+  @Test
+  void missingForeignDuplicateAndCancelledLineIdsCannotBeSubmitted() {
+    for (var lines : java.util.Arrays.<List<BillLineQuantity>>asList(null,
+        List.of(), List.of(new BillLineQuantity(9100L, 1)),
+        List.of(new BillLineQuantity(null, 1)),
+        List.of(new BillLineQuantity(4100L, null)), List.of(
+            new BillLineQuantity(4100L, 1), new BillLineQuantity(4100L, 2)))) {
+      assertThatThrownBy(() -> payments.generateBill(1100, lines))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+    unpaid(1100, 9010);
+  }
+
+  @Test
+  void cancelledItemsStayUnchangedAndExcludedFromTheGeneratedBill() {
+    jdbc.update(
+        "INSERT INTO Order_Detail(order_detail_id,order_id,item_id,quantity,unit_price_at_order,item_name_at_order,preparation_status) VALUES(9997,1100,9001,7,123,'TEST cancelled item','CANCELLED')");
+    payments.generateBill(1100, List.of(new BillLineQuantity(4100L, 1)));
+    assertThat(jdbc.queryForObject(
+        "SELECT total_amount FROM Invoice WHERE order_id=1100",
+        BigDecimal.class)).isEqualByComparingTo("195000");
+    assertThat(jdbc.queryForObject(
+        "SELECT quantity FROM Order_Detail WHERE order_detail_id=9997",
+        Integer.class)).isEqualTo(7);
+    assertThat(jdbc.queryForObject(
+        "SELECT preparation_status FROM Order_Detail WHERE order_detail_id=9997",
+        String.class)).isEqualTo("CANCELLED");
+  }
+
+  @Test
+  void waiterCannotChangeAnOrderAfterTheCashierGeneratesItsBill() {
+    generateBill(1100);
+    role("WAITER");
+    assertThat(orders.getOrderDetail(1100).canEdit()).isFalse();
+    assertThatThrownBy(
+        () -> orders.addItemToOrder(1100, List.of(new OrderLine(9001, 1))))
+        .isInstanceOf(com.restaurant.exception.BusinessException.class)
+        .hasMessageContaining("locked");
+    assertThatThrownBy(() -> orders.reduceItemQuantity(1100, 4100, 1))
+        .isInstanceOf(com.restaurant.exception.BusinessException.class)
+        .hasMessageContaining("locked");
+    assertThatThrownBy(() -> orders.cancelOrderDetail(1100, 4100))
+        .isInstanceOf(com.restaurant.exception.BusinessException.class)
+        .hasMessageContaining("locked");
+    assertThatThrownBy(() -> orders.cancelOrder(1100, "TEST cancellation"))
+        .isInstanceOf(com.restaurant.exception.BusinessException.class)
+        .hasMessageContaining("locked");
+    unpaid(1100, 9010, true);
+  }
+
+  @Test
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  void generationFailureRollsBackReviewedQuantitiesAndTotal() throws Exception {
+    doThrow(new DataAccessResourceFailureException("TEST private SQL error"))
+        .when(checkout).createInvoice(eq(1100L), any(BigDecimal.class));
+    mvc.perform(post("/payments/1100/bill").with(csrf())
+        .param("detailId", "4100").param("quantity", "1"))
+        .andExpect(redirectedUrl("/payments?orderId=1100"))
+        .andExpect(flash().attribute("error",
+            org.hamcrest.Matchers.containsString("Could not generate")));
+    assertThat(jdbc.queryForObject(
+        "SELECT quantity FROM Order_Detail WHERE order_detail_id=4100",
+        Integer.class)).isEqualTo(2);
+    assertThat(jdbc.queryForObject(
+        "SELECT total_amount FROM Orders WHERE order_id=1100",
+        BigDecimal.class)).isEqualByComparingTo("390000");
+    unpaid(1100, 9010);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"MANAGER", "WAITER", "CHEF"})
+  void billGenerationIsCashierOnlyAndRequiresCsrf(String otherRole)
+      throws Exception {
+    role(otherRole);
+    assertThatThrownBy(() -> payments.generateBill(1100,
+        List.of(new BillLineQuantity(4100L, 1))))
+        .isInstanceOf(AccessDeniedException.class);
+    mvc.perform(post("/payments/1100/bill")
+        .with(user("DEMO_FIXTURE_" + otherRole).roles(otherRole)).with(csrf())
+        .param("detailId", "4100").param("quantity", "1"))
+        .andExpect(status().isForbidden());
+    mvc.perform(post("/payments/1100/bill")
+        .with(user("DEMO_FIXTURE_CASHIER").roles("CASHIER"))
+        .param("detailId", "4100").param("quantity", "1"))
+        .andExpect(status().isForbidden());
+    unpaid(1100, 9010);
+  }
+
+  @Test
+  void unpaidGeneratedBillDoesNotCountAsRevenueOrExposeAPaidInvoice()
+      throws Exception {
+    var today = new DateRange(LocalDate.now(), LocalDate.now());
+    role("MANAGER");
+    var before = reports.report(today, Grouping.DAY).summary();
+    role("CASHIER");
+    generateBill(1100);
+    mvc.perform(get("/invoices/1100")).andExpect(redirectedUrl("/payments"));
+    role("MANAGER");
+    assertThat(reports.report(today, Grouping.DAY).summary()).isEqualTo(before);
+    unpaid(1100, 9010, true);
   }
 
   private void reportPayment(int id, String method, String amount,
@@ -423,22 +614,25 @@ class PaymentIntegrationTest {
 
   @Test
   @Transactional(propagation = Propagation.NOT_SUPPORTED)
-  void lateDatabaseFailureRollsBackEverythingAndShowsSafeRecoveryGuidance()
+  void lateDatabaseFailureRollsBackPaymentAndRetainsTheLockedBill()
       throws Exception {
-    doThrow(new DataAccessResourceFailureException(
-        "TEST internal database details")).when(checkout)
-        .createInvoice(eq(1100L), any(BigDecimal.class));
-    mvc.perform(post("/payments/1100/confirm").with(csrf())
-        .param("paymentMethod", "BANK_TRANSFER")
-        .param("paymentVerified", "true"))
-        .andExpect(redirectedUrl("/payments?orderId=1100"))
-        .andExpect(flash().attribute("error",
-            org.hamcrest.Matchers
-                .containsString("payment status before retrying")))
-        .andExpect(flash().attribute("error", org.hamcrest.Matchers
-            .not(org.hamcrest.Matchers.containsString("internal database"))));
-    unpaid(1100, 9010);
-
+    generateBill(1100);
+    try {
+      doThrow(new DataAccessResourceFailureException(
+          "TEST internal database details")).when(checkout).releaseTable(any());
+      mvc.perform(post("/payments/1100/confirm").with(csrf())
+          .param("paymentMethod", "BANK_TRANSFER")
+          .param("paymentVerified", "true"))
+          .andExpect(redirectedUrl("/payments?orderId=1100"))
+          .andExpect(flash().attribute("error",
+              org.hamcrest.Matchers
+                  .containsString("payment status before retrying")))
+          .andExpect(flash().attribute("error", org.hamcrest.Matchers
+              .not(org.hamcrest.Matchers.containsString("internal database"))));
+      unpaid(1100, 9010, true);
+    } finally {
+      jdbc.update("DELETE FROM Invoice WHERE order_id=1100");
+    }
   }
 
   @Test
@@ -455,6 +649,7 @@ class PaymentIntegrationTest {
     jdbc.update(
         "INSERT INTO Order_Detail(order_id,item_id,quantity,unit_price_at_order,item_name_at_order,preparation_status) VALUES(?,9001,2,19.50,'TEST race dish','SERVED')",
         id);
+    generateBill(id);
     var pool = Executors.newFixedThreadPool(2);
     var start = new CountDownLatch(1);
     try {

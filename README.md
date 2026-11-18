@@ -58,6 +58,15 @@ Sai thông tin báo `Incorrect username or password.`; chỉ khi đúng username
 và mật khẩu của tài khoản khóa mới báo `Your account has been locked.`
 Trường trống được nhắc bằng tiếng Anh ở giao diện và backend.
 
+Trong Payment & Invoice, thu ngân được tăng/giảm **số lượng nguyên từ 1**
+trên các dòng món đã Served khi đơn đủ điều kiện thanh toán. Tổng tiền xem
+trước cập nhật ngay theo đơn giá đã lưu lúc gọi món. Bấm **Generate Bill**
+để lưu số lượng và tạo bill trong cùng transaction; từ đó khóa mọi thay đổi
+đơn, kể cả tải lại trang hoặc mở ở thiết bị khác. Phần nhập và xác nhận thanh
+toán mở sau khi tạo bill. Bill chưa thanh toán không được tính doanh thu;
+Print Invoice chỉ mở sau khi thanh toán thành công. Không có thao tác mở khóa
+hoặc sửa lại bill đã tạo.
+
 Giao dịch mới chọn **Cash** hoặc **Bank Transfer**. Cashier phải đánh dấu
 `I have received and verified the payment.`; tiền mặt cần nhập Amount Received
 đủ tổng hóa đơn và giao diện tính Change Amount. Chuyển khoản dùng bảng QR

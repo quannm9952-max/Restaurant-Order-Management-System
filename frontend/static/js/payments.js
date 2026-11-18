@@ -40,14 +40,78 @@ document.addEventListener("DOMContentLoaded", () => {
     return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
   };
   const total = parseAmount(bill.dataset.total);
-  let generated = false;
+  const generated = bill.dataset.billGenerated === "true";
+  const canPay = generated && bill.dataset.paymentReady === "true";
+  const billForm = document.querySelector("[data-bill-form]");
+  const generate = document.querySelector("[data-generate-bill]");
+  const quantities = [...billForm.querySelectorAll("[data-bill-quantity]")];
+  const reviewQuantities = () => {
+    if (!quantities.length) return false;
+    let valid = true;
+    let amount = 0;
+    quantities.forEach((input) => {
+      const quantity = Number(input.value);
+      const unitPrice = parseAmount(input.dataset.unitPrice);
+      const lineTotal = quantity * unitPrice;
+      const lineValid =
+        /^\d+$/.test(input.value) &&
+        quantity >= 1 &&
+        quantity <= 2147483647 &&
+        unitPrice !== null &&
+        Number.isSafeInteger(lineTotal) &&
+        lineTotal <= 999999999999;
+      input.setCustomValidity(
+        lineValid
+          ? ""
+          : "Enter a whole quantity of at least 1 within the supported bill total.",
+      );
+      input.closest("tr").querySelector("[data-line-total]").textContent =
+        lineValid ? money.format(lineTotal / 100) : "—";
+      valid = valid && lineValid;
+      amount += lineTotal;
+    });
+    valid =
+      valid &&
+      amount > 0 &&
+      Number.isSafeInteger(amount) &&
+      amount <= 999999999999;
+    billForm.querySelector("[data-bill-total]").textContent = valid
+      ? money.format(amount / 100)
+      : "—";
+    billForm.querySelector("[data-bill-error]").hidden = valid;
+    generate.disabled = !valid;
+    return valid;
+  };
+  quantities.forEach((input) =>
+    input.addEventListener("input", reviewQuantities),
+  );
+  let generating = false;
+  billForm.addEventListener("submit", (event) => {
+    if (
+      generating ||
+      generated ||
+      !reviewQuantities() ||
+      !billForm.reportValidity()
+    ) {
+      event.preventDefault();
+      return;
+    }
+    generating = true;
+    generate.disabled = true;
+    generate.textContent = "Generating...";
+    quantities.forEach((input) => {
+      input.readOnly = true;
+    });
+  });
   let submitting = false;
   const update = () => {
     const isCash = method.value === "CASH";
     const isBank = method.value === "BANK_TRANSFER";
     const received = parseAmount(cash.value);
-    cash.disabled = !generated || !isCash;
-    cash.required = generated && isCash;
+    method.disabled = !canPay;
+    verified.disabled = !canPay;
+    cash.disabled = !canPay || !isCash;
+    cash.required = canPay && isCash;
     form.querySelectorAll("[data-cash-field]").forEach((field) => {
       field.hidden = !isCash;
     });
@@ -59,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
         total !== null &&
         received >= total &&
         received <= 999999999999);
-    process.disabled = !generated || !enough || !verified.checked || submitting;
+    process.disabled = !canPay || !enough || !verified.checked || submitting;
     confirm.disabled = process.disabled;
     error.hidden = !(generated && isCash && cash.value !== "" && !enough);
     form.querySelector("[data-cash-change]").value =
@@ -67,19 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ? money.format(Math.max(0, received - total) / 100)
         : "";
   };
-  form
-    .querySelector("[data-generate-bill]")
-    .addEventListener("click", (event) => {
-      if (bill.dataset.paymentReady !== "true") return;
-      generated = true;
-      verified.disabled = false;
-      event.currentTarget.disabled = true;
-      document.querySelector("[data-bill-state]").textContent =
-        "Bill generated";
-      form.querySelector("[data-payment-hint]").textContent =
-        "Select a method, collect the full payment and verify receipt before confirming.";
-      update();
-    });
   method.addEventListener("change", () => {
     verified.checked = false;
     update();

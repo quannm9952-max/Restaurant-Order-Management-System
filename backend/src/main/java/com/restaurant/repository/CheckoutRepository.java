@@ -14,9 +14,11 @@ import org.springframework.stereotype.Repository;
 public class CheckoutRepository extends JdbcRepositorySupport {
   private static final String ORDER = """
       SELECT o.order_id AS id,o.status,o.created_at,
-             t.table_name AS table_code,e.full_name AS waiter_name,o.table_id
+             t.table_name AS table_code,e.full_name AS waiter_name,o.table_id,
+             i.invoice_number,i.total_amount AS billed_amount
       FROM Orders o JOIN Restaurant_tables t ON t.table_id=o.table_id
       JOIN Employee e ON e.employee_id=o.employee_id
+      LEFT JOIN Invoice i ON i.order_id=o.order_id
       """;
   private static final String PAYMENT = """
       SELECT p.payment_id AS id,p.order_id,p.amount,p.payment_method,
@@ -90,6 +92,31 @@ public class CheckoutRepository extends JdbcRepositorySupport {
         "SELECT COUNT(*) FROM Payment "
             + "WHERE order_id=:id AND status='SUCCESSFUL'",
         Map.of("id", id)) > 0;
+  }
+
+  public boolean hasBill(long id) {
+    return count("SELECT COUNT(*) FROM Invoice WHERE order_id=:id",
+        Map.of("id", id)) > 0;
+  }
+
+  public void updateBillQuantity(long orderId, long detailId, int quantity) {
+    if (update(
+        "UPDATE Order_Detail SET quantity=:quantity "
+            + "WHERE order_id=:order AND order_detail_id=:detail "
+            + "AND preparation_status='SERVED'",
+        Map.of("quantity", quantity, "order", orderId, "detail",
+            detailId)) != 1)
+      throw new IllegalStateException(
+          "Order changed. Reload and review the bill.");
+  }
+
+  public void updateOrderTotal(long id, BigDecimal amount) {
+    if (update(
+        "UPDATE Orders SET total_amount=:amount "
+            + "WHERE order_id=:id AND status='OPEN'",
+        Map.of("id", id, "amount", amount)) != 1)
+      throw new IllegalStateException(
+          "Order changed. Reload and review the bill.");
   }
 
   public long insertPayment(long id, BigDecimal amount, String method,

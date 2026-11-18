@@ -1,3 +1,35 @@
+## Thu ngân sửa số lượng và khóa bill (18/11/2026)
+
+Docker verify bản cuối: **348 test, 0 failure, 0 error, 0 skipped**.
+Node syntax, Prettier check và git diff --check đạt. Không thêm bảng/cột
+hoặc migration; dùng Invoice làm mốc bill đã được tạo trong database.
+
+JUnit kiểm tra tăng/giảm số lượng, giữ đơn giá snapshot, khóa sau tải lại,
+chặn bỏ bước tạo bill, số lượng sai/tràn tổng, ID thiếu/trùng/khác đơn,
+dòng Cancelled, quyền Cashier/CSRF và chặn mọi sửa đơn từ Waiter. Khi tạo
+Invoice lỗi, số lượng/tổng đơn rollback; thanh toán lỗi rollback Payment,
+Order/Table và giữ bill đã khóa. Bill chưa trả không vào doanh thu và không
+mở trang hóa đơn Paid. Regression đặt món, bếp, phục vụ, báo cáo vẫn đạt.
+
+MySQL bản sao được khôi phục từ backup và khớp toàn bộ 9 bảng. Chrome thực
+hiện sửa từ 365.000 VND lên 645.000 VND, tạo bill và reload giữ khóa; tất cả
+endpoint sửa đơn của Waiter bị chặn. Cash nhận 700.000 VND trả 55.000 VND;
+Bank Transfer dùng tổng đã duyệt. Payment và Invoice khớp, chỉ một Invoice
+được lưu và không đổi thời điểm tạo bill khi trả tiền. Chỉ số doanh thu tăng
+sau Successful + Completed. Hai Cashier đồng thời tạo bill với số lượng
+khác nhau chỉ có một người thành công; không ghi đè hoặc tạo Invoice trùng.
+Khởi động lại app và đăng nhập phiên mới vẫn thấy bill khóa.
+
+16 bố cục 1440/820/390/320 px cho bill đang sửa, Cash sau tạo bill, Bank
+Transfer và hóa đơn đã trả; đã xem ảnh desktop/mobile, không lỗi JavaScript
+hoặc tràn toàn trang. Mọi thao tác tạo bill/thanh toán thử chỉ trên bản sao.
+Database chính giữ nguyên cả 9 bảng trong suốt kiểm thử.
+Sau triển khai Docker chính: 12 bố cục draft/hóa đơn đã trả/báo cáo tại
+4 kích thước đạt, bốn actor đăng nhập và mở đúng trang. Không gửi tạo bill
+hoặc thanh toán trên bản chính; đối chiếu đủ 9 bảng trước/sau không đổi.
+Trang login và JS/CSS công khai qua Cloudflare khớp mã nguồn; không gửi
+request có đăng nhập ra Cloudflare.
+
 ## Chuyển toàn bộ số tiền cũ sang VND ×10.000 (18/11/2026)
 
 Dữ liệu demo và fixture kiểm thử nhân riêng 5 cột tiền; giữ ID, số lượng,

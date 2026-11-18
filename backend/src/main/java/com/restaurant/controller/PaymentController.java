@@ -2,11 +2,14 @@ package com.restaurant.controller;
 
 import com.restaurant.exception.NotFoundException;
 import com.restaurant.dto.payment.PaymentConfirmation;
+import com.restaurant.dto.payment.BillLineQuantity;
 import java.math.BigDecimal;
 import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.TransactionException;
 import com.restaurant.service.PaymentService;
 import java.util.Map;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +62,38 @@ public class PaymentController {
       return ResponseEntity.internalServerError()
           .body(Map.of("error", "Unable to load details. Please try again."));
     }
+  }
+
+  @PostMapping("/payments/{orderId}/bill")
+  public String generateBill(@PathVariable long orderId,
+      @RequestParam(required = false) List<Long> detailId,
+      @RequestParam(required = false) List<Integer> quantity,
+      @RequestParam(defaultValue = "") String search,
+      RedirectAttributes flash) {
+    try {
+      if (detailId == null || quantity == null
+          || detailId.size() != quantity.size())
+        throw new IllegalArgumentException(
+            "Review all item quantities before generating the bill.");
+      service.generateBill(orderId,
+          IntStream.range(0, detailId.size())
+              .mapToObj(index -> new BillLineQuantity(detailId.get(index),
+                  quantity.get(index)))
+              .toList());
+      flash.addFlashAttribute("success",
+          "Bill generated. Quantities are locked. You can now collect and confirm payment.");
+    } catch (IllegalArgumentException | IllegalStateException
+        | com.restaurant.exception.BusinessException | NotFoundException ex) {
+      flash.addFlashAttribute("error", ex.getMessage());
+    } catch (DataAccessException | TransactionException ex) {
+      LOG.error("Bill generation failed; transaction rolled back", ex);
+      flash.addFlashAttribute("error",
+          "Could not generate the bill. Reload the order and check its bill status before retrying.");
+    }
+    flash.addAttribute("orderId", orderId);
+    if (!search.isBlank())
+      flash.addAttribute("search", search);
+    return "redirect:/payments";
   }
 
   /** Confirm payment with transaction lock and duplicate protection */

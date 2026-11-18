@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.restaurant.config.DemoAccounts;
 import com.restaurant.dto.order.OrderLine;
 import com.restaurant.dto.payment.PaymentConfirmation;
+import com.restaurant.dto.payment.BillLineQuantity;
 import com.restaurant.dto.report.ReportModels.*;
 import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
@@ -443,6 +444,7 @@ class SystemIntegrationTest {
   @Test
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
   void checkoutCreatesOnePaymentAndInvoiceAndReleasesTable() throws Exception {
+    payments.generateBill(1100, List.of(new BillLineQuantity(4100L, 2)));
     long id = payments.confirmPayment(1100,
         new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00")));
     assertThat(id).isPositive();
@@ -482,6 +484,7 @@ class SystemIntegrationTest {
   @Test
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
   void recordsFailedPaymentForAServedOrderWithoutClosingIt() {
+    payments.generateBill(1100, List.of(new BillLineQuantity(4100L, 2)));
     payments.recordFailedPayment(1100, "CASH");
     assertThat(jdbc.queryForObject(
         "SELECT status FROM Orders WHERE order_id=1100", String.class))
@@ -509,17 +512,16 @@ class SystemIntegrationTest {
   @Test
   @Transactional(propagation = Propagation.NOT_SUPPORTED)
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
-  void invoiceFailureRollsBackPaymentOrderAndTableTogether() {
+  void mismatchedGeneratedBillCannotBePaid() {
     long count = jdbc.queryForObject(
         "SELECT COUNT(*) FROM Payment WHERE order_id=1100", Long.class);
     jdbc.update(
         "INSERT INTO Invoice(order_id,invoice_number,issued_at,total_amount)"
-            + " VALUES(1100,'TEST-CONFLICT',CURRENT_TIMESTAMP,390000)");
+            + " VALUES(1100,'TEST-CONFLICT',CURRENT_TIMESTAMP,390001)");
     try {
       assertThatThrownBy(() -> payments.confirmPayment(1100,
           new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
-          .isInstanceOf(
-              org.springframework.dao.DataIntegrityViolationException.class);
+          .isInstanceOf(IllegalStateException.class);
       assertThat(jdbc.queryForObject(
           "SELECT COUNT(*) FROM Payment WHERE order_id=1100", Long.class))
           .isEqualTo(count);

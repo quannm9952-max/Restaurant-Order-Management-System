@@ -2,6 +2,7 @@ package com.restaurant.service;
 
 import com.restaurant.repository.CheckoutRepository;
 import com.restaurant.dto.payment.PaymentConfirmation;
+import com.restaurant.dto.payment.BillLineQuantity;
 import com.restaurant.entity.enums.PaymentMethod;
 import java.math.BigDecimal;
 import java.util.*;
@@ -49,10 +50,13 @@ public class PaymentService {
     order.put("served_items", active - unserved);
     order.put("unserved_items", unserved);
     order.put("unservedCount", unserved);
-    order.put("readyToPay",
-        "OPEN".equals(order.get("status")) && active > 0 && unserved == 0
-            && amount.signum() > 0
-            && !checkoutRepository.hasSuccessfulPayment(id));
+    boolean ready = "OPEN".equals(order.get("status")) && active > 0
+        && unserved == 0 && amount.signum() > 0
+        && !checkoutRepository.hasSuccessfulPayment(id);
+    boolean generated = order.get("invoice_number") != null;
+    order.put("readyToPay", ready);
+    order.put("billGenerated", generated);
+    order.put("canEditQuantities", ready && !generated);
     return order;
   }
 
@@ -74,6 +78,59 @@ public class PaymentService {
   }
 
   @Transactional
+  public void generateBill(long id, List<BillLineQuantity> quantities) {
+    payableOrder(id);
+    if (checkoutRepository.hasBill(id))
+      throw new IllegalStateException(
+          "Bill already generated. Quantities are locked.");
+    var active = checkoutRepository.lines(id).stream()
+        .filter(line -> !"CANCELLED".equals(line.get("status"))).toList();
+    if (quantities == null || quantities.size() != active.size())
+      throw new IllegalArgumentException(
+          "Order changed. Reload and review all item quantities.");
+    var reviewed = new HashMap<Long, Integer>();
+    for (var line : quantities) {
+      if (line == null || line.detailId() == null || line.quantity() == null
+          || line.quantity() < 1
+          || reviewed.put(line.detailId(), line.quantity()) != null)
+        throw new IllegalArgumentException(
+            "Enter a whole quantity of at least 1 for every item.");
+    }
+    BigDecimal total = BigDecimal.ZERO;
+    for (var line : active) {
+      long detailId = ((Number) line.get("id")).longValue();
+      Integer quantity = reviewed.get(detailId);
+      if (quantity == null)
+        throw new IllegalArgumentException(
+            "Order changed. Reload and review all item quantities.");
+      total = total.add(((BigDecimal) line.get("unit_price"))
+          .multiply(BigDecimal.valueOf(quantity)));
+    }
+    if (total.signum() <= 0
+        || total.compareTo(new BigDecimal("9999999999.99")) > 0)
+      throw new IllegalArgumentException(
+          "The bill total must be positive and within the supported amount.");
+    for (var line : active) {
+      long detailId = ((Number) line.get("id")).longValue();
+      int quantity = reviewed.get(detailId);
+      if (quantity != ((Number) line.get("quantity")).intValue())
+        checkoutRepository.updateBillQuantity(id, detailId, quantity);
+    }
+    checkoutRepository.updateOrderTotal(id, total);
+    checkoutRepository.createInvoice(id, total);
+  }
+
+  private void requireGeneratedBill(long id, BigDecimal amount) {
+    var order = checkoutRepository.order(id);
+    if (order.get("invoice_number") == null)
+      throw new IllegalStateException(
+          "Generate the bill before confirming payment.");
+    if (amount.compareTo((BigDecimal) order.get("billed_amount")) != 0)
+      throw new IllegalStateException(
+          "Order total no longer matches the generated bill.");
+  }
+
+  @Transactional
   public long confirmPayment(long id, PaymentConfirmation confirmation) {
     if (confirmation == null)
       throw new IllegalArgumentException("Enter payment details.");
@@ -84,6 +141,7 @@ public class PaymentService {
           "Confirm that you have received and verified the payment.");
     var locked = payableOrder(id);
     BigDecimal amount = (BigDecimal) locked.get("amount");
+    requireGeneratedBill(id, amount);
     if (method == PaymentMethod.CASH) {
       BigDecimal received = confirmation.amountReceived();
       if (received == null || received.signum() < 0
@@ -100,7 +158,6 @@ public class PaymentService {
     if (checkoutRepository.completeOrder(id, amount) != 1)
       throw new IllegalStateException("Order changed during checkout.");
     checkoutRepository.releaseTable(locked.get("table_id"));
-    checkoutRepository.createInvoice(id, amount);
     return paymentId;
   }
 
@@ -108,6 +165,7 @@ public class PaymentService {
   public long recordFailedPayment(long id, String paymentMethod) {
     PaymentMethod method = PaymentMethod.forPayment(paymentMethod);
     var locked = payableOrder(id);
+    requireGeneratedBill(id, (BigDecimal) locked.get("amount"));
     return checkoutRepository.insertPayment(id,
         (BigDecimal) locked.get("amount"), method.name(), false);
   }
