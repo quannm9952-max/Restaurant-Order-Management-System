@@ -425,23 +425,20 @@ class PaymentIntegrationTest {
   @Transactional(propagation = Propagation.NOT_SUPPORTED)
   void lateDatabaseFailureRollsBackEverythingAndShowsSafeRecoveryGuidance()
       throws Exception {
-    try {
-      doThrow(new DataAccessResourceFailureException(
-          "TEST internal database details")).when(checkout)
-          .createInvoice(eq(1100L), any(BigDecimal.class));
-      mvc.perform(post("/payments/1100/confirm").with(csrf())
-          .param("paymentMethod", "BANK_TRANSFER")
-          .param("paymentVerified", "true"))
-          .andExpect(redirectedUrl("/payments?orderId=1100"))
-          .andExpect(flash().attribute("error",
-              org.hamcrest.Matchers
-                  .containsString("payment status before retrying")))
-          .andExpect(flash().attribute("error", org.hamcrest.Matchers
-              .not(org.hamcrest.Matchers.containsString("internal database"))));
-      unpaid(1100, 9010);
-    } finally {
-      // No persisted fixture changes: rollback is the behavior under test.
-    }
+    doThrow(new DataAccessResourceFailureException(
+        "TEST internal database details")).when(checkout)
+        .createInvoice(eq(1100L), any(BigDecimal.class));
+    mvc.perform(post("/payments/1100/confirm").with(csrf())
+        .param("paymentMethod", "BANK_TRANSFER")
+        .param("paymentVerified", "true"))
+        .andExpect(redirectedUrl("/payments?orderId=1100"))
+        .andExpect(flash().attribute("error",
+            org.hamcrest.Matchers
+                .containsString("payment status before retrying")))
+        .andExpect(flash().attribute("error", org.hamcrest.Matchers
+            .not(org.hamcrest.Matchers.containsString("internal database"))));
+    unpaid(1100, 9010);
+
   }
 
   @Test

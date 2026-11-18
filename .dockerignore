@@ -12,3 +12,10 @@
 **/backups
 backend/docs
 uploads
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.tmp
+**/*.bak
+**/*.orig
+**/*.rej

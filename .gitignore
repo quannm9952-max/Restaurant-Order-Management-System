@@ -15,3 +15,12 @@ Thumbs.db
 **/application-local.properties
 database/backups/
 uploads/
+
+# Temporary tooling, editor backups and merge leftovers.
+**/__pycache__/
+*.pyc
+*.pyo
+*.tmp
+*.bak
+*.orig
+*.rej
