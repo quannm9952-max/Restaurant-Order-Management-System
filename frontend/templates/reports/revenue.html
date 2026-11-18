@@ -82,6 +82,81 @@
           ></small>
         </section>
       </div>
+      <div class="metrics method-metrics">
+        <section class="metric">
+          <span>Cash Revenue</span
+          ><img th:src="@{/images/icons/cash.svg}" alt="" />
+          <strong
+            id="cash-revenue"
+            th:text="${@money.format(report.cashRevenue())}"
+          ></strong>
+          <small>Successful Cash payments for completed orders</small>
+        </section>
+        <section class="metric">
+          <span>Bank Transfer Revenue</span
+          ><img th:src="@{/images/icons/cash.svg}" alt="" />
+          <strong
+            id="bank-transfer-revenue"
+            th:text="${@money.format(report.bankTransferRevenue())}"
+          ></strong>
+          <small>Successful Bank Transfer payments for completed orders</small>
+        </section>
+      </div>
+      <section
+        class="panel method-revenue-panel"
+        aria-labelledby="method-revenue-title"
+      >
+        <div class="panel-heading">
+          <div>
+            <h2 id="method-revenue-title">Revenue by Payment Method</h2>
+            <p>
+              Successful payments for completed orders in the selected date
+              range.
+            </p>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table records-table" data-method-revenue>
+            <thead>
+              <tr>
+                <th>Payment Method</th>
+                <th class="text-end">Transactions</th>
+                <th class="text-end">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                th:each="method : ${report.methods}"
+                th:attr="data-method=${method.method.name()}"
+              >
+                <th scope="row" th:text="${method.label()}"></th>
+                <td class="text-end" th:text="${method.transactions}"></td>
+                <td
+                  class="text-end"
+                  th:text="${@money.format(method.revenue)}"
+                ></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td
+                  class="text-end"
+                  th:text="${report.summary.successful}"
+                ></td>
+                <td
+                  class="text-end"
+                  th:text="${@money.format(report.summary.totalRevenue)}"
+                ></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="chart-note">
+          Unknown includes missing or unrecognized legacy methods, including
+          Card. Historical values remain unchanged in Payment History.
+        </p>
+      </section>
       <div class="report-grid">
         <section class="panel chart-panel">
           <div class="panel-heading">

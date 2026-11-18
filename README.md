@@ -58,6 +58,18 @@ Sai thông tin báo `Incorrect username or password.`; chỉ khi đúng username
 và mật khẩu của tài khoản khóa mới báo `Your account has been locked.`
 Trường trống được nhắc bằng tiếng Anh ở giao diện và backend.
 
+Giao dịch mới chọn **Cash** hoặc **Bank Transfer**. Cashier phải đánh dấu
+`I have received and verified the payment.`; tiền mặt cần nhập Amount Received
+đủ tổng hóa đơn và giao diện tính Change Amount. Chuyển khoản dùng bảng QR
+in sẵn ở quầy; Cashier tự kiểm tra tiền thực nhận trên tài khoản nhà hàng,
+sau đó mới xác nhận. Phần mềm không tạo/hiển thị QR hoặc tự xác nhận ngân hàng.
+
+Revenue Reports có thêm Cash Revenue, Bank Transfer Revenue và bảng tổng
+hợp theo phương thức. Giữ quy tắc **Successful + đơn Completed**. Unknown
+gồm phương thức trống/chưa phân loại và phương thức cũ ngoài hai nhóm như Card;
+lịch sử giữ nguyên giá trị cũ và cho lọc theo phương thức. Không đổi schema
+hoặc dữ liệu thanh toán cũ. Xem [chi tiết triển khai](backend/docs/payment-update.md).
+
 Thanh toán và xem/in hóa đơn thuộc Cashier. Manager theo dõi doanh thu,
 đơn hàng và lịch sử thanh toán qua các module báo cáo của Manager.
 

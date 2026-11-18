@@ -1,6 +1,10 @@
 package com.restaurant.controller;
 
 import com.restaurant.exception.NotFoundException;
+import com.restaurant.dto.payment.PaymentConfirmation;
+import java.math.BigDecimal;
+import org.springframework.dao.DataAccessException;
+import org.springframework.transaction.TransactionException;
 import com.restaurant.service.PaymentService;
 import java.util.List;
 import java.util.Map;
@@ -61,10 +65,13 @@ public class PaymentController {
   /** Confirm payment with transaction lock and duplicate protection */
   @PostMapping("/payments/{orderId}/confirm")
   public String confirmPayment(@PathVariable long orderId,
-      @RequestParam(defaultValue = "Cash") String paymentMethod,
+      @RequestParam(defaultValue = "") String paymentMethod,
+      @RequestParam(defaultValue = "false") boolean paymentVerified,
+      @RequestParam(required = false) BigDecimal amountReceived,
       RedirectAttributes redirectAttrs) {
     try {
-      long paymentId = service.payOrder(orderId, paymentMethod, true);
+      long paymentId = service.confirmPayment(orderId, new PaymentConfirmation(
+          paymentMethod, paymentVerified, amountReceived));
       redirectAttrs.addFlashAttribute("success",
           "Payment successfully recorded for Order #" + orderId + " (Txn #"
               + paymentId + ", method: " + paymentMethod
@@ -75,6 +82,13 @@ public class PaymentController {
         | IllegalStateException e) {
       redirectAttrs.addFlashAttribute("error",
           "Payment error for Order #" + orderId + ": " + e.getMessage());
+      redirectAttrs.addAttribute("orderId", orderId);
+      return "redirect:/payments";
+    } catch (DataAccessException | TransactionException ex) {
+      LOG.error("Payment confirmation failed; transaction rolled back", ex);
+      redirectAttrs.addFlashAttribute("error",
+          "Could not confirm payment. Check this order's payment status before retrying.");
+      redirectAttrs.addAttribute("orderId", orderId);
       return "redirect:/payments";
     }
   }
@@ -82,10 +96,10 @@ public class PaymentController {
   /** Record payment failure (Order remains Open, Table remains Occupied) */
   @PostMapping("/payments/{orderId}/fail")
   public String recordPaymentFailure(@PathVariable long orderId,
-      @RequestParam(defaultValue = "Cash") String paymentMethod,
+      @RequestParam(defaultValue = "") String paymentMethod,
       RedirectAttributes redirectAttrs) {
     try {
-      service.payOrder(orderId, paymentMethod, false);
+      service.recordFailedPayment(orderId, paymentMethod);
       redirectAttrs.addFlashAttribute("error",
           "Payment marked as failed for Order #" + orderId
               + ". Order remains in Open status.");

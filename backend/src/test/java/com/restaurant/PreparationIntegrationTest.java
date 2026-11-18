@@ -7,6 +7,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import com.restaurant.dto.order.OrderLine;
+import com.restaurant.dto.payment.PaymentConfirmation;
 import com.restaurant.dto.preparation.PreparationLine;
 import com.restaurant.dto.report.ReportModels.DateRange;
 import com.restaurant.dto.report.ReportModels.Grouping;
@@ -527,7 +528,7 @@ class PreparationIntegrationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"Cash", "Card", "Bank Transfer"})
+  @ValueSource(strings = {"CASH", "BANK_TRANSFER"})
   void completeOrderKitchenServingPaymentAndReportFlowUsesSavedPrices(
       String paymentMethod) {
     role("WAITER");
@@ -545,13 +546,15 @@ class PreparationIntegrationTest {
       preparation.markReady(orderId, line.detailId());
     }
     role("CASHIER");
-    assertThatThrownBy(() -> payments.payOrder(orderId, "Cash", true))
+    assertThatThrownBy(() -> payments.confirmPayment(orderId,
+        new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
         .isInstanceOf(IllegalStateException.class);
     role("WAITER");
     for (var line : lines)
       preparation.confirmServed(orderId, line.detailId());
     role("CASHIER");
-    payments.payOrder(orderId, paymentMethod, true);
+    payments.confirmPayment(orderId,
+        new PaymentConfirmation(paymentMethod, true, saved));
     assertThat(jdbc.queryForObject("SELECT status FROM Orders WHERE order_id=?",
         String.class, orderId)).isEqualTo("COMPLETED");
     assertThat(jdbc.queryForObject(
@@ -698,7 +701,9 @@ class PreparationIntegrationTest {
     raceFixture(id, "READY");
     try {
       var outcomes = race("WAITER", () -> preparation.confirmServed(id, id),
-          "CASHIER", () -> payments.payOrder(id, "Cash", true));
+          "CASHIER",
+          () -> payments.confirmPayment(id, new PaymentConfirmation("CASH",
+              true, new BigDecimal("1000000.00"))));
       assertThat(outcomes.getFirst().success()).isTrue();
       if (!outcomes.get(1).success())
         assertThat(outcomes.get(1).error())

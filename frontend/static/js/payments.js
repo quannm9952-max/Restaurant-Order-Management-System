@@ -20,60 +20,99 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const bill = document.querySelector("[data-payment-ready]");
   if (!bill) return;
-  const method = document.querySelector("[data-payment-method]");
-  const cash = document.querySelector("[data-cash-received]");
-  const process = document.querySelector("[data-process-payment]");
-  const error = document.querySelector("[data-payment-error]");
-  const total = Number(bill.dataset.total);
+  const form = document.querySelector("[data-payment-form]");
+  const method = form.querySelector("[data-payment-method]");
+  const cash = form.querySelector("[data-cash-received]");
+  const verified = form.querySelector("[data-payment-verified]");
+  const process = form.querySelector("[data-process-payment]");
+  const confirm = form.querySelector("[data-confirm-payment]");
+  const error = form.querySelector("[data-payment-error]");
+  const money = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+  const cents = (value) => {
+    if (!/^\d{1,10}(\.\d{1,2})?$/.test(value)) return null;
+    const [whole, fraction = ""] = value.split(".");
+    return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  };
+  const total = cents(bill.dataset.total);
   let generated = false;
+  let submitting = false;
   const update = () => {
-    cash.disabled = !generated || method.value !== "Cash";
+    const isCash = method.value === "CASH";
+    const isBank = method.value === "BANK_TRANSFER";
+    const received = cents(cash.value);
+    cash.disabled = !generated || !isCash;
+    cash.required = generated && isCash;
+    form.querySelectorAll("[data-cash-field]").forEach((field) => {
+      field.hidden = !isCash;
+    });
+    form.querySelector("[data-bank-transfer]").hidden = !isBank;
+    form
+      .querySelector(".payment-fields")
+      .classList.toggle("bank-transfer", isBank);
     const enough =
-      method.value !== "Cash" ||
-      (cash.value !== "" && Number(cash.value) >= total);
-    process.disabled = !generated || !enough;
-    error.hidden = !(
-      generated &&
-      method.value === "Cash" &&
-      cash.value !== "" &&
-      !enough
-    );
-    document.querySelector("[data-cash-change]").value =
-      method.value === "Cash" && cash.value !== ""
-        ? new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-          }).format(Math.max(0, Number(cash.value) - total))
+      isBank ||
+      (isCash &&
+        received !== null &&
+        total !== null &&
+        received >= total &&
+        received <= 999999999999);
+    process.disabled = !generated || !enough || !verified.checked || submitting;
+    confirm.disabled = process.disabled;
+    error.hidden = !(generated && isCash && cash.value !== "" && !enough);
+    form.querySelector("[data-cash-change]").value =
+      isCash && received !== null && total !== null
+        ? money.format(Math.max(0, received - total) / 100)
         : "";
   };
-  document
+  form
     .querySelector("[data-generate-bill]")
     .addEventListener("click", (event) => {
       if (bill.dataset.paymentReady !== "true") return;
       generated = true;
       method.disabled = false;
+      verified.disabled = false;
       event.currentTarget.disabled = true;
       document.querySelector("[data-bill-state]").textContent =
         "Bill generated";
-      document.querySelector("[data-payment-hint]").textContent =
-        "Record the payment collected at the restaurant.";
+      form.querySelector("[data-payment-hint]").textContent =
+        "Select a method, collect the full payment and verify receipt before confirming.";
       update();
     });
-  method.addEventListener("change", update);
-  cash.addEventListener("input", update);
+  method.addEventListener("change", () => {
+    verified.checked = false;
+    update();
+  });
+  cash.addEventListener("input", () => {
+    verified.checked = false;
+    update();
+  });
+  verified.addEventListener("change", update);
   process.addEventListener("click", () => {
+    update();
     if (process.disabled) return;
-    document.querySelector("[data-confirm-method]").textContent =
+    form.querySelector("[data-confirm-method]").textContent =
       `Payment method: ${method.options[method.selectedIndex].text}`;
+    const cashSummary = form.querySelector("[data-confirm-cash]");
+    cashSummary.hidden = method.value !== "CASH";
+    cashSummary.textContent =
+      method.value === "CASH"
+        ? `Amount Received: ${money.format(cents(cash.value) / 100)} | Change Amount: ${money.format((cents(cash.value) - total) / 100)}`
+        : "";
     document.getElementById("confirm-payment").showModal();
   });
-  document
-    .querySelector("[data-payment-form]")
-    .addEventListener("submit", (event) => {
-      if (process.disabled) {
-        event.preventDefault();
-        return;
-      }
-      document.querySelector("[data-confirm-payment]").disabled = true;
-    });
+  form.addEventListener("submit", (event) => {
+    update();
+    if (process.disabled || !form.reportValidity()) {
+      event.preventDefault();
+      return;
+    }
+    submitting = true;
+    process.disabled = true;
+    confirm.disabled = true;
+    confirm.textContent = "Confirming...";
+  });
+  update();
 });

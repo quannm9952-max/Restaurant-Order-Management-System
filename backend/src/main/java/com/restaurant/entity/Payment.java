@@ -33,8 +33,7 @@ public class Payment {
   private BigDecimal amount;
 
   @Size(max = 30)
-  @NotNull
-  @Column(name = "payment_method", nullable = false, length = 30)
+  @Column(name = "payment_method", length = 30)
   private String method;
 
   @Enumerated(EnumType.STRING)

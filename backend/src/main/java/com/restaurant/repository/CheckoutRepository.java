@@ -59,7 +59,10 @@ public class CheckoutRepository extends JdbcRepositorySupport {
                COALESCE(d.amount,0) AS amount,
                COALESCE(d.active_items,0) AS total_items,
                COALESCE(d.served_items,0) AS served_items,
-               COALESCE(d.unserved_items,0) AS unserved_items
+               COALESCE(d.unserved_items,0) AS unserved_items,
+               CASE WHEN EXISTS (SELECT 1 FROM Payment p
+                 WHERE p.order_id=o.order_id AND p.status='SUCCESSFUL')
+                 THEN 1 ELSE 0 END AS paid
         FROM Orders o JOIN Restaurant_tables t ON t.table_id=o.table_id
         JOIN Employee e ON e.employee_id=o.employee_id
         LEFT JOIN (

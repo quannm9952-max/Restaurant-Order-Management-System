@@ -1,6 +1,7 @@
 package com.restaurant.controller;
 
 import com.restaurant.entity.enums.PaymentStatus;
+import com.restaurant.entity.enums.PaymentMethod;
 
 import com.restaurant.dto.report.ReportModels.*;
 import com.restaurant.service.HistoryService;
@@ -27,15 +28,21 @@ public class PaymentHistoryController {
       @RequestParam(required = false) String to,
       @RequestParam(defaultValue = "") String q,
       @RequestParam(required = false) String status,
+      @RequestParam(defaultValue = "ALL") String method,
       @RequestParam(defaultValue = "0") int page, Model model) {
     DateRange range = filters.range(from, to);
     PaymentStatus selected = filters.status(status, PaymentStatus.class);
+    PaymentMethod selectedMethod = filters.status(method, PaymentMethod.class);
+    model.addAttribute("selectedMethod",
+        selectedMethod == null ? "ALL" : selectedMethod.name());
     model.addAttribute("range", range);
     model.addAttribute("q", q.trim());
     model.addAttribute("selectedStatus",
         selected == null ? "ALL" : selected.name());
-    model.addAttribute("result", monitoring.payments(range, q, selected, page));
-    model.addAttribute("counts", monitoring.paymentCounts(range, q));
+    model.addAttribute("result",
+        monitoring.payments(range, q, selected, selectedMethod, page));
+    model.addAttribute("counts",
+        monitoring.paymentCounts(range, q, selectedMethod));
     if (id != null)
       model.addAttribute("payment", monitoring.payment(id));
     model.addAttribute("section", "history");

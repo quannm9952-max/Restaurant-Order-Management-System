@@ -1,6 +1,8 @@
 package com.restaurant.service;
 
 import com.restaurant.repository.CheckoutRepository;
+import com.restaurant.dto.payment.PaymentConfirmation;
+import com.restaurant.entity.enums.PaymentMethod;
 import java.math.BigDecimal;
 import java.util.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,8 +49,10 @@ public class PaymentService {
     order.put("served_items", active - unserved);
     order.put("unserved_items", unserved);
     order.put("unservedCount", unserved);
-    order.put("readyToPay", "OPEN".equals(order.get("status")) && active > 0
-        && unserved == 0 && amount.signum() > 0);
+    order.put("readyToPay",
+        "OPEN".equals(order.get("status")) && active > 0 && unserved == 0
+            && amount.signum() > 0
+            && !checkoutRepository.hasSuccessfulPayment(id));
     return order;
   }
 
@@ -61,44 +65,75 @@ public class PaymentService {
       order.put("totalAmount", amount);
       order.put("total_amount", amount);
       order.put("unservedCount", unserved);
-      order.put("readyToPay", "OPEN".equals(order.get("status")) && active > 0
-          && unserved == 0 && amount.signum() > 0);
+      order.put("readyToPay",
+          "OPEN".equals(order.get("status")) && active > 0 && unserved == 0
+              && amount.signum() > 0
+              && ((Number) order.get("paid")).intValue() == 0);
     });
     return orders;
   }
 
   @Transactional
-  public long payOrder(long id, String paymentMethod, boolean success) {
+  public long confirmPayment(long id, PaymentConfirmation confirmation) {
+    if (confirmation == null)
+      throw new IllegalArgumentException("Enter payment details.");
+    PaymentMethod method = PaymentMethod
+        .forPayment(confirmation.paymentMethod());
+    if (!confirmation.paymentVerified())
+      throw new IllegalArgumentException(
+          "Confirm that you have received and verified the payment.");
+    var locked = payableOrder(id);
+    BigDecimal amount = (BigDecimal) locked.get("amount");
+    if (method == PaymentMethod.CASH) {
+      BigDecimal received = confirmation.amountReceived();
+      if (received == null || received.signum() < 0
+          || received.stripTrailingZeros().scale() > 2
+          || received.compareTo(new BigDecimal("9999999999.99")) > 0)
+        throw new IllegalArgumentException(
+            "Enter a valid Amount Received with at most two decimal places.");
+      if (received.compareTo(amount) < 0)
+        throw new IllegalArgumentException(
+            "Amount Received must cover the total amount.");
+    }
+    long paymentId = checkoutRepository.insertPayment(id, amount, method.name(),
+        true);
+    if (checkoutRepository.completeOrder(id, amount) != 1)
+      throw new IllegalStateException("Order changed during checkout.");
+    checkoutRepository.releaseTable(locked.get("table_id"));
+    checkoutRepository.createInvoice(id, amount);
+    return paymentId;
+  }
+
+  @Transactional
+  public long recordFailedPayment(long id, String paymentMethod) {
+    PaymentMethod method = PaymentMethod.forPayment(paymentMethod);
+    var locked = payableOrder(id);
+    return checkoutRepository.insertPayment(id,
+        (BigDecimal) locked.get("amount"), method.name(), false);
+  }
+
+  private Map<String, Object> payableOrder(long id) {
     var locked = checkoutRepository.lockOrder(id);
     if (!"OPEN".equals(locked.get("status")))
       throw new IllegalStateException("Only an OPEN order can be paid.");
     if (checkoutRepository.hasSuccessfulPayment(id))
-      throw new IllegalStateException("Order already paid.");
+      throw new IllegalStateException(
+          "Order already paid. Check its invoice before retrying.");
     var detail = orderDetailForPayment(id);
     if (((Number) detail.get("total_items")).longValue() == 0)
       throw new IllegalStateException("Order has no active items.");
     if (!Boolean.TRUE.equals(detail.get("readyToPay")))
       throw new IllegalStateException(
           "Every active item must be Served before payment.");
-    String method = paymentMethod == null ? "Cash" : paymentMethod.trim();
-    if (!Set.of("Cash", "Card", "Bank Transfer").contains(method))
-      throw new IllegalArgumentException("Choose Cash, Card or Bank Transfer.");
-    var amount = (BigDecimal) detail.get("totalAmount");
-    long paymentId = checkoutRepository.insertPayment(id, amount, method,
-        success);
-    if (success) {
-      if (checkoutRepository.completeOrder(id, amount) != 1) {
-        throw new IllegalStateException("Order changed during checkout.");
-      }
-      checkoutRepository.releaseTable(locked.get("table_id"));
-      checkoutRepository.createInvoice(id, amount);
-    }
-    return paymentId;
+    locked.put("amount", detail.get("totalAmount"));
+    return locked;
   }
 
   public Map<String, Object> invoiceData(long id) {
     var order = checkoutRepository.completedOrder(id);
     var payment = checkoutRepository.successfulPayment(id);
+    payment.put("methodLabel",
+        PaymentMethod.display((String) payment.get("payment_method")));
     var result = new LinkedHashMap<String, Object>();
     result.put("order", order);
     result.put("payment", payment);

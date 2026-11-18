@@ -162,34 +162,67 @@
                     class="form-select"
                     name="paymentMethod"
                     data-payment-method
+                    required
                     disabled
                   >
-                    <option value="Cash">Cash</option>
-                    <option value="Card">Card</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="">Select a payment method</option>
+                    <option value="CASH">Cash</option>
+                    <option value="BANK_TRANSFER">Bank Transfer</option>
                   </select></label
-                ><label
-                  >Cash received<input
+                ><label data-cash-field hidden
+                  >Amount Received<input
                     class="form-control"
                     type="number"
                     data-cash-received
+                    name="amountReceived"
                     step="0.01"
+                    max="9999999999.99"
                     min="0"
                     placeholder="&#8212;"
                     disabled /></label
-                ><label
-                  >Change<input
+                ><label data-cash-field hidden
+                  >Change Amount<input
                     class="form-control"
                     data-cash-change
                     readonly
                     placeholder="&#8212;"
                 /></label>
               </div>
+              <div
+                class="notice warning payment-transfer-guide"
+                data-bank-transfer
+                hidden
+              >
+                <strong>Use the printed bank QR at the counter.</strong>
+                <p class="tiny">
+                  Ask the customer to scan the fixed QR and transfer
+                  <b th:text="${@money.format(o.totalAmount)}"></b> with
+                  reference <b th:text="'ORD-' + ${o.id}"></b>.
+                </p>
+                <p class="tiny">
+                  Check the restaurant's bank account on your own phone. Verify
+                  the actual transaction, full amount and reference; resolve any
+                  difference before confirming. A customer screenshot alone is
+                  not proof of receipt.
+                </p>
+              </div>
+              <label class="payment-verification">
+                <input
+                  type="checkbox"
+                  name="paymentVerified"
+                  value="true"
+                  data-payment-verified
+                  required
+                  disabled
+                />
+                <span>I have received and verified the payment.</span>
+              </label>
               <p class="tiny muted" data-payment-hint>
                 Generate a bill before payment.
               </p>
               <p class="form-error" data-payment-error hidden>
-                Cash received must cover the total amount.
+                Enter a valid Amount Received that covers the total amount (up
+                to two decimal places).
               </p>
             </section>
             <div class="payment-actions">
@@ -245,6 +278,7 @@
                   ><strong th:text="${@money.format(o.totalAmount)}"></strong>
                 </div>
                 <p class="tiny muted" data-confirm-method></p>
+                <p class="tiny" data-confirm-cash hidden></p>
               </div>
               <div class="dialog-footer">
                 <button
@@ -275,8 +309,10 @@
               th:text="${o.readyToPay ? 'No Successful payment exists for this order. Generate Bill to enable payment.' : (o.status == 'COMPLETED' ? 'The order is closed and its table has been released.' : 'Payment requires an Open order with at least one item and all non-cancelled lines Served.')}"
             ></p>
           </div>
-          <p class="tiny muted mt-2" th:if="${user.role == 'Manager'}">
-            Manager view is read-only. A Cashier records payments.
+          <p class="tiny muted mt-2">
+            If confirmation is interrupted, reload this order and check its
+            payment status before retrying. Completed orders cannot be paid
+            again.
           </p>
         </section>
         <section

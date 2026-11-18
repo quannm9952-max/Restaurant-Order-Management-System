@@ -65,7 +65,8 @@ public class ReportService {
           value.amount(), height));
     }
     return new RevenueReport(range, effective, summary, points,
-        payments.recentSuccessful(range), ceiling);
+        payments.recentSuccessful(range), ceiling,
+        payments.revenueByMethod(range));
   }
 
   private BigDecimal chartCeiling(BigDecimal maximum) {

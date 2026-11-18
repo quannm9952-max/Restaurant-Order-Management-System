@@ -1,6 +1,9 @@
 package com.restaurant.repository;
 
 import com.restaurant.entity.enums.PaymentStatus;
+import com.restaurant.entity.enums.PaymentMethod;
+import java.math.BigDecimal;
+import java.util.EnumMap;
 
 import com.restaurant.entity.enums.OrderStatus;
 
@@ -32,6 +35,12 @@ public class PaymentReportRepository {
       + " OR CONCAT('ORD-', p.order_id) LIKE :query ESCAPE '!') ";
   private static final String INCLUDED = "p.status = 'SUCCESSFUL' "
       + "AND o.status = 'COMPLETED'";
+  private static final String METHOD_GROUP = """
+      CASE WHEN UPPER(TRIM(p.payment_method))='CASH' THEN 'CASH'
+           WHEN UPPER(TRIM(p.payment_method)) IN ('BANK_TRANSFER','BANK TRANSFER')
+             THEN 'BANK_TRANSFER'
+           ELSE 'UNKNOWN' END
+      """;
   private final NamedParameterJdbcTemplate jdbc;
 
   public PaymentReportRepository(NamedParameterJdbcTemplate jdbc) {
@@ -39,14 +48,15 @@ public class PaymentReportRepository {
   }
 
   public Page<PaymentRow> findPayments(DateRange range, String query,
-      PaymentStatus status, int page, int size) {
+      PaymentStatus status, PaymentMethod method, int page, int size) {
     var parameters = ReportParameters.range(range)
         .addValue("query", ReportParameters.literalSearch(query))
         .addValue("status", status == null ? null : status.name(),
             java.sql.Types.VARCHAR)
         .addValue("limit", size).addValue("offset", (long) page * size);
     String filter = RANGE + SEARCH
-        + " AND (:status IS NULL OR p.status = :status) ";
+        + " AND (:status IS NULL OR p.status = :status) "
+        + methodFilter(method, parameters);
     long total = jdbc.queryForObject("SELECT COUNT(*)" + FROM + filter,
         parameters, Long.class);
     List<PaymentRow> rows = jdbc.query(
@@ -56,15 +66,17 @@ public class PaymentReportRepository {
     return new Page<>(rows, total, page, size);
   }
 
-  public PaymentCounts counts(DateRange range, String query) {
+  public PaymentCounts counts(DateRange range, String query,
+      PaymentMethod method) {
+    var parameters = ReportParameters.range(range).addValue("query",
+        ReportParameters.literalSearch(query));
+    String methodFilter = methodFilter(method, parameters);
     return jdbc.queryForObject("""
         SELECT COUNT(CASE WHEN p.status = 'SUCCESSFUL' THEN 1 END) AS
         successful,
                COUNT(CASE WHEN p.status = 'PENDING' THEN 1 END) AS pending,
                COUNT(CASE WHEN p.status = 'FAILED' THEN 1 END) AS failed
-        """ + FROM + RANGE + SEARCH,
-        ReportParameters.range(range).addValue("query",
-            ReportParameters.literalSearch(query)),
+        """ + FROM + RANGE + SEARCH + methodFilter, parameters,
         (rs, row) -> new PaymentCounts(rs.getLong("successful"),
             rs.getLong("pending"), rs.getLong("failed")));
   }
@@ -97,6 +109,34 @@ public class PaymentReportRepository {
         (rs, row) -> new RevenueSummary(rs.getBigDecimal("revenue"),
             rs.getLong("successful"), rs.getLong("pending"),
             rs.getLong("failed"), rs.getLong("inconsistent")));
+  }
+
+  public List<MethodRevenue> revenueByMethod(DateRange range) {
+    var rows = jdbc.query(
+        "SELECT " + METHOD_GROUP + " AS method_group, "
+            + "COUNT(*) AS transactions, SUM(p.amount) AS revenue " + FROM
+            + RANGE + " AND " + INCLUDED + " GROUP BY " + METHOD_GROUP,
+        ReportParameters.range(range),
+        (rs, row) -> new MethodRevenue(
+            PaymentMethod.valueOf(rs.getString("method_group")),
+            rs.getLong("transactions"), rs.getBigDecimal("revenue")));
+    var grouped = new EnumMap<PaymentMethod, MethodRevenue>(
+        PaymentMethod.class);
+    rows.forEach(row -> grouped.put(row.method(), row));
+    return List
+        .of(PaymentMethod.CASH, PaymentMethod.BANK_TRANSFER,
+            PaymentMethod.UNKNOWN)
+        .stream().map(method -> grouped.getOrDefault(method,
+            new MethodRevenue(method, 0, BigDecimal.ZERO)))
+        .toList();
+  }
+
+  private String methodFilter(PaymentMethod method,
+      MapSqlParameterSource parameters) {
+    if (method == null)
+      return "";
+    parameters.addValue("method", method.name());
+    return " AND (" + METHOD_GROUP + ")=:method ";
   }
 
   public List<DailyRevenue> dailyRevenue(DateRange range) {

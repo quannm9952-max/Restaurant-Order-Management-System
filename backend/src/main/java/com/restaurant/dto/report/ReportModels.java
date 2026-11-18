@@ -1,6 +1,7 @@
 package com.restaurant.dto.report;
 
 import com.restaurant.entity.enums.PaymentStatus;
+import com.restaurant.entity.enums.PaymentMethod;
 
 import com.restaurant.entity.enums.OrderStatus;
 
@@ -143,6 +144,10 @@ public final class ReportModels {
       return label(status);
     }
 
+    public String methodLabel() {
+      return PaymentMethod.display(paymentMethod);
+    }
+
     public boolean includedInRevenue() {
       return status == PaymentStatus.SUCCESSFUL
           && orderStatus == OrderStatus.COMPLETED;
@@ -159,6 +164,13 @@ public final class ReportModels {
       long pending, long failed, long inconsistentSuccessful) {
     public long excluded() {
       return pending + failed + inconsistentSuccessful;
+    }
+  }
+
+  public record MethodRevenue(PaymentMethod method, long transactions,
+      BigDecimal revenue) {
+    public String label() {
+      return method.label();
     }
   }
 
@@ -179,10 +191,25 @@ public final class ReportModels {
 
   public record RevenueReport(DateRange range, Grouping grouping,
       RevenueSummary summary, List<ChartPoint> points,
-      List<PaymentRow> recentPayments, BigDecimal chartCeiling) {
+      List<PaymentRow> recentPayments, BigDecimal chartCeiling,
+      List<MethodRevenue> methods) {
     public RevenueReport {
       points = List.copyOf(points);
       recentPayments = List.copyOf(recentPayments);
+      methods = List.copyOf(methods);
+    }
+
+    public BigDecimal cashRevenue() {
+      return methodRevenue(PaymentMethod.CASH);
+    }
+
+    public BigDecimal bankTransferRevenue() {
+      return methodRevenue(PaymentMethod.BANK_TRANSFER);
+    }
+
+    private BigDecimal methodRevenue(PaymentMethod method) {
+      return methods.stream().filter(row -> row.method() == method)
+          .map(MethodRevenue::revenue).findFirst().orElse(BigDecimal.ZERO);
     }
 
     public List<BigDecimal> axisTicks() {

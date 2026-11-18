@@ -28,3 +28,11 @@ Xóa món/danh mục là cập nhật `is_active`; món bị xóa cũng có
 danh mục khi không còn món có `is_active=true`, kể cả món ngừng bán.
 Ảnh tải lên được lưu theo item_id trong volume `menu-images`, không thêm
 bảng/cột vào schema 9 bảng. Khi sao lưu hệ thống cần giữ cả database và ảnh.
+
+Thanh toán mới lưu `payment_method` là `CASH` hoặc `BANK_TRANSFER`; schema
+hiện có đã đủ, không cần SQL migration. Không backfill/đổi tên/gán Cash cho
+giao dịch cũ. Báo cáo nhận cả tên cũ `Cash`/`Bank Transfer`; NULL, trống và
+phương thức khác vào nhóm Unknown, còn lịch sử/hóa đơn giữ nhãn cũ.
+Ràng buộc `uq_one_successful_payment_per_order` và khóa Orders được tái sử
+dụng để chống hai thanh toán thành công. `check.sql` có truy vấn đối soát
+nhóm phương thức với cùng khoảng ngày và quy tắc Successful + Completed.

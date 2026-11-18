@@ -23,6 +23,34 @@
           th:value="${selectedStatus}"
         />
         <div th:replace="~{shared/reports :: dateRange(${range})}"></div>
+        <label class="group-control"
+          >Payment method
+          <select class="form-select" name="method" data-auto-submit>
+            <option value="ALL" th:selected="${selectedMethod == 'ALL'}">
+              All methods
+            </option>
+            <option value="CASH" th:selected="${selectedMethod == 'CASH'}">
+              Cash
+            </option>
+            <option
+              value="BANK_TRANSFER"
+              th:selected="${selectedMethod == 'BANK_TRANSFER'}"
+            >
+              Bank Transfer
+            </option>
+            <option
+              value="UNKNOWN"
+              th:selected="${selectedMethod == 'UNKNOWN'}"
+            >
+              Unknown / legacy
+            </option>
+          </select>
+        </label>
+        <noscript
+          ><button class="btn btn-primary" type="submit">
+            Apply filters
+          </button></noscript
+        >
         <span class="subtle ms-auto"
           >All records remain available for viewing</span
         >
@@ -32,24 +60,24 @@
           <nav class="status-tabs" aria-label="Payment status">
             <a
               th:classappend="${selectedStatus == 'ALL'} ? 'selected'"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q})}"
+              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},method=${selectedMethod})}"
               >All Payments <b th:text="${counts.total()}">0</b></a
             >
             <a
               th:classappend="${selectedStatus == 'SUCCESSFUL'} ? 'selected'"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status='SUCCESSFUL')}"
+              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status='SUCCESSFUL',method=${selectedMethod})}"
               ><i class="dot successful"></i>Successful
               <b th:text="${counts.successful}">0</b></a
             >
             <a
               th:classappend="${selectedStatus == 'PENDING'} ? 'selected'"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status='PENDING')}"
+              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status='PENDING',method=${selectedMethod})}"
               ><i class="dot pending"></i>Pending
               <b th:text="${counts.pending}">0</b></a
             >
             <a
               th:classappend="${selectedStatus == 'FAILED'} ? 'selected'"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status='FAILED')}"
+              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status='FAILED',method=${selectedMethod})}"
               ><i class="dot failed"></i>Failed
               <b th:text="${counts.failed}">0</b></a
             >
@@ -67,6 +95,10 @@
               type="hidden"
               name="status"
               th:value="${selectedStatus}"
+            /><input
+              type="hidden"
+              name="method"
+              th:value="${selectedMethod}"
             /><label class="visually-hidden" for="payment-search"
               >Search payment ID or order ID</label
             ><input
@@ -96,6 +128,7 @@
                 <th>PAYMENT ID</th>
                 <th>ORDER ID</th>
                 <th>PAYMENT DATE</th>
+                <th>PAYMENT METHOD</th>
                 <th class="text-end">AMOUNT</th>
                 <th>PAYMENT STATUS</th>
                 <th>ACTIONS</th>
@@ -119,6 +152,7 @@
                     th:text="${#temporals.format(payment.paymentTime,'HH:mm')}"
                   ></small>
                 </td>
+                <td th:text="${payment.methodLabel()}"></td>
                 <td class="text-end">
                   <strong th:text="${@money.format(payment.amount)}"></strong>
                 </td>
@@ -130,7 +164,7 @@
                 <td>
                   <a
                     class="btn button-soft action-button"
-                    th:href="@{/manager/payment-history/{id}(id=${payment.paymentId},from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number})}"
+                    th:href="@{/manager/payment-history/{id}(id=${payment.paymentId},from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number},method=${selectedMethod})}"
                     >View Payment Details</a
                   >
                 </td>
@@ -144,10 +178,12 @@
         >
           <span class="empty-symbol">⌕</span>
           <h3>No payments found</h3>
-          <p>No records match your selected dates, status and search.</p>
+          <p>
+            No records match your selected dates, method, status and search.
+          </p>
           <a
             class="btn btn-outline-secondary"
-            th:href="@{/manager/payment-history(from=${range.from},to=${range.to})}"
+            th:href="@{/manager/payment-history(from=${range.from},to=${range.to},method=${selectedMethod})}"
             >Clear search</a
           >
         </div>
@@ -160,7 +196,7 @@
               class="btn btn-outline-secondary"
               th:classappend="${!result.hasPrevious()} ? 'disabled'"
               th:attr="aria-disabled=${!result.hasPrevious()}"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number - 1})}"
+              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number - 1},method=${selectedMethod})}"
               >Previous</a
             ><span
               th:text="${result.number + 1} + ' of ' + ${result.pages()}"
@@ -169,7 +205,7 @@
               class="btn btn-outline-secondary"
               th:classappend="${!result.hasNext()} ? 'disabled'"
               th:attr="aria-disabled=${!result.hasNext()}"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number + 1})}"
+              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number + 1},method=${selectedMethod})}"
               >Next</a
             >
           </nav>
@@ -195,7 +231,7 @@
         ><a
           class="icon-button"
           aria-label="Close payment details"
-          th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number})}"
+          th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number},method=${selectedMethod})}"
           ><img th:src="@{/images/icons/close.svg}" alt=""
         /></a>
       </header>
@@ -241,7 +277,7 @@
           </div>
           <div>
             <dt>Payment method</dt>
-            <dd th:text="${payment.paymentMethod ?: 'Not recorded'}"></dd>
+            <dd th:text="${payment.methodLabel()}"></dd>
           </div>
           <div>
             <dt>Cashier</dt>
@@ -297,7 +333,7 @@
         ><a
           class="btn btn-outline-secondary"
           data-dialog-close
-          th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number})}"
+          th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number},method=${selectedMethod})}"
           >Close</a
         >
       </footer>

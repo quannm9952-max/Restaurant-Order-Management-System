@@ -1,6 +1,7 @@
 package com.restaurant.service;
 
 import com.restaurant.entity.enums.PaymentStatus;
+import com.restaurant.entity.enums.PaymentMethod;
 
 import com.restaurant.entity.enums.OrderStatus;
 
@@ -46,12 +47,22 @@ public class HistoryService {
 
   public Page<PaymentRow> payments(DateRange range, String query,
       PaymentStatus status, int page) {
-    return payments.findPayments(range, checkQuery(query), status,
+    return payments(range, query, status, null, page);
+  }
+
+  public Page<PaymentRow> payments(DateRange range, String query,
+      PaymentStatus status, PaymentMethod method, int page) {
+    return payments.findPayments(range, checkQuery(query), status, method,
         checkPage(page), PAGE_SIZE);
   }
 
   public PaymentCounts paymentCounts(DateRange range, String query) {
-    return payments.counts(range, checkQuery(query));
+    return paymentCounts(range, query, null);
+  }
+
+  public PaymentCounts paymentCounts(DateRange range, String query,
+      PaymentMethod method) {
+    return payments.counts(range, checkQuery(query), method);
   }
 
   public PaymentRow payment(int id) {

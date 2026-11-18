@@ -1,3 +1,36 @@
+## Thanh toán xác nhận thủ công và doanh thu theo phương thức (18/11/2026)
+
+Docker verify: **332 test đạt, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**.
+PaymentIntegrationTest bổ sung 47 ca. Cập nhật regression của System và
+Preparation để dùng API có xác nhận đã nhận tiền; giao dịch mới chỉ CASH
+hoặc BANK_TRANSFER. Kiểm tra phương thức trống/sai, thiếu xác nhận, thiếu
+hoặc sai định dạng tiền mặt, giá lưu lúc đặt, món chưa Served, quyền/CSRF,
+đơn đã có Successful, hóa đơn, dữ liệu cũ nguyên vẹn, Unknown, bộ lọc và
+phân trang. Giữ quy tắc doanh thu Successful + Completed; có kiểm thử dòng
+Successful lệch trạng thái đơn vẫn ở lịch sử nhưng bị loại khỏi doanh thu.
+
+Project Docker/MySQL riêng kiểm tra trực tiếp hai luồng Cash/Bank Transfer,
+6 tình huống đầu vào sai, hai HTTP request đồng thời với hai phương thức,
+unique constraint MySQL và lỗi tạo Invoice sau khi Payment/Order/Table đã
+được cập nhật: toàn bộ thay đổi rollback. Đối chiếu tiền/số giao dịch từng
+nhóm với SQL, tổng nhóm bằng tổng doanh thu; 28 bản ghi thanh toán mẫu cũ
+giữ nguyên checksum theo từng dòng, gồm phương thức và thời gian.
+
+Chrome headless: **40 bố cục** ở 1440×900, 1180×820, 820×1180, 768×1024,
+844×390, 1024×768, 390×844 và 320×740. Bao gồm Cash, Bank Transfer, Revenue
+Reports, Payment History và chi tiết chỉ đọc. Thử chọn phương thức, nhập
+thiếu/đủ tiền, tính tiền thừa, checkbox, modal xác nhận, submit thật, hóa
+đơn/in ấn, hướng dẫn QR in sẵn, phân trang giữ phương thức và bộ lọc. Không
+lỗi JavaScript hoặc tràn ngang toàn trang; bảng rộng cuộn trong khung.
+Đã xem ảnh desktop/điện thoại, gồm thẻ doanh thu và bảng đối soát.
+
+Bản chính Docker: doanh thu từng nhóm khớp MySQL tại localhost, giao diện
+xác nhận/lịch sử/phân quyền đạt; đủ 9 bảng giữ nguyên checksum trước/sau.
+Ba asset payments.js/app.css/reports.css công khai qua Cloudflare khớp nguồn.
+Không truy cập payload tài chính có đăng nhập qua Cloudflare. Đã dọn project
+và hai volume thử riêng. Không thêm bảng/cột/dependency hoặc đổi Docker.
+Chi tiết file và phạm vi: [payment-update.md](payment-update.md).
+
 ## Xem lại các món/bàn đã phục vụ (18/11/2026)
 
 Docker verify: **286 test đạt, 0 failure, 0 error, 0 skipped**.

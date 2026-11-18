@@ -1204,6 +1204,27 @@ dialog.app-dialog h2 {
 .payment-fields select {
   margin-top: 6px;
 }
+.payment-fields.bank-transfer {
+  grid-template-columns: 1fr;
+}
+.payment-verification {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.payment-verification input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--orange);
+}
+.payment-transfer-guide {
+  margin-top: 14px;
+}
 .payment-actions {
   display: grid;
   grid-template-columns: 1fr 1.1fr 1fr;

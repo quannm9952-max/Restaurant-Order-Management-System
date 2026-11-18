@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import com.restaurant.config.DemoAccounts;
 import com.restaurant.dto.order.OrderLine;
+import com.restaurant.dto.payment.PaymentConfirmation;
 import com.restaurant.dto.report.ReportModels.*;
 import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
@@ -402,7 +403,8 @@ class SystemIntegrationTest {
         org.springframework.security.access.AccessDeniedException.class);
     assertThatThrownBy(() -> payments.invoiceData(1042)).isInstanceOf(
         org.springframework.security.access.AccessDeniedException.class);
-    assertThatThrownBy(() -> payments.payOrder(1100, "Cash", true))
+    assertThatThrownBy(() -> payments.confirmPayment(1100,
+        new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
         .isInstanceOf(
             org.springframework.security.access.AccessDeniedException.class);
   }
@@ -441,7 +443,8 @@ class SystemIntegrationTest {
   @Test
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
   void checkoutCreatesOnePaymentAndInvoiceAndReleasesTable() throws Exception {
-    long id = payments.payOrder(1100, "Cash", true);
+    long id = payments.confirmPayment(1100,
+        new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00")));
     assertThat(id).isPositive();
     assertThat(jdbc.queryForObject(
         "SELECT status FROM Orders WHERE order_id=1100", String.class))
@@ -452,7 +455,8 @@ class SystemIntegrationTest {
     assertThat(jdbc.queryForObject(
         "SELECT total_amount FROM Invoice WHERE order_id=1100",
         BigDecimal.class)).isEqualByComparingTo("39");
-    assertThatThrownBy(() -> payments.payOrder(1100, "Cash", true))
+    assertThatThrownBy(() -> payments.confirmPayment(1100,
+        new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
         .isInstanceOf(IllegalStateException.class);
     mvc.perform(get("/invoices/1100")).andExpect(status().isOk()).andExpect(
         content().string(org.hamcrest.Matchers.containsString("INV-1100")));
@@ -465,9 +469,10 @@ class SystemIntegrationTest {
     jdbc.update(
         "UPDATE Order_Detail SET preparation_status=? WHERE order_id=1100",
         status);
-    assertThatThrownBy(() -> payments.payOrder(1100, "Cash", true))
+    assertThatThrownBy(() -> payments.confirmPayment(1100,
+        new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
         .isInstanceOf(IllegalStateException.class);
-    assertThatThrownBy(() -> payments.payOrder(1100, "Cash", false))
+    assertThatThrownBy(() -> payments.recordFailedPayment(1100, "CASH"))
         .isInstanceOf(IllegalStateException.class);
     assertThat(jdbc.queryForObject(
         "SELECT COUNT(*) FROM Payment WHERE order_id=1100", Long.class))
@@ -477,7 +482,7 @@ class SystemIntegrationTest {
   @Test
   @WithMockUser(username = "test_cashier", roles = "CASHIER")
   void recordsFailedPaymentForAServedOrderWithoutClosingIt() {
-    payments.payOrder(1100, "Cash", false);
+    payments.recordFailedPayment(1100, "CASH");
     assertThat(jdbc.queryForObject(
         "SELECT status FROM Orders WHERE order_id=1100", String.class))
         .isEqualTo("OPEN");
@@ -511,7 +516,8 @@ class SystemIntegrationTest {
         "INSERT INTO Invoice(order_id,invoice_number,issued_at,total_amount)"
             + " VALUES(1100,'TEST-CONFLICT',CURRENT_TIMESTAMP,39)");
     try {
-      assertThatThrownBy(() -> payments.payOrder(1100, "Cash", true))
+      assertThatThrownBy(() -> payments.confirmPayment(1100,
+          new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
           .isInstanceOf(
               org.springframework.dao.DataIntegrityViolationException.class);
       assertThat(jdbc.queryForObject(
