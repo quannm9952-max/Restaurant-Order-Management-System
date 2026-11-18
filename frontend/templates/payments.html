@@ -157,15 +157,16 @@
                 ></span>
               </div>
               <div class="payment-fields">
-                <label
+                <label class="payment-method-field"
                   >Payment method<select
                     class="form-select"
                     name="paymentMethod"
                     data-payment-method
+                    aria-describedby="payment-hint"
                     required
-                    disabled
+                    th:disabled="${!o.readyToPay or user.role != 'Cashier'}"
                   >
-                    <option value="">Select a payment method</option>
+                    <option value="">Select a method</option>
                     <option value="CASH">Cash</option>
                     <option value="BANK_TRANSFER">Bank Transfer</option>
                   </select></label
@@ -217,9 +218,12 @@
                 />
                 <span>I have received and verified the payment.</span>
               </label>
-              <p class="tiny muted" data-payment-hint>
-                Generate a bill before payment.
-              </p>
+              <p
+                class="tiny muted"
+                id="payment-hint"
+                data-payment-hint
+                th:text="${o.readyToPay ? 'Select a method, then generate the bill to enter and verify payment details.' : (o.status == 'COMPLETED' ? 'Payment is completed. View or print the invoice below.' : 'Payment becomes available when the order is Open and every active item is Served.')}"
+              ></p>
               <p class="form-error" data-payment-error hidden>
                 Enter a valid Amount Received that covers the total amount (up
                 to two decimal places).

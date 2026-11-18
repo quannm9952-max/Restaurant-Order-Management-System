@@ -1,3 +1,21 @@
+## Ô chọn phương thức thanh toán (18/11/2026)
+
+Ô Payment method chiếm một hàng đầy đủ; Amount Received/Change Amount ở
+hàng dưới. Đơn đủ điều kiện cho chọn phương thức trước Generate Bill;
+sinh bill, xác nhận nhận tiền và kiểm tra tiền mặt vẫn là điều kiện xử lý.
+Đơn đã thanh toán hoặc chưa đủ điều kiện tiếp tục khóa các thao tác.
+
+Node check, Docker runtime build và git diff --check đạt. Chrome headless
+kiểm tra 8 viewport: 1918×925, 1440×900, 1180×820, 820×1180, 768×1024,
+844×390, 390×844 và 320×740. Có 24 kiểm tra độ rộng cho placeholder/Cash/
+Bank Transfer: chữ vừa vùng nội dung, hàng chọn rộng đầy đủ và nhận click
+ở trái/giữa/mũi tên. Chọn phương thức trước sinh bill, giữ lựa chọn sau
+sinh bill, từ chối thiếu tiền/checkbox và mở/đóng xác nhận cả hai phương
+thức đều đạt; không submit thanh toán. Đã xem ảnh desktop/điện thoại.
+Không lỗi JavaScript hoặc tràn ngang toàn trang. Checksum đủ 9 bảng chính
+không đổi; CSS/JS public qua Cloudflare khớp nguồn. Chỉ sửa frontend và
+nhật ký kiểm tra, giữ Java/SQL/nghiệp vụ backend hiện tại.
+
 ## Thanh toán xác nhận thủ công và doanh thu theo phương thức (18/11/2026)
 
 Docker verify: **332 test đạt, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**.

@@ -1193,19 +1193,20 @@ dialog.app-dialog h2 {
 }
 .payment-fields {
   display: grid;
-  grid-template-columns: 1fr 1.3fr 1.3fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin: 8px 0 10px;
 }
 .payment-fields label {
+  min-width: 0;
   font-size: 11px;
+}
+.payment-method-field {
+  grid-column: 1 / -1;
 }
 .payment-fields input,
 .payment-fields select {
   margin-top: 6px;
-}
-.payment-fields.bank-transfer {
-  grid-template-columns: 1fr;
 }
 .payment-verification {
   display: flex;

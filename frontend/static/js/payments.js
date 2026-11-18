@@ -49,9 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
       field.hidden = !isCash;
     });
     form.querySelector("[data-bank-transfer]").hidden = !isBank;
-    form
-      .querySelector(".payment-fields")
-      .classList.toggle("bank-transfer", isBank);
     const enough =
       isBank ||
       (isCash &&
@@ -72,7 +69,6 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", (event) => {
       if (bill.dataset.paymentReady !== "true") return;
       generated = true;
-      method.disabled = false;
       verified.disabled = false;
       event.currentTarget.disabled = true;
       document.querySelector("[data-bill-state]").textContent =
