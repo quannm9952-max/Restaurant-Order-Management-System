@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
+      currencyDisplay: "code",
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(value);

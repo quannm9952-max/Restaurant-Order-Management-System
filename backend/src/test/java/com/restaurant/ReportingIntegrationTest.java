@@ -207,19 +207,19 @@ class ReportingIntegrationTest {
     var money = new com.restaurant.config.ReportConfig.MoneyFormatter();
     assertThat(report.summary().totalRevenue()).isEqualByComparingTo("0.01");
     assertThat(report.axisTicks().stream().map(money::axis).toList())
-        .containsExactly("0,04\u00a0₫", "0,03\u00a0₫", "0,02\u00a0₫",
-            "0,01\u00a0₫", "0\u00a0₫");
+        .containsExactly("0,04\u00a0VND", "0,03\u00a0VND", "0,02\u00a0VND",
+            "0,01\u00a0VND", "0\u00a0VND");
   }
 
   @Test
   void vndFormattingKeepsStoredMoneyExactForIntegerAndLegacyFractionalAmounts() {
     var money = new com.restaurant.config.ReportConfig.MoneyFormatter();
     assertThat(money.format(new BigDecimal("25000.00")))
-        .isEqualTo("25.000\u00a0₫");
-    assertThat(money.format(new BigDecimal("8.50"))).isEqualTo("8,5\u00a0₫");
-    assertThat(money.format(new BigDecimal("0.01"))).isEqualTo("0,01\u00a0₫");
+        .isEqualTo("25.000\u00a0VND");
+    assertThat(money.format(new BigDecimal("8.50"))).isEqualTo("8,5\u00a0VND");
+    assertThat(money.format(new BigDecimal("0.01"))).isEqualTo("0,01\u00a0VND");
     assertThat(money.format(new BigDecimal("9999999999.99")))
-        .isEqualTo("9.999.999.999,99\u00a0₫");
+        .isEqualTo("9.999.999.999,99\u00a0VND");
   }
 
   @Test
@@ -331,8 +331,9 @@ class ReportingIntegrationTest {
 
   @Test
   void reportHtmlDisplaysTheDatabaseTotal() throws Exception {
-    mvc.perform(get("/manager/reports")).andExpect(status().isOk()).andExpect(
-        content().string(org.hamcrest.Matchers.containsString("1.892\u00a0₫")));
+    mvc.perform(get("/manager/reports")).andExpect(status().isOk())
+        .andExpect(content()
+            .string(org.hamcrest.Matchers.containsString("1.892\u00a0VND")));
     mvc.perform(get("/manager/payment-history").param("q", "NO_MATCH"))
         .andExpect(status().isOk()).andExpect(content()
             .string(org.hamcrest.Matchers.containsString("No payments found")));

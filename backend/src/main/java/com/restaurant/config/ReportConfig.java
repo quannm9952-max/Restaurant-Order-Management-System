@@ -25,12 +25,12 @@ public class ReportConfig {
   public static final class MoneyFormatter {
     public String format(BigDecimal amount) {
       NumberFormat format = NumberFormat
-          .getCurrencyInstance(Locale.forLanguageTag("vi-VN"));
+          .getNumberInstance(Locale.forLanguageTag("vi-VN"));
       // Retain fractional legacy amounts instead of silently rounding stored
       // money.
       format.setMinimumFractionDigits(0);
       format.setMaximumFractionDigits(2);
-      return format.format(amount);
+      return format.format(amount) + "\u00a0VND";
     }
 
     public String axis(BigDecimal amount) {

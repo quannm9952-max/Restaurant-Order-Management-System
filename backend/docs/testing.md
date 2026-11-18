@@ -1,3 +1,15 @@
+## Hiển thị mã tiền VND thay ký hiệu (18/11/2026)
+
+MoneyFormatter và hai bộ định dạng JavaScript dùng hậu tố chữ VND, ví dụ
+25.000 VND và 8,5 VND. Cập nhật cả nhãn trục, tooltip, giỏ món, tiền thừa,
+modal xác nhận, hóa đơn và placeholder báo cáo. Giá trị số giữ nguyên.
+Docker verify đạt **333 test, 0 failure, 0 error, 0 skipped**; runtime build,
+Node check và git diff --check đạt. Chrome headless kiểm tra **24 bố cục**
+ở 1440/820/390/320 px: tiền server/client đều có mã VND, không còn ký hiệu
+đồng; nhãn trục không bị cắt, không lỗi JavaScript hoặc tràn toàn trang.
+Đã xem ảnh hóa đơn và biểu đồ mobile; không gửi thanh toán khi kiểm tra.
+Checksum đủ 9 bảng trước/sau không đổi. Không sửa schema hoặc dữ liệu.
+
 ## Định dạng tiền VND toàn hệ thống (18/11/2026)
 
 Theo lựa chọn giữ nguyên số tiền: đổi MoneyFormatter, giỏ món, tiền thừa,
