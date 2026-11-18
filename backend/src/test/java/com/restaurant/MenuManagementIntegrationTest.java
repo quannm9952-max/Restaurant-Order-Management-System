@@ -100,6 +100,26 @@ class MenuManagementIntegrationTest {
   }
 
   @Test
+  void priceFiltersUseVndAmountsAtEveryBoundary() {
+    String name = "TEST VND filter";
+    category(name);
+    for (String price : List.of("99999", "100000", "300000", "300001", "600000",
+        "600001")) {
+      menu.addMenu(name + " " + price, name, "", new BigDecimal(price), null);
+    }
+    assertThat(menu.searchMenu("", name, null, "price_asc", "under_10"))
+        .extracting(row -> row.get("name")).containsExactly(name + " 99999");
+    assertThat(menu.searchMenu("", name, null, "price_asc", "10_30"))
+        .extracting(row -> row.get("name"))
+        .containsExactly(name + " 100000", name + " 300000");
+    assertThat(menu.searchMenu("", name, null, "price_asc", "30_60"))
+        .extracting(row -> row.get("name"))
+        .containsExactly(name + " 300001", name + " 600000");
+    assertThat(menu.searchMenu("", name, null, "price_asc", "above_60"))
+        .extracting(row -> row.get("name")).containsExactly(name + " 600001");
+  }
+
+  @Test
   void emptyCategoryCanBeDeletedAndRecreatedWithTheSameIdentity()
       throws Exception {
     long id = category("TEST Empty Category");

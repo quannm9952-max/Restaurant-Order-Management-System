@@ -2,13 +2,13 @@
 SET @report_from = '2026-10-29 00:00:00';
 SET @report_until = '2026-11-05 00:00:00';
 
--- Expected: 24 transactions and 1892.00. End bound is exclusive.
+-- Expected: 24 transactions and 18920000.00. End bound is exclusive.
 SELECT COUNT(*) AS successful_transactions, COALESCE(SUM(p.amount), 0) AS total_revenue
 FROM Payment p JOIN Orders o ON o.order_id = p.order_id
 WHERE p.status = 'SUCCESSFUL' AND o.status = 'COMPLETED'
   AND p.payment_time >= @report_from AND p.payment_time < @report_until;
 
--- Expected: 196, 248, 312, 284, 338, 330, 184 across seven days.
+-- Expected: 1960000, 2480000, 3120000, 2840000, 3380000, 3300000, 1840000 VND across seven days.
 SELECT DATE(p.payment_time) AS report_date, COUNT(*) AS transactions, SUM(p.amount) AS revenue
 FROM Payment p JOIN Orders o ON o.order_id = p.order_id
 WHERE p.status = 'SUCCESSFUL' AND o.status = 'COMPLETED'

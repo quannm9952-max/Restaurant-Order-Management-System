@@ -67,14 +67,19 @@ sau đó mới xác nhận. Phần mềm không tạo/hiển thị QR hoặc t�
 Revenue Reports có thêm Cash Revenue, Bank Transfer Revenue và bảng tổng
 hợp theo phương thức. Giữ quy tắc **Successful + đơn Completed**. Unknown
 gồm phương thức trống/chưa phân loại và phương thức cũ ngoài hai nhóm như Card;
-lịch sử giữ nguyên giá trị cũ và cho lọc theo phương thức. Không đổi schema
-hoặc dữ liệu thanh toán cũ. Xem [chi tiết triển khai](backend/docs/payment-update.md).
+lịch sử giữ nguyên phương thức cũ và cho lọc theo phương thức. Xem
+[chi tiết triển khai](backend/docs/payment-update.md).
 
 Toàn hệ thống hiển thị tiền bằng **VND** theo định dạng Việt Nam,
-ví dụ `25000` → `25.000 VND`. Việc đổi đơn vị không nhân tỷ giá hoặc sửa các
-số tiền đã lưu; dữ liệu cũ có phần lẻ vẫn hiện đầy đủ, ví dụ `8.50` → `8,5 VND`.
+ví dụ `85000` → `85.000 VND`. Dữ liệu cũ được chuyển một lần bằng hệ số
+**10.000** theo yêu cầu: `8.50` → `85000` → `85.000 VND`. Áp dụng cho giá
+món, giá lưu trong chi tiết đơn, tổng đơn, mọi thanh toán và hóa đơn cũ.
+Đây là hệ số chuyển dữ liệu của đồ án, không phải tỷ giá tự cập nhật.
 Menu, giỏ món, bill, hóa đơn, lịch sử, báo cáo và tiền thừa dùng cùng quy tắc.
 Giá/số tiền nhận nhập dạng số; độ chính xác hai chữ số thập phân được giữ.
+Dữ liệu demo/test đã dùng mức tiền VND mới. Database cũ cần chuyển theo
+[hướng dẫn có sao lưu và chống nhân lặp](database/README.md); không chạy
+chuyển đổi trên database mới tạo từ seed hiện tại.
 
 Thanh toán và xem/in hóa đơn thuộc Cashier. Manager theo dõi doanh thu,
 đơn hàng và lịch sử thanh toán qua các module báo cáo của Manager.

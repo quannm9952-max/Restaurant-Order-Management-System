@@ -116,10 +116,10 @@ class PaymentIntegrationTest {
       String method) throws Exception {
     var old = jdbc.queryForList("SELECT * FROM Payment ORDER BY payment_id");
     long id = payments.confirmPayment(1100,
-        confirmed(method, method.equals("CASH") ? "50.00" : null));
+        confirmed(method, method.equals("CASH") ? "500000.00" : null));
     assertThat(jdbc.queryForObject(
         "SELECT amount FROM Payment WHERE payment_id=?", BigDecimal.class, id))
-        .isEqualByComparingTo("39.00");
+        .isEqualByComparingTo("390000.00");
     assertThat(jdbc.queryForObject(
         "SELECT payment_method FROM Payment WHERE payment_id=?", String.class,
         id)).isEqualTo(method);
@@ -139,13 +139,13 @@ class PaymentIntegrationTest {
         "SELECT * FROM Payment WHERE payment_id<>? ORDER BY payment_id", id))
         .isEqualTo(old);
     assertThat(payments.invoiceData(1100).get("total"))
-        .isEqualTo(new BigDecimal("39.00"));
+        .isEqualTo(new BigDecimal("390000.00"));
     mvc.perform(get("/invoices/1100")).andExpect(status().isOk())
         .andExpect(content().string(org.hamcrest.Matchers
             .containsString(PaymentMethod.forPayment(method).label())));
     role("CASHIER");
     assertThatThrownBy(
-        () -> payments.confirmPayment(1100, confirmed(method, "39")))
+        () -> payments.confirmPayment(1100, confirmed(method, "390000")))
         .isInstanceOf(IllegalStateException.class);
     assertThat(jdbc.queryForObject(
         "SELECT COUNT(*) FROM Payment WHERE order_id=1100 AND status='SUCCESSFUL'",
@@ -159,7 +159,7 @@ class PaymentIntegrationTest {
   void invalidOrMissingNewMethodCannotCreatePayment(String method) {
     role("CASHIER");
     assertThatThrownBy(
-        () -> payments.confirmPayment(1100, confirmed(method, "39")))
+        () -> payments.confirmPayment(1100, confirmed(method, "390000")))
         .isInstanceOf(IllegalArgumentException.class);
     unpaid(1100, 9010);
   }
@@ -169,11 +169,11 @@ class PaymentIntegrationTest {
   void missingReceiptVerificationIsRejectedByServiceAndHttp(String method)
       throws Exception {
     assertThatThrownBy(() -> payments.confirmPayment(1100,
-        new PaymentConfirmation(method, false, new BigDecimal("39"))))
+        new PaymentConfirmation(method, false, new BigDecimal("390000"))))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("received and verified");
     mvc.perform(post("/payments/1100/confirm").with(csrf())
-        .param("paymentMethod", method).param("amountReceived", "39"))
+        .param("paymentMethod", method).param("amountReceived", "390000"))
         .andExpect(redirectedUrl("/payments?orderId=1100"))
         .andExpect(flash().attribute("error",
             org.hamcrest.Matchers.containsString("received and verified")));
@@ -182,7 +182,7 @@ class PaymentIntegrationTest {
 
   @ParameterizedTest
   @NullSource
-  @ValueSource(strings = {"38.99", "0", "-1", "39.001", "10000000000"})
+  @ValueSource(strings = {"389999.99", "0", "-1", "390000.001", "10000000000"})
   void cashMustHaveSufficientValidTender(String received) throws Exception {
     assertThatThrownBy(
         () -> payments.confirmPayment(1100, confirmed("CASH", received)))
@@ -199,7 +199,7 @@ class PaymentIntegrationTest {
   @Test
   void httpCannotDefaultToCashOrAcceptMalformedMoney() throws Exception {
     mvc.perform(post("/payments/1100/confirm").with(csrf())
-        .param("paymentVerified", "true").param("amountReceived", "39"))
+        .param("paymentVerified", "true").param("amountReceived", "390000"))
         .andExpect(redirectedUrl("/payments?orderId=1100"))
         .andExpect(flash().attributeExists("error"));
     mvc.perform(post("/payments/1100/confirm").with(csrf())
@@ -215,11 +215,11 @@ class PaymentIntegrationTest {
       throws Exception {
     mvc.perform(post("/payments/1100/confirm").with(csrf())
         .param("paymentMethod", method).param("paymentVerified", "true")
-        .param("amountReceived", "39.00").param("totalAmount", "0.01"))
+        .param("amountReceived", "390000.00").param("totalAmount", "0.01"))
         .andExpect(redirectedUrl("/invoices/1100"));
     assertThat(jdbc.queryForObject(
         "SELECT amount FROM Payment WHERE order_id=1100", BigDecimal.class))
-        .isEqualByComparingTo("39");
+        .isEqualByComparingTo("390000");
   }
 
   @ParameterizedTest
@@ -237,7 +237,7 @@ class PaymentIntegrationTest {
   @Test
   void openOrderWithExistingSuccessCannotBePaidOrPresentedAsEligible() {
     jdbc.update(
-        "INSERT INTO Payment(order_id,amount,payment_method,status) VALUES(1100,39,'Card','SUCCESSFUL')");
+        "INSERT INTO Payment(order_id,amount,payment_method,status) VALUES(1100,390000,'Card','SUCCESSFUL')");
     assertThat(payments.orderDetailForPayment(1100).get("readyToPay"))
         .isEqualTo(false);
     assertThat(payments.checkoutOrders("ORD-1100").getFirst().get("readyToPay"))

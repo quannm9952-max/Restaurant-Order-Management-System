@@ -1,3 +1,31 @@
+## Chuyển toàn bộ số tiền cũ sang VND ×10.000 (18/11/2026)
+
+Dữ liệu demo và fixture kiểm thử nhân riêng 5 cột tiền; giữ ID, số lượng,
+ngày giờ, trạng thái và thông tin tài khoản. Ví dụ 8.50 cũ thành 85000.00,
+hiện **85.000 VND**. Các khoảng lọc giá tương ứng cũng đổi sang VND.
+Docker verify đạt **334 test, 0 failure, 0 error, 0 skipped**.
+
+Trên MySQL bản sao, khôi phục backup khớp toàn bộ 9 bảng; chuyển đổi đúng
+155 ô tiền và giữ nguyên mọi trường khác. SQL chạy lại không nhân lặp;
+gây lỗi sau cả 5 UPDATE thì tất cả rollback; sửa lệch mốc gốc thì bị chặn.
+Backup do PowerShell tạo cũng được khôi phục và đối chiếu thành công.
+
+Chrome headless: 24 bố cục 1440/820/390/320 px cho menu, đơn, bill, hóa đơn,
+báo cáo và lịch sử; không tràn toàn trang, cắt nhãn trục hay lỗi JavaScript.
+Giá menu 85.000 VND và hóa đơn cũ 390.000 VND đúng dữ liệu chuyển đổi.
+Cột tiền bill/hóa đơn giữ VND trên một dòng; bảng cuộn trong khung khi
+màn hình hẹp. Chế độ in ẩn nút thao tác và hiển thị đủ các cột.
+Thanh toán mới Cash/Bank Transfer thử riêng trên bản sao đều lưu 85000.00;
+nhận 100.000 VND trả lại 15.000 VND. Không tạo thanh toán thử trên bản chính.
+
+Bản chính sau khi chuyển và khởi động image mới: 155 ô tiền khớp chính xác
+kết quả ×10.000 từ bản gốc; mọi trường còn lại của 9 bảng giữ nguyên.
+Không có lệch tổng giữa chi tiết đơn, Orders, Successful Payment và Invoice.
+Bốn actor đăng nhập/mở trang đúng quyền; 24 bố cục trên bản chính được kiểm
+tra chỉ đọc, không gửi thanh toán. Seed khi khởi động không nhân lại số tiền.
+
+Các mục bên dưới ghi lại kiểm tra ở các phiên bản trước lần chuyển số tiền.
+
 ## Hiển thị mã tiền VND thay ký hiệu (18/11/2026)
 
 MoneyFormatter và hai bộ định dạng JavaScript dùng hậu tố chữ VND, ví dụ

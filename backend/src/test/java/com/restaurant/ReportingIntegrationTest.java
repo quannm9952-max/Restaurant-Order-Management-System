@@ -77,17 +77,19 @@ class ReportingIntegrationTest {
   @Test
   void revenueMatchesTheReconciliationFixtureWithoutMultiplyingOrderLines() {
     var report = reports.report(RANGE, Grouping.DAY);
-    assertThat(report.summary().totalRevenue()).isEqualByComparingTo("1892.00");
+    assertThat(report.summary().totalRevenue())
+        .isEqualByComparingTo("18920000.00");
     assertThat(report.summary().successful()).isEqualTo(24);
     assertThat(report.summary().excluded()).isEqualTo(4);
     assertThat(report.summary().pending()).isEqualTo(2);
     assertThat(report.summary().failed()).isEqualTo(2);
-    assertThat(report.chartCeiling()).isEqualByComparingTo("400");
+    assertThat(report.chartCeiling()).isEqualByComparingTo("4000000");
     assertThat(report.points()).extracting(ChartPoint::amount)
         .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
-        .containsExactly(new BigDecimal("196"), new BigDecimal("248"),
-            new BigDecimal("312"), new BigDecimal("284"), new BigDecimal("338"),
-            new BigDecimal("330"), new BigDecimal("184"));
+        .containsExactly(new BigDecimal("1960000"), new BigDecimal("2480000"),
+            new BigDecimal("3120000"), new BigDecimal("2840000"),
+            new BigDecimal("3380000"), new BigDecimal("3300000"),
+            new BigDecimal("1840000"));
     assertThat(report.recentPayments()).extracting(PaymentRow::paymentId)
         .containsExactly(2046, 2044, 2043);
   }
@@ -97,10 +99,10 @@ class ReportingIntegrationTest {
     var report = reports.report(RANGE, Grouping.WEEK);
     assertThat(report.points()).hasSize(2);
     assertThat(report.points().getFirst().amount())
-        .isEqualByComparingTo("1040.00");
+        .isEqualByComparingTo("10400000.00");
     assertThat(report.points().getLast().amount())
-        .isEqualByComparingTo("852.00");
-    assertThat(report.chartCeiling()).isEqualByComparingTo("1200");
+        .isEqualByComparingTo("8520000.00");
+    assertThat(report.chartCeiling()).isEqualByComparingTo("12000000");
     assertThat(report.points().getFirst().start())
         .isEqualTo(LocalDate.of(2026, 10, 26));
     assertThat(report.points().stream().map(ChartPoint::amount)
@@ -114,7 +116,7 @@ class ReportingIntegrationTest {
     assertThat(report.grouping()).isEqualTo(Grouping.MONTH);
     assertThat(report.points()).extracting(ChartPoint::amount)
         .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
-        .containsExactly(new BigDecimal("756"), new BigDecimal("1136"));
+        .containsExactly(new BigDecimal("7560000"), new BigDecimal("11360000"));
     assertThat(report.points().getFirst().start())
         .isEqualTo(LocalDate.of(2026, 10, 1));
     assertThat(report.points().getFirst().end())
@@ -216,7 +218,8 @@ class ReportingIntegrationTest {
     var money = new com.restaurant.config.ReportConfig.MoneyFormatter();
     assertThat(money.format(new BigDecimal("25000.00")))
         .isEqualTo("25.000\u00a0VND");
-    assertThat(money.format(new BigDecimal("8.50"))).isEqualTo("8,5\u00a0VND");
+    assertThat(money.format(new BigDecimal("85000")))
+        .isEqualTo("85.000\u00a0VND");
     assertThat(money.format(new BigDecimal("0.01"))).isEqualTo("0,01\u00a0VND");
     assertThat(money.format(new BigDecimal("9999999999.99")))
         .isEqualTo("9.999.999.999,99\u00a0VND");
@@ -228,7 +231,8 @@ class ReportingIntegrationTest {
     completedPayment(1061, 2061, "2026-11-05 00:00:00", "0.02");
     completedPayment(1062, 2062, "2026-10-28 23:59:59", "0.04");
     var report = reports.report(RANGE, Grouping.DAY);
-    assertThat(report.summary().totalRevenue()).isEqualByComparingTo("1892.01");
+    assertThat(report.summary().totalRevenue())
+        .isEqualByComparingTo("18920000.01");
     assertThat(report.summary().successful()).isEqualTo(25);
     assertThat(monitoring.payments(RANGE, "PAY-206", null, 0).content())
         .extracting(PaymentRow::paymentId).containsExactly(2060);
@@ -242,7 +246,8 @@ class ReportingIntegrationTest {
         + "order_id, amount, payment_time, status) VALUES"
         + " (2099,1050,999,'2026-11-04 15:00:00','SUCCESSFUL')");
     var report = reports.report(RANGE, Grouping.DAY);
-    assertThat(report.summary().totalRevenue()).isEqualByComparingTo("1892");
+    assertThat(report.summary().totalRevenue())
+        .isEqualByComparingTo("18920000");
     assertThat(report.summary().inconsistentSuccessful()).isEqualTo(1);
     assertThat(monitoring.payment(2099).includedInRevenue()).isFalse();
     assertThat(monitoring.paymentCounts(RANGE, "").successful()).isEqualTo(25);
@@ -289,8 +294,8 @@ class ReportingIntegrationTest {
     assertThat(details.items().getFirst().itemName())
         .isEqualTo("DEMO Grilled Chicken");
     assertThat(details.items().getFirst().unitPrice())
-        .isEqualByComparingTo("19.50");
-    assertThat(details.calculatedTotal()).isEqualByComparingTo("78.00");
+        .isEqualByComparingTo("195000.00");
+    assertThat(details.calculatedTotal()).isEqualByComparingTo("780000.00");
     assertThat(details.payments()).hasSize(2);
   }
 
@@ -313,7 +318,7 @@ class ReportingIntegrationTest {
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM Payment", Long.class))
         .isEqualTo(28);
     assertThat(reports.report(RANGE, Grouping.DAY).summary().totalRevenue())
-        .isEqualByComparingTo("1892");
+        .isEqualByComparingTo("18920000");
   }
 
   @ParameterizedTest
@@ -332,8 +337,8 @@ class ReportingIntegrationTest {
   @Test
   void reportHtmlDisplaysTheDatabaseTotal() throws Exception {
     mvc.perform(get("/manager/reports")).andExpect(status().isOk())
-        .andExpect(content()
-            .string(org.hamcrest.Matchers.containsString("1.892\u00a0VND")));
+        .andExpect(content().string(
+            org.hamcrest.Matchers.containsString("18.920.000\u00a0VND")));
     mvc.perform(get("/manager/payment-history").param("q", "NO_MATCH"))
         .andExpect(status().isOk()).andExpect(content()
             .string(org.hamcrest.Matchers.containsString("No payments found")));

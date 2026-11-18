@@ -199,10 +199,10 @@ public class MenuRepository extends JdbcRepositorySupport {
       p.put("available", available);
     }
     sql += switch (priceRange == null ? "all" : priceRange) {
-      case "under_10" -> " AND m.unit_price < 10";
-      case "10_30" -> " AND m.unit_price BETWEEN 10 AND 30";
-      case "30_60" -> " AND m.unit_price > 30 AND m.unit_price <= 60";
-      case "above_60" -> " AND m.unit_price > 60";
+      case "under_10" -> " AND m.unit_price < 100000";
+      case "10_30" -> " AND m.unit_price BETWEEN 100000 AND 300000";
+      case "30_60" -> " AND m.unit_price > 300000 AND m.unit_price <= 600000";
+      case "above_60" -> " AND m.unit_price > 600000";
       default -> "";
     };
     sql += " ORDER BY " + switch (sort == null ? "default" : sort) {

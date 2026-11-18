@@ -103,38 +103,40 @@
               th:text="${#strings.capitalize(#strings.toLowerCase(o.status))}"
             ></span>
           </div>
-          <table class="bill-items">
-            <thead>
-              <tr>
-                <th>ITEM</th>
-                <th class="text-center">QTY</th>
-                <th class="right">SAVED UNIT PRICE</th>
-                <th class="right">SUBTOTAL</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                th:each="line : ${o.items}"
-                th:classappend="${line.status == 'Cancelled'} ? 'cancelled-line'"
-              >
-                <td>
-                  <span th:text="${line.item_name}"></span
-                  ><small
-                    th:text="${line.status == 'Cancelled' ? 'Cancelled · excluded' : line.status}"
-                  ></small>
-                </td>
-                <td class="text-center muted" th:text="${line.quantity}"></td>
-                <td
-                  class="right"
-                  th:text="${@money.format(line.unit_price)}"
-                ></td>
-                <td
-                  class="right strong"
-                  th:text="${@money.format(line.status == 'Cancelled' ? 0 : line.line_total)}"
-                ></td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="bill-items">
+              <thead>
+                <tr>
+                  <th>ITEM</th>
+                  <th class="text-center">QTY</th>
+                  <th class="right">SAVED UNIT PRICE</th>
+                  <th class="right">SUBTOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  th:each="line : ${o.items}"
+                  th:classappend="${line.status == 'Cancelled'} ? 'cancelled-line'"
+                >
+                  <td>
+                    <span th:text="${line.item_name}"></span
+                    ><small
+                      th:text="${line.status == 'Cancelled' ? 'Cancelled · excluded' : line.status}"
+                    ></small>
+                  </td>
+                  <td class="text-center muted" th:text="${line.quantity}"></td>
+                  <td
+                    class="right"
+                    th:text="${@money.format(line.unit_price)}"
+                  ></td>
+                  <td
+                    class="right strong"
+                    th:text="${@money.format(line.status == 'Cancelled' ? 0 : line.line_total)}"
+                  ></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <div class="bill-total">
             <span>Total amount</span
             ><strong th:text="${@money.format(o.totalAmount)}"></strong>

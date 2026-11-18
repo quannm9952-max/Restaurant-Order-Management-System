@@ -478,7 +478,8 @@ dialog .dialog-footer {
     grid-template-columns: minmax(0, 1fr);
   }
   .bill-items {
-    table-layout: fixed;
+    table-layout: auto;
+    min-width: 440px;
   }
   .bill-items td,
   .bill-items th {

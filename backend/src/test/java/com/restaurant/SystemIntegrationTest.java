@@ -426,10 +426,10 @@ class SystemIntegrationTest {
         List.of(new OrderLine(9001, 2)));
     entityManager.flush();
     assertThat(order.getEmployee().getId()).isEqualTo(9702);
-    assertThat(order.getTotalAmount()).isEqualByComparingTo("1999.98");
+    assertThat(order.getTotalAmount()).isEqualByComparingTo("19999800.00");
     jdbc.update("UPDATE Menu_item SET unit_price=1.00 WHERE item_id=9001");
     assertThat(order.getDetails().getFirst().getUnitPriceAtOrder())
-        .isEqualByComparingTo("999.99");
+        .isEqualByComparingTo("9999900.00");
     assertThat(jdbc.queryForObject(
         "SELECT status FROM Restaurant_tables WHERE table_id=9004",
         String.class)).isEqualTo("OCCUPIED");
@@ -454,7 +454,7 @@ class SystemIntegrationTest {
         String.class)).isEqualTo("AVAILABLE");
     assertThat(jdbc.queryForObject(
         "SELECT total_amount FROM Invoice WHERE order_id=1100",
-        BigDecimal.class)).isEqualByComparingTo("39");
+        BigDecimal.class)).isEqualByComparingTo("390000");
     assertThatThrownBy(() -> payments.confirmPayment(1100,
         new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
         .isInstanceOf(IllegalStateException.class);
@@ -514,7 +514,7 @@ class SystemIntegrationTest {
         "SELECT COUNT(*) FROM Payment WHERE order_id=1100", Long.class);
     jdbc.update(
         "INSERT INTO Invoice(order_id,invoice_number,issued_at,total_amount)"
-            + " VALUES(1100,'TEST-CONFLICT',CURRENT_TIMESTAMP,39)");
+            + " VALUES(1100,'TEST-CONFLICT',CURRENT_TIMESTAMP,390000)");
     try {
       assertThatThrownBy(() -> payments.confirmPayment(1100,
           new PaymentConfirmation("CASH", true, new BigDecimal("1000000.00"))))
@@ -540,11 +540,11 @@ class SystemIntegrationTest {
     jdbc.update("UPDATE Orders SET status='COMPLETED' WHERE order_id=1100");
     jdbc.update("INSERT INTO Payment(order_id,amount"
         + ",payment_method,status,payment_time)"
-        + " VALUES(1100,39,'Cash','SUCCESSFUL','2026-11-05 12:30:00')");
+        + " VALUES(1100,390000,'Cash','SUCCESSFUL','2026-11-05 12:30:00')");
     var range = new DateRange(LocalDate.of(2026, 11, 5),
         LocalDate.of(2026, 11, 5));
     assertThat(reports.report(range, Grouping.DAY).summary().totalRevenue())
-        .isEqualByComparingTo("39");
+        .isEqualByComparingTo("390000");
   }
 
   @Test
