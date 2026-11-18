@@ -1,5 +1,19 @@
 # Kiểm chứng hệ thống
 
+## Chiều cao cột và chế độ nhóm doanh thu (18/11/2026)
+
+Sửa vùng vẽ cột bị trừ padding khác với đường lưới/trục Y. Cột, đường lưới
+và nhãn trục nay dùng chung vùng vẽ; nhãn được căn giữa đúng vạch chia.
+Hiển thị rõ Auto hay nhóm thủ công, thêm Use Auto giữ nguyên khoảng ngày.
+
+Chrome headless đo **35 bố cục** ở 1440/1180/820/390/320 px: tỷ lệ chiều
+cao từng cột khớp số tiền chia mức trục cao nhất, sai số dưới 0.15%; chân
+cột, trục và vạch chia khớp trong 1.5 px. Bao gồm Day/Week/Month/Auto và
+khoảng rỗng. Cả 5 lần đổi Day sang Auto cho khoảng 36 ngày đều trả Week và
+giữ ngày lọc; không lỗi JavaScript hoặc tràn trang. Đã xem ảnh biểu đồ.
+CSS public khớp nguồn; đủ 9 bảng giữ nguyên checksum. Không sửa số liệu
+hoặc logic tính doanh thu; không đọc payload báo cáo qua Cloudflare.
+
 ## Chọn ngày trực tiếp trên lịch (18/11/2026)
 
 Sửa lỗi nút ngày/tháng bị thay thế khi render khiến xử lý bấm ngoài lịch

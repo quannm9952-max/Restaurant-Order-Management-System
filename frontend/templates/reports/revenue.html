@@ -38,8 +38,19 @@
         >
       </form>
       <p class="grouping-guide">
-        Auto: Day for 1–31 days, Week for 32–90 days, Month for longer ranges.
-        You can also choose a grouping.
+        <span
+          th:if="${selectedGroup == 'AUTO'}"
+          th:text="|Auto: ${#strings.capitalize(#strings.toLowerCase(report.grouping.name()))} for ${range.days()} days. Day: 1–31, Week: 32–90, Month: 91+.|"
+        ></span>
+        <th:block th:unless="${selectedGroup == 'AUTO'}">
+          <span
+            th:text="|Manual grouping: ${#strings.capitalize(#strings.toLowerCase(selectedGroup))}. This grouping stays active when dates change.|"
+          ></span>
+          <a
+            th:href="@{/manager/reports(from=${range.from},to=${range.to},group='AUTO')}"
+            >Use Auto for this range</a
+          >
+        </th:block>
       </p>
       <div class="metrics">
         <section class="metric metric-primary">

@@ -505,7 +505,7 @@ select:focus-visible {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-top: 12px;
+  padding-top: 0;
 }
 .revenue-bar {
   width: 64%;
@@ -542,6 +542,12 @@ select:focus-visible {
   margin: -12px 0 24px;
   font-size: 12px;
   line-height: 1.7;
+}
+.grouping-guide a {
+  margin-left: 8px;
+  color: var(--orange-hover);
+  font-weight: 600;
+  text-decoration: underline;
 }
 .chart-scroll {
   overflow-y: hidden;
@@ -1508,7 +1514,7 @@ dd {
 }
 .chart-axis {
   position: absolute;
-  inset: 0 auto 26px 0;
+  inset: var(--chart-top-space) auto var(--chart-label-space) 0;
   width: 40px;
   display: flex;
   flex-direction: column;
@@ -1517,11 +1523,23 @@ dd {
   font-size: 10px;
   color: var(--subtle);
 }
+.chart-axis > span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 0;
+  flex-shrink: 0;
+}
 .bar-chart {
-  padding-left: 48px;
+  --chart-top-space: 24px;
+  --chart-label-space: 32px;
+  padding: var(--chart-top-space) 24px var(--chart-label-space) 48px;
 }
 .chart-grid {
+  top: var(--chart-top-space);
+  bottom: var(--chart-label-space);
   left: 48px;
+  right: 24px;
 }
 .search-submit {
   display: grid;
