@@ -1,3 +1,33 @@
+## Định dạng tiền VND toàn hệ thống (18/11/2026)
+
+Theo lựa chọn giữ nguyên số tiền: đổi MoneyFormatter, giỏ món, tiền thừa,
+nhãn giá/bill/hóa đơn/báo cáo và thông báo nhập giá sang VND. Dùng vi-VN,
+dấu chấm phân nhóm, dấu phẩy phần lẻ và ký hiệu ₫. Giữ tối đa hai số lẻ
+để không làm tròn mất các giá trị đã lưu; không dùng tỷ giá chuyển đổi.
+Biểu đồ đo nhãn thực sau khi font tải và khi resize, chừa đủ chỗ cho trục
+VND/số tiền trên cột, giữ cùng vùng vẽ giữa cột và đường lưới.
+
+Docker verify: **333 test đạt, 0 failure, 0 error, 0 skipped; BUILD SUCCESS**.
+Kiểm tra 25.000 ₫, 8,5 ₫, 0,01 ₫ và giá trị tối đa DECIMAL; các nhãn trục
+phần lẻ không trùng/mất giá trị. Regression thanh toán, phân quyền, menu,
+phục vụ và báo cáo vẫn đạt. Node check orders.js/payments.js/reports.js,
+Docker runtime build và git diff --check đạt.
+
+MySQL riêng + Chrome headless: **24 bố cục** ở 1440/820/390/320 px trên Menu,
+giỏ món, Payment, Invoice, Revenue Reports và Payment History. Giỏ 2 ×
+125.000,5 = 250.001 ₫; nhận 300.000 ₫ thì tiền thừa 49.999 ₫; thanh toán
+Cash lưu đúng 250001.00, Bank Transfer giữ 8.50 và hiện 8,5 ₫. Tổng báo cáo
+250.009,5 ₫ khớp Cash + Bank Transfer. Nhãn trục số tiền lớn không bị cắt,
+không tràn ngang toàn trang hoặc lỗi JavaScript; đã xem ảnh desktop/mobile.
+Bảng rộng vẫn cuộn trong khung riêng. Đây là giả lập Chrome.
+
+Bản chính: tất cả số tiền và các bản ghi khác giữ nguyên; chỉ đổi nhãn mô
+tả demo khớp đúng chuỗi cũ bằng migration giới hạn 8 ID. Đối chiếu hash
+Menu_item cùng checksum 8 bảng còn lại đạt; các mô tả tùy chỉnh không đổi.
+Bốn actor mở trang đúng quyền với VND. Bốn asset public qua Cloudflare
+khớp nguồn; kiểm tra dữ liệu có đăng nhập chỉ tại localhost. Đã dọn project
+và hai volume thử riêng. Không thay schema hoặc công nghệ.
+
 ## Ô chọn phương thức thanh toán (18/11/2026)
 
 Ô Payment method chiếm một hàng đầy đủ; Amount Received/Change Amount ở

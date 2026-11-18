@@ -140,7 +140,7 @@
             ><strong th:text="${@money.format(o.totalAmount)}"></strong>
           </div>
           <p class="tiny muted">
-            Cancelled lines are excluded. All amounts are in USD.
+            Cancelled lines are excluded. All amounts are in VND.
           </p>
           <form
             th:action="@{/payments/{id}/confirm(id=${o.id})}"

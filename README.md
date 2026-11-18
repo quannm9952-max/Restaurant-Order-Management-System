@@ -70,6 +70,12 @@ gồm phương thức trống/chưa phân loại và phương thức cũ ngoài 
 lịch sử giữ nguyên giá trị cũ và cho lọc theo phương thức. Không đổi schema
 hoặc dữ liệu thanh toán cũ. Xem [chi tiết triển khai](backend/docs/payment-update.md).
 
+Toàn hệ thống hiển thị tiền bằng **VND (₫)** theo định dạng Việt Nam,
+ví dụ `25000` → `25.000 ₫`. Việc đổi đơn vị không nhân tỷ giá hoặc sửa các
+số tiền đã lưu; dữ liệu cũ có phần lẻ vẫn hiện đầy đủ, ví dụ `8.50` → `8,5 ₫`.
+Menu, giỏ món, bill, hóa đơn, lịch sử, báo cáo và tiền thừa dùng cùng quy tắc.
+Giá/số tiền nhận nhập dạng số; độ chính xác hai chữ số thập phân được giữ.
+
 Thanh toán và xem/in hóa đơn thuộc Cashier. Manager theo dõi doanh thu,
 đơn hàng và lịch sử thanh toán qua các module báo cáo của Manager.
 

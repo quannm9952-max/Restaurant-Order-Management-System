@@ -2,6 +2,37 @@
   "use strict";
   const chart = document.querySelector("[data-revenue-chart]");
   const tooltip = document.getElementById("revenue-tooltip");
+  if (chart) {
+    const minimum =
+      parseFloat(chart.style.getPropertyValue("--chart-min-width")) || 240;
+    const context = document.createElement("canvas").getContext("2d");
+    const textWidth = (element) => {
+      const style = getComputedStyle(element);
+      context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      return context.measureText(element.textContent.trim()).width;
+    };
+    const sizeLabels = () => {
+      const ticks = [...chart.querySelectorAll(".chart-axis span")];
+      const width = Math.max(
+        40,
+        Math.ceil(Math.max(0, ...ticks.map(textWidth))) + 2,
+      );
+      const points = chart.querySelectorAll(".bar-column").length;
+      const values = chart.classList.contains("is-dense")
+        ? []
+        : [...chart.querySelectorAll(".revenue-bar b")];
+      const slot = Math.ceil(Math.max(0, ...values.map(textWidth))) + 12;
+      chart.style.setProperty("--chart-axis-width", `${width}px`);
+      chart.style.setProperty(
+        "--chart-min-width",
+        `${Math.max(240, minimum + width - 40, width + 32 + slot * points)}px`,
+      );
+    };
+    sizeLabels();
+    document.fonts.ready.then(sizeLabels);
+    window.addEventListener("resize", sizeLabels);
+  }
+
   if (chart && tooltip) {
     const hide = () => {
       tooltip.hidden = true;

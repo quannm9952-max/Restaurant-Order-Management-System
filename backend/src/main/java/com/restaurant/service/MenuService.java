@@ -95,7 +95,7 @@ public class MenuService {
     if (price == null || price.signum() <= 0 || price.scale() > 2
         || price.compareTo(new BigDecimal("9999999999.99")) > 0)
       throw new IllegalArgumentException(
-          "Enter a positive USD price with at most two decimal places.");
+          "Enter a positive VND price with at most two decimal places.");
     if (description != null && description.trim().length() > 255)
       throw new IllegalArgumentException(
           "Description must not exceed 255 characters.");

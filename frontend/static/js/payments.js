@@ -27,22 +27,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const process = form.querySelector("[data-process-payment]");
   const confirm = form.querySelector("[data-confirm-payment]");
   const error = form.querySelector("[data-payment-error]");
-  const money = new Intl.NumberFormat("en-US", {
+  const money = new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "USD",
+    currency: "VND",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   });
-  const cents = (value) => {
+  const parseAmount = (value) => {
     if (!/^\d{1,10}(\.\d{1,2})?$/.test(value)) return null;
     const [whole, fraction = ""] = value.split(".");
     return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
   };
-  const total = cents(bill.dataset.total);
+  const total = parseAmount(bill.dataset.total);
   let generated = false;
   let submitting = false;
   const update = () => {
     const isCash = method.value === "CASH";
     const isBank = method.value === "BANK_TRANSFER";
-    const received = cents(cash.value);
+    const received = parseAmount(cash.value);
     cash.disabled = !generated || !isCash;
     cash.required = generated && isCash;
     form.querySelectorAll("[data-cash-field]").forEach((field) => {
@@ -95,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cashSummary.hidden = method.value !== "CASH";
     cashSummary.textContent =
       method.value === "CASH"
-        ? `Amount Received: ${money.format(cents(cash.value) / 100)} | Change Amount: ${money.format((cents(cash.value) - total) / 100)}`
+        ? `Amount Received: ${money.format(parseAmount(cash.value) / 100)} | Change Amount: ${money.format((parseAmount(cash.value) - total) / 100)}`
         : "";
     document.getElementById("confirm-payment").showModal();
   });

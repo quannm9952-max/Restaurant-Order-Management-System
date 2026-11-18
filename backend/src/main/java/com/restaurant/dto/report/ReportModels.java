@@ -220,9 +220,9 @@ public final class ReportModels {
 
     public String chartTitle() {
       return switch (grouping) {
-        case MONTH -> "Monthly revenue · USD";
-        case WEEK -> "Weekly revenue · USD";
-        default -> "Daily revenue · USD";
+        case MONTH -> "Monthly revenue · VND";
+        case WEEK -> "Weekly revenue · VND";
+        default -> "Daily revenue · VND";
       };
     }
 

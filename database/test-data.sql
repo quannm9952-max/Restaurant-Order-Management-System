@@ -1,6 +1,6 @@
 -- TEST/DEMO DATA ONLY. Use the isolated restaurant_order_management_tv5_demo database.
 -- Re-runnable fixtures for member 5, not an implementation of TV1–TV4 workflows.
--- 29 Oct–04 Nov 2026: 24 SUCCESSFUL = USD 1892.00; 2 PENDING + 2 FAILED excluded.
+-- 29 Oct–04 Nov 2026: 24 SUCCESSFUL = VND 1892.00; 2 PENDING + 2 FAILED excluded.
 START TRANSACTION;
 
 INSERT INTO Employee (employee_id, full_name, position) VALUES

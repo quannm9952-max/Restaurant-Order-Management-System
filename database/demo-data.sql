@@ -202,14 +202,14 @@ INSERT INTO Menu_category(category_id,category_name,description,is_active) VALUE
 (9101,'Main Courses','DEMO catalog',true),(9102,'Appetizers','DEMO catalog',true),(9103,'Beverages','DEMO catalog',true),(9104,'Desserts','DEMO catalog',true)
 ON DUPLICATE KEY UPDATE category_id=VALUES(category_id);
 INSERT INTO Menu_item(item_id,category_id,item_name,description,unit_price,is_active,is_available) VALUES
-(9111,9101,'DEMO Japanese A5 Wagyu Steak','DEMO price in USD',65.00,true,true),
-(9112,9101,'DEMO Lobster Thermidor','DEMO price in USD',48.50,true,true),
-(9113,9102,'DEMO Burrata with Heirloom Tomatoes','DEMO price in USD',12.00,true,true),
-(9114,9102,'DEMO French Onion Soup','DEMO price in USD',8.50,true,true),
-(9115,9103,'DEMO Classic Mojito Mocktail','DEMO price in USD',6.00,true,true),
-(9116,9103,'DEMO Premium Jasmine Tea','DEMO price in USD',4.50,true,true),
-(9117,9104,'DEMO Italian Tiramisu','DEMO price in USD',9.00,true,true),
-(9118,9104,'DEMO Belgian Chocolate Fondant','DEMO price in USD',10.50,true,true)
+(9111,9101,'DEMO Japanese A5 Wagyu Steak','DEMO price in VND',65.00,true,true),
+(9112,9101,'DEMO Lobster Thermidor','DEMO price in VND',48.50,true,true),
+(9113,9102,'DEMO Burrata with Heirloom Tomatoes','DEMO price in VND',12.00,true,true),
+(9114,9102,'DEMO French Onion Soup','DEMO price in VND',8.50,true,true),
+(9115,9103,'DEMO Classic Mojito Mocktail','DEMO price in VND',6.00,true,true),
+(9116,9103,'DEMO Premium Jasmine Tea','DEMO price in VND',4.50,true,true),
+(9117,9104,'DEMO Italian Tiramisu','DEMO price in VND',9.00,true,true),
+(9118,9104,'DEMO Belgian Chocolate Fondant','DEMO price in VND',10.50,true,true)
 ON DUPLICATE KEY UPDATE item_id=VALUES(item_id);
 
 COMMIT;

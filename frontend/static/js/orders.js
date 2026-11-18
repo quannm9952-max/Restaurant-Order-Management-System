@@ -3,9 +3,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!workspace) return;
   const cart = new Map();
   const money = (value) =>
-    new Intl.NumberFormat("en-US", {
+    new Intl.NumberFormat("vi-VN", {
       style: "currency",
-      currency: "USD",
+      currency: "VND",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(value);
   const render = () => {
     const lines = document.querySelector("[data-cart-lines]");

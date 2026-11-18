@@ -1515,7 +1515,7 @@ dd {
 .chart-axis {
   position: absolute;
   inset: var(--chart-top-space) auto var(--chart-label-space) 0;
-  width: 40px;
+  width: var(--chart-axis-width);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1533,12 +1533,14 @@ dd {
 .bar-chart {
   --chart-top-space: 24px;
   --chart-label-space: 32px;
-  padding: var(--chart-top-space) 24px var(--chart-label-space) 48px;
+  --chart-axis-width: 112px;
+  padding: var(--chart-top-space) 24px var(--chart-label-space)
+    calc(var(--chart-axis-width) + 8px);
 }
 .chart-grid {
   top: var(--chart-top-space);
   bottom: var(--chart-label-space);
-  left: 48px;
+  left: calc(var(--chart-axis-width) + 8px);
   right: 24px;
 }
 .search-submit {

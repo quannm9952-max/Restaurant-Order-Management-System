@@ -36,3 +36,10 @@ phương thức khác vào nhóm Unknown, còn lịch sử/hóa đơn giữ nhã
 Ràng buộc `uq_one_successful_payment_per_order` và khóa Orders được tái sử
 dụng để chống hai thanh toán thành công. `check.sql` có truy vấn đối soát
 nhóm phương thức với cùng khoảng ngày và quy tắc Successful + Completed.
+
+Đơn vị hiển thị hiện tại là VND; không có phép nhân tỷ giá hoặc làm tròn
+các cột giá/tiền khi chuyển từ giao diện USD. Schema DECIMAL hiện có giữ
+nguyên để bảo toàn số tiền cũ có phần lẻ. Với database đã tồn tại, migration
+`migrations/20261118_vnd_labels.sql` chỉ đổi chuỗi mô tả demo gốc sang VND
+cho item_id 9111–9118; chạy lại an toàn và giữ mô tả đã được chỉnh sửa.
+Migration không cập nhật giá, đơn, thanh toán hoặc hóa đơn.

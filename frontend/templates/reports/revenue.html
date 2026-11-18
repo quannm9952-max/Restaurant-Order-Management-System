@@ -58,7 +58,7 @@
           ><img th:src="@{/images/icons/cash.svg}" alt="" /><strong
             id="total-revenue"
             th:text="${@money.format(report.summary.totalRevenue)}"
-            >$0.00</strong
+            >0 ₫</strong
           ><small>Successful payments only</small>
         </section>
         <section class="metric">
@@ -162,7 +162,7 @@
           <div class="panel-heading">
             <div>
               <h2>Revenue over time</h2>
-              <p th:text="${report.chartTitle()}">Daily revenue · USD</p>
+              <p th:text="${report.chartTitle()}">Daily revenue · VND</p>
             </div>
             <span class="chart-legend"><i></i>Successful</span>
           </div>
@@ -210,7 +210,7 @@
                       class="revenue-bar"
                       th:style="'height:' + ${point.heightPercent} + '%'"
                     >
-                      <b th:text="${@money.format(point.amount)}">$0</b>
+                      <b th:text="${@money.format(point.amount)}">0 ₫</b>
                     </div>
                   </div>
                   <span
@@ -278,7 +278,7 @@
                   >Order</small
                 ></span
               ><strong th:text="${@money.format(payment.amount)}"
-                >$0.00</strong
+                >0 ₫</strong
               ></a
             >
             <div

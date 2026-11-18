@@ -194,7 +194,7 @@
             <span
               th:text="'Showing ' + ${#lists.size(items)} + ' of ' + ${stats.totalItems} + ' menu items'"
             ></span
-            ><span>Prices in USD</span>
+            ><span>Prices in VND</span>
           </footer>
         </section>
       </div>
@@ -425,7 +425,7 @@
           <div class="field">
             <label
               th:for="${'food-price-' + (item == null or item.id == null ? 'new' : item.id)}"
-              >Price (USD)</label
+              >Price (VND)</label
             ><input
               class="form-control"
               name="price"

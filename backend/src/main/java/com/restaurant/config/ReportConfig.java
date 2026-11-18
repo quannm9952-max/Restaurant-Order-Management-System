@@ -24,15 +24,17 @@ public class ReportConfig {
 
   public static final class MoneyFormatter {
     public String format(BigDecimal amount) {
-      return NumberFormat.getCurrencyInstance(Locale.US).format(amount);
+      NumberFormat format = NumberFormat
+          .getCurrencyInstance(Locale.forLanguageTag("vi-VN"));
+      // Retain fractional legacy amounts instead of silently rounding stored
+      // money.
+      format.setMinimumFractionDigits(0);
+      format.setMaximumFractionDigits(2);
+      return format.format(amount);
     }
 
     public String axis(BigDecimal amount) {
-      NumberFormat format = NumberFormat.getCurrencyInstance(Locale.US);
-      int decimals = amount.stripTrailingZeros().scale() > 0 ? 2 : 0;
-      format.setMinimumFractionDigits(decimals);
-      format.setMaximumFractionDigits(decimals);
-      return format.format(amount);
+      return format(amount);
     }
   }
 }
