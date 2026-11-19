@@ -81,7 +81,6 @@
         <span th:text="${paid ? 'Total paid' : 'Amount due'}"></span
         ><strong th:text="${@money.format(total)}"></strong>
       </div>
-      <p class="tiny">All amounts in VND. Cancelled item lines are excluded.</p>
       <footer class="invoice-thanks">
         <h2>Thank you for dining with us!</h2>
         <p class="tiny" th:if="${!paid}">
