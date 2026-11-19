@@ -308,6 +308,12 @@
               </button>
             </div>
             <p class="form-error" data-preview-error role="alert" hidden></p>
+            <a
+              data-preview-reload
+              th:href="@{/payments(orderId=${o.id},search=${currentSearch})}"
+              hidden
+              >Reload Payment</a
+            >
             <dialog class="app-dialog" id="confirm-payment">
               <div class="dialog-head">
                 <h2>Confirm Payment</h2>

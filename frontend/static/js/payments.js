@@ -145,6 +145,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const printBill = form.querySelector("[data-print-bill]");
   const preview = document.querySelector("#bill-preview");
   const previewError = form.querySelector("[data-preview-error]");
+  const previewReload = form.querySelector("[data-preview-reload]");
+  const checkPreviewAccess = (response) => {
+    if (
+      response.status === 401 ||
+      response.status === 403 ||
+      (response.redirected && new URL(response.url).pathname === "/login")
+    )
+      throw new Error(
+        "This page has expired. Reload Payment and sign in again if asked.",
+      );
+  };
+  const readReview = async (response) => {
+    checkPreviewAccess(response);
+    const fallback = "Could not open the bill. Reload Payment and try again.";
+    if (!response.headers.get("content-type")?.includes("application/json"))
+      throw new Error(fallback);
+    let reviewed;
+    try {
+      reviewed = await response.json();
+    } catch {
+      throw new Error(fallback);
+    }
+    if (!response.ok)
+      throw new Error(
+        typeof reviewed?.error === "string" ? reviewed.error : fallback,
+      );
+    if (
+      typeof reviewed?.billRevision !== "string" ||
+      !/^[a-f0-9]{64}$/.test(reviewed.billRevision)
+    )
+      throw new Error(fallback);
+    return reviewed;
+  };
   const quantities = [...form.querySelectorAll("[data-bill-quantity]")];
   let busy = false;
   let validQuantities = true;
@@ -249,6 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
       validQuantities = reviewQuantities();
       verified.checked = false;
       previewError.hidden = true;
+      previewReload.hidden = true;
       update();
     }),
   );
@@ -257,27 +291,44 @@ document.addEventListener("DOMContentLoaded", () => {
     if (busy || !validQuantities || (!canPay && !paid)) return;
     busy = true;
     previewError.hidden = true;
+    previewReload.hidden = true;
     update();
     try {
       let url = form.dataset.invoiceUrl;
       if (!paid) {
+        const data = new URLSearchParams();
+        const reviewFields = new Set([
+          "detailId",
+          "quantity",
+          "billRevision",
+          "expectedTotal",
+          "_csrf",
+        ]);
+        for (const [name, value] of new FormData(form)) {
+          if (reviewFields.has(name)) data.append(name, value);
+        }
+        const headers = { Accept: "application/json" };
+        const token = form.querySelector('[name="_csrf"]');
+        if (token) headers["X-CSRF-TOKEN"] = token.value;
         const response = await fetch(form.dataset.reviewUrl, {
           method: "POST",
-          body: new FormData(form),
-          headers: { Accept: "application/json" },
+          body: data,
+          credentials: "same-origin",
+          headers,
         });
-        const reviewed = await response.json();
-        if (!response.ok)
-          throw new Error(
-            reviewed.error || "Could not save the reviewed bill.",
-          );
+        const reviewed = await readReview(response);
         form.querySelector("[name=billRevision]").value = reviewed.billRevision;
         url =
           form.dataset.previewUrl +
           "?revision=" +
           encodeURIComponent(reviewed.billRevision);
       }
-      const response = await fetch(url, { headers: { Accept: "text/html" } });
+      const response = await fetch(url, {
+        headers: { Accept: "text/html" },
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      checkPreviewAccess(response);
       const page = new DOMParser().parseFromString(
         await response.text(),
         "text/html",
@@ -296,8 +347,13 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.add("bill-preview-open");
       preview.showModal();
     } catch (error) {
-      previewError.textContent = error.message;
+      previewError.textContent =
+        error instanceof TypeError
+          ? "Could not open the bill. Reload Payment and try again."
+          : error.message;
       previewError.hidden = false;
+      previewReload.hidden = false;
+      previewReload.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } finally {
       busy = false;
       update();

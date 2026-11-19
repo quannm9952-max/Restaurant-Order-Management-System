@@ -75,6 +75,27 @@ class HttpSecurityTest {
         "INSERT INTO Account(employee_id,username,password_hash,role,is_active)"
             + " VALUES(9803,'TEST_HTTP_MANAGER',?,'MANAGER',true)",
         encoder.encode("TEST_ONLY_HTTP_2026"));
+    jdbc.update("INSERT INTO Employee(employee_id,full_name,position)"
+        + " VALUES(9804,'TEST HTTP Cashier','CASHIER')");
+    jdbc.update(
+        "INSERT INTO Account(employee_id,username,password_hash,role,is_active)"
+            + " VALUES(9804,'TEST_HTTP_CASHIER',?,'CASHIER',true)",
+        encoder.encode("TEST_ONLY_HTTP_2026"));
+    jdbc.update(
+        "INSERT INTO Restaurant_tables(table_id,table_name,capacity,status)"
+            + " VALUES(9804,'TEST HTTP Bill',4,'OCCUPIED')");
+    jdbc.update("INSERT INTO Menu_category(category_id,category_name)"
+        + " VALUES(9804,'TEST HTTP Bill Category')");
+    jdbc.update(
+        "INSERT INTO Menu_item(item_id,category_id,item_name,unit_price)"
+            + " VALUES(9804,9804,'TEST HTTP Bill Item',450000)");
+    jdbc.update(
+        "INSERT INTO Orders(order_id,table_id,employee_id,status,total_amount)"
+            + " VALUES(9804,9804,9801,'OPEN',450000)");
+    jdbc.update(
+        "INSERT INTO Order_Detail(order_detail_id,order_id,item_id,quantity,"
+            + "unit_price_at_order,item_name_at_order,preparation_status)"
+            + " VALUES(9804,9804,9804,1,450000,'TEST HTTP Bill Item','SERVED')");
     base = "http://127.0.0.1:"
         + environment.getRequiredProperty("local.server.port");
   }
@@ -143,6 +164,67 @@ class HttpSecurityTest {
         + "&username=TEST_HTTP_MANAGER&password=TEST_ONLY_HTTP_2026");
     assertThat(signedIn.uri().getPath()).isEqualTo("/home");
     return client;
+  }
+
+  @Test
+  void realCashierCanReviewAndPreviewBillWithoutReceivingPayment()
+      throws Exception {
+    try (var client = client()) {
+      var login = get(client, "/login");
+      var signedIn = post(client, "/login", csrf(login.body())
+          + "&username=TEST_HTTP_CASHIER&password=TEST_ONLY_HTTP_2026");
+      assertThat(signedIn.uri().getPath()).isEqualTo("/home");
+      var page = get(client, "/payments?orderId=9804");
+      var revision = Pattern
+          .compile("name=\"billRevision\"[^>]*value=\"([^\"]+)\"")
+          .matcher(page.body());
+      assertThat(revision.find()).isTrue();
+      String token = URLDecoder.decode(csrf(page.body()).substring(6),
+          StandardCharsets.UTF_8);
+      var reviewed = client.send(HttpRequest
+          .newBuilder(URI.create(base + "/payments/9804/review"))
+          .header("Content-Type", "application/x-www-form-urlencoded")
+          .header("Accept", "application/json").header("X-CSRF-TOKEN", token)
+          .POST(HttpRequest.BodyPublishers.ofString("detailId=9804&quantity=1"
+              + "&expectedTotal=450000&billRevision=" + revision.group(1)))
+          .build(), HttpResponse.BodyHandlers.ofString());
+      assertThat(reviewed.statusCode()).isEqualTo(200);
+      assertThat(reviewed.headers().firstValue("Content-Type"))
+          .hasValueSatisfying(
+              value -> assertThat(value).startsWith("application/json"));
+      assertThat(reviewed.body())
+          .contains("\"billRevision\":\"" + revision.group(1) + "\"");
+      var bill = get(client,
+          "/payments/9804/bill?revision=" + revision.group(1));
+      assertThat(bill.statusCode()).isEqualTo(200);
+      assertThat(bill.body().replace('\u00a0', ' ')).contains("invoice-paper",
+          "TEST HTTP Bill Item", "Unpaid", "450.000 VND");
+      assertThat(jdbc.queryForObject(
+          "SELECT status FROM Orders WHERE order_id=9804", String.class))
+          .isEqualTo("OPEN");
+      assertThat(jdbc.queryForObject(
+          "SELECT COUNT(*) FROM Payment WHERE order_id=9804", Long.class))
+          .isZero();
+      assertThat(jdbc.queryForObject(
+          "SELECT COUNT(*) FROM Invoice WHERE order_id=9804", Long.class))
+          .isZero();
+    }
+  }
+
+  @Test
+  void expiredPageCannotReviewBillWithoutValidSessionAndCsrf()
+      throws Exception {
+    try (var client = client()) {
+      var denied = post(client, "/payments/9804/review",
+          "detailId=9804&quantity=2&expectedTotal=900000&billRevision=old&_csrf=expired");
+      assertThat(denied.statusCode()).isEqualTo(403);
+      assertThat(jdbc.queryForObject(
+          "SELECT quantity FROM Order_Detail WHERE order_detail_id=9804",
+          Integer.class)).isEqualTo(1);
+      assertThat(jdbc.queryForObject(
+          "SELECT COUNT(*) FROM Payment WHERE order_id=9804", Long.class))
+          .isZero();
+    }
   }
 
   @Test
