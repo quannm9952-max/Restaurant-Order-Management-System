@@ -134,37 +134,127 @@ function initScrollableRegions() {
 
 function initMenuPrices() {
   document.querySelectorAll("[data-menu-price]").forEach((input) => {
+    const amount = input.form.querySelector("[data-menu-price-amount]");
     const error = document.getElementById(
       input.getAttribute("aria-describedby"),
     );
+    let units = "";
+    let selection = [0, 0];
+    let displayedSelection = [0, 0];
+    const [initialWhole, initialFraction = ""] = amount.value.split(".");
+    const initialDecimals = initialFraction.replace(/0+$/, "");
+    const initialValue =
+      initialWhole + (initialDecimals ? "," + initialDecimals : "");
+    const readText = (text) => {
+      const value = text
+        .trim()
+        .replace(/\s*VND$/i, "")
+        .trim();
+      return /^-?\d{1,3}(\.\d{3})+(,\d*)?$/.test(value)
+        ? value.replace(/\./g, "")
+        : value.replace(".", ",");
+    };
     const validate = (required = false) => {
-      input.setCustomValidity("");
       let message = "";
-      if (input.validity.badInput) message = "Enter a valid price.";
-      else if (!input.value) {
+      const numeric = /^-?\d+(,\d*)?$/.test(units);
+      if (!units) {
         if (required) message = "Please enter a price.";
-      } else if (input.valueAsNumber < 0) message = "Price cannot be negative.";
-      else if (input.validity.rangeUnderflow)
+      } else if (!numeric) message = "Enter a valid price.";
+      else if (units.startsWith("-")) message = "Price cannot be negative.";
+      else if (Number(units.replace(",", ".")) <= 0)
         message = "Price must be greater than 0 VND.";
-      else if (input.validity.rangeOverflow)
+      else if (Number(units.replace(",", ".")) > 9999999999.99)
         message = "Price must not exceed 9.999.999.999,99 VND.";
-      else if (input.validity.stepMismatch)
+      else if ((units.split(",")[1] || "").length > 2)
         message = "Use no more than two decimal places.";
+      amount.value =
+        !message && numeric ? units.replace(",", ".").replace(/\.$/, "") : "";
       input.setCustomValidity(message);
       input.setAttribute("aria-invalid", String(Boolean(message)));
       error.textContent = message;
       error.hidden = !message;
     };
+    const render = (value, caret = value.length) => {
+      units = value.replace(/^(-?)0+(?=\d)/, "$1");
+      caret = Math.min(
+        units.length,
+        Math.max(0, caret - (value.length - units.length)),
+      );
+      if (/^-?\d+(,\d*)?$/.test(units)) {
+        const [whole, fraction] = units.split(",");
+        input.value =
+          whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".") +
+          (fraction === undefined ? "" : "," + fraction) +
+          " VND";
+      } else input.value = units;
+      let position = 0;
+      let remaining = caret;
+      while (position < input.value.length && remaining > 0) {
+        if (input.value[position] !== ".") remaining--;
+        position++;
+      }
+      input.setSelectionRange(position, position);
+      selection = [caret, caret];
+      displayedSelection = [position, position];
+      validate();
+    };
+    const range = () => {
+      const current = [input.selectionStart ?? 0, input.selectionEnd ?? 0];
+      return current.every(
+        (value, index) => value === displayedSelection[index],
+      )
+        ? selection
+        : current.map((position) =>
+            Math.min(
+              units.length,
+              input.value.slice(0, position).replace(/\./g, "").length,
+            ),
+          );
+    };
+    input.addEventListener("beforeinput", (event) => {
+      if (event.isComposing) return;
+      let [start, end] = range();
+      let inserted;
+      if (
+        event.inputType === "deleteContentBackward" ||
+        event.inputType === "deleteContentForward"
+      ) {
+        if (start === end) {
+          if (event.inputType === "deleteContentBackward")
+            start = Math.max(0, start - 1);
+          else end = Math.min(units.length, end + 1);
+        }
+        inserted = "";
+      } else if (event.inputType.startsWith("insert") && event.data !== null)
+        inserted = event.data.replace(".", ",");
+      else return;
+      event.preventDefault();
+      render(
+        units.slice(0, start) + inserted + units.slice(end),
+        start + inserted.length,
+      );
+    });
+    input.addEventListener("paste", (event) => {
+      event.preventDefault();
+      const [start, end] = range();
+      const inserted = readText(event.clipboardData.getData("text"));
+      render(
+        units.slice(0, start) + inserted + units.slice(end),
+        start + inserted.length,
+      );
+    });
     ["input", "change"].forEach((event) =>
-      input.addEventListener(event, () => validate()),
+      input.addEventListener(event, () => render(readText(input.value))),
     );
     input.addEventListener("invalid", (event) => {
       event.preventDefault();
       validate(true);
       input.focus();
     });
-    input.form.addEventListener("reset", () => setTimeout(validate));
-    validate();
+    input.form.addEventListener("reset", () =>
+      setTimeout(() => render(initialValue)),
+    );
+    render(initialValue);
   });
 }
 
