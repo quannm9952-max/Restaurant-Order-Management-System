@@ -17,9 +17,7 @@
       <div class="flex-row spread">
         <div>
           <h1>Oak &amp; Ember Restaurant</h1>
-          <p
-            th:text="${paid ? 'Dine-in invoice' : 'Bill for customer review · Not paid'}"
-          ></p>
+          <p th:if="${paid}">Dine-in invoice</p>
         </div>
         <span
           class="status-chip"
