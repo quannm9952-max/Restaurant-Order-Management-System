@@ -275,7 +275,9 @@ function initEmployeeFilters() {
       });
       document.querySelector("[data-employee-count]").textContent =
         `Showing ${matched.length ? page * 8 + 1 : 0}–${Math.min((page + 1) * 8, matched.length)} of ${matched.length} employees`;
-      document.querySelector("[data-page-number]").textContent = page + 1;
+      const pageNumber = document.querySelector("[data-page-number]");
+      pageNumber.textContent = `${page + 1} / ${pages}`;
+      pageNumber.setAttribute("aria-label", `Page ${page + 1} of ${pages}`);
       document.querySelector("[data-page-prev]").disabled = page === 0;
       document.querySelector("[data-page-next]").disabled = page === pages - 1;
       document.querySelector("[data-employee-empty]").hidden =

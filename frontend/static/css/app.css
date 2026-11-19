@@ -377,17 +377,36 @@ label {
   display: flex;
   gap: 8px;
 }
-.pagination-buttons button {
+.pagination-buttons button,
+.pagination-buttons .current {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--border);
   background: white;
   border-radius: 6px;
   padding: 6px 12px;
   color: var(--muted);
 }
-.pagination-buttons button.current {
+.pagination-buttons .current {
   background: var(--orange-pale);
   color: var(--orange);
   border-color: transparent;
+  white-space: nowrap;
+}
+.pagination-buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pagination-buttons button:not(:disabled):hover {
+  background: var(--orange-pale);
+  color: var(--orange);
+}
+.pagination-buttons button:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
 }
 .footnote {
   margin-top: 16px;

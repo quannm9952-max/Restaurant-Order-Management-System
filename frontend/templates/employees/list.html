@@ -124,11 +124,57 @@
         </p>
         <footer class="list-footer">
           <span data-employee-count></span>
-          <div class="pagination-buttons">
-            <button data-page-prev aria-label="Previous page">?</button
-            ><button class="current" data-page-number>1</button
-            ><button data-page-next aria-label="Next page">?</button>
-          </div>
+          <nav class="pagination-buttons" aria-label="Employee pagination">
+            <button
+              type="button"
+              data-page-prev
+              aria-label="Previous page"
+              title="Previous page"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <span
+              class="current"
+              data-page-number
+              role="status"
+              aria-live="polite"
+              >1 / 1</span
+            >
+            <button
+              type="button"
+              data-page-next
+              aria-label="Next page"
+              title="Next page"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </button>
+          </nav>
         </footer>
       </section>
       <div class="footnote">
@@ -268,7 +314,11 @@
               aria-describedby="employeeUsernameHelp"
               required
             />
-            <small class="username-hint" id="employeeUsernameHelp" role="status">
+            <small
+              class="username-hint"
+              id="employeeUsernameHelp"
+              role="status"
+            >
               A-Z, a-z, 0-9 and underscore (_) only.
             </small>
           </div>
