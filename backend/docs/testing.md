@@ -1,3 +1,18 @@
+## Phân trang thống nhất toàn hệ thống (19/11/2026)
+
+Ba khu vực có phân trang (Employees, Restaurant Orders, Payment History)
+dùng cùng kiểu mũi tên SVG trái/phải, ô trang hiện tại / tổng trang nền cam
+nhạt, kích thước nút và trạng thái mờ. Hai trang báo cáo dùng chung fragment;
+Employees vẫn phân trang tại trình duyệt và dùng cùng SVG/CSS. Nút đầu/cuối
+là button disabled, không có URL âm hoặc link đi quá trang cuối.
+
+Docker verify: **350 test đạt**, Prettier và git diff --check đạt. Chrome
+kiểm tra cả ba tại 1440/820/390/320 px; kiểu chữ, màu, kích thước ô số trang
+khớp nhau. Điều hướng đủ các trang rồi quay lại: không trùng dòng, giữ q,
+status, from/to và payment method. Kết quả rỗng có 1 / 1 và hai nút disabled;
+Employees đầu/cuối đúng. Không tràn trang/lỗi JavaScript. Đối chiếu checksum
+đủ 9 bảng trước/sau triển khai và thử giao diện không đổi, chỉ dùng GET.
+
 ## Lọc ghi chú lập trình khỏi giao diện (19/11/2026)
 
 Giữ hướng dẫn thao tác, giới hạn nhập liệu, điều kiện nghiệp vụ, trạng thái

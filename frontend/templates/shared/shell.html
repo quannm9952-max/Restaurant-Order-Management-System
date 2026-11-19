@@ -158,6 +158,70 @@
         <p th:text="${description}"></p>
       </div>
     </section>
+    <svg
+      th:fragment="pageArrow(previous)"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path th:attr="d=${previous ? 'm15 18-6-6 6-6' : 'm9 6 6 6-6 6'}" />
+    </svg>
+    <nav
+      th:fragment="pagination(result,previousUrl,nextUrl,label)"
+      class="pagination-buttons"
+      th:attr="aria-label=${label}"
+    >
+      <a
+        th:if="${result.hasPrevious()}"
+        th:href="${previousUrl}"
+        aria-label="Previous page"
+        title="Previous page"
+        rel="prev"
+      >
+        <svg th:replace="~{shared/shell :: pageArrow(true)}"></svg>
+      </a>
+      <button
+        th:unless="${result.hasPrevious()}"
+        type="button"
+        disabled
+        aria-label="Previous page"
+        title="Previous page"
+      >
+        <svg th:replace="~{shared/shell :: pageArrow(true)}"></svg>
+      </button>
+      <span
+        class="current"
+        role="status"
+        aria-live="polite"
+        th:text="${result.number + 1} + ' / ' + ${result.pages()}"
+        th:attr="aria-label=|Page ${result.number + 1} of ${result.pages()}|"
+      ></span>
+      <a
+        th:if="${result.hasNext()}"
+        th:href="${nextUrl}"
+        aria-label="Next page"
+        title="Next page"
+        rel="next"
+      >
+        <svg th:replace="~{shared/shell :: pageArrow(false)}"></svg>
+      </a>
+      <button
+        th:unless="${result.hasNext()}"
+        type="button"
+        disabled
+        aria-label="Next page"
+        title="Next page"
+      >
+        <svg th:replace="~{shared/shell :: pageArrow(false)}"></svg>
+      </button>
+    </nav>
     <div th:fragment="flash" aria-live="polite">
       <div
         class="notice success"

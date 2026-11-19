@@ -25,3 +25,9 @@ cần thiết cho nhân viên/khách. Không đưa ghi chú kiểm thử, lý do
 cơ chế lưu dữ liệu hoặc chi tiết polling lên giao diện. Ghi chú lập trình
 nằm trong mã nguồn hoặc tài liệu phát triển. Ghi chú đơn và mô tả món do
 nhân viên nhập vẫn được hiển thị, có escape HTML như trước.
+
+Phân trang Employee Management, Restaurant Orders và Payment History dùng
+cùng `.pagination-buttons`: mũi tên trái, trang hiện tại / tổng trang, mũi tên
+phải. SVG dùng `shared/shell :: pageArrow`; các trang báo cáo dùng chung
+fragment `pagination`. Đầu/cuối danh sách dùng button disabled; liên kết
+chuyển trang giữ đầy đủ tìm kiếm và bộ lọc.

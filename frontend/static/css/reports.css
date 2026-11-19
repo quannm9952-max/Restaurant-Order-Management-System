@@ -836,6 +836,7 @@ button.bar-column {
 }
 .pagination-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -844,21 +845,6 @@ button.bar-column {
   border-top: 1px solid var(--border);
   color: var(--subtle);
   font-size: 10.5px;
-}
-.pagination-footer nav {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-.pagination-footer .btn {
-  min-height: 28px;
-  padding: 4px 15px;
-  font-size: 10.5px;
-}
-.pagination-footer .disabled {
-  background: #eef1f5;
-  color: #98a3b1;
-  border-color: #e3e8ee;
 }
 .empty-state {
   min-height: 240px;

@@ -191,24 +191,9 @@
           <span
             th:text="'Showing ' + ${result.first()} + '–' + ${result.last()} + ' of ' + ${result.total} + ' transactions'"
           ></span>
-          <nav aria-label="Payment history pages">
-            <a
-              class="btn btn-outline-secondary"
-              th:classappend="${!result.hasPrevious()} ? 'disabled'"
-              th:attr="aria-disabled=${!result.hasPrevious()}"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number - 1},method=${selectedMethod})}"
-              >Previous</a
-            ><span
-              th:text="${result.number + 1} + ' of ' + ${result.pages()}"
-            ></span
-            ><a
-              class="btn btn-outline-secondary"
-              th:classappend="${!result.hasNext()} ? 'disabled'"
-              th:attr="aria-disabled=${!result.hasNext()}"
-              th:href="@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number + 1},method=${selectedMethod})}"
-              >Next</a
-            >
-          </nav>
+          <nav
+            th:replace="~{shared/shell :: pagination(${result},@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number - 1},method=${selectedMethod})},@{/manager/payment-history(from=${range.from},to=${range.to},q=${q},status=${selectedStatus},page=${result.number + 1},method=${selectedMethod})},'Payment history pages')}"
+          ></nav>
         </footer>
       </section>
     </main>

@@ -375,8 +375,12 @@ label {
 }
 .pagination-buttons {
   display: flex;
+  align-items: center;
+  flex-shrink: 0;
   gap: 8px;
+  font-size: 12px;
 }
+.pagination-buttons a,
 .pagination-buttons button,
 .pagination-buttons .current {
   display: inline-flex;
@@ -389,6 +393,7 @@ label {
   border-radius: 6px;
   padding: 6px 12px;
   color: var(--muted);
+  text-decoration: none;
 }
 .pagination-buttons .current {
   background: var(--orange-pale);
@@ -400,10 +405,12 @@ label {
   opacity: 0.4;
   cursor: default;
 }
+.pagination-buttons a:hover,
 .pagination-buttons button:not(:disabled):hover {
   background: var(--orange-pale);
   color: var(--orange);
 }
+.pagination-buttons a:focus-visible,
 .pagination-buttons button:focus-visible {
   outline: 2px solid var(--orange);
   outline-offset: 2px;

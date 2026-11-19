@@ -90,22 +90,9 @@
           <span
             th:text="'Showing ' + ${result.first()} + '–' + ${result.last()} + ' of ' + ${result.total} + ' orders'"
           ></span>
-          <nav aria-label="Order pages">
-            <a
-              class="btn btn-outline-secondary"
-              th:classappend="${!result.hasPrevious()} ? 'disabled'"
-              th:href="@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number - 1})}"
-              >Previous</a
-            ><span
-              th:text="${result.number + 1} + ' of ' + ${result.pages()}"
-            ></span
-            ><a
-              class="btn btn-outline-secondary"
-              th:classappend="${!result.hasNext()} ? 'disabled'"
-              th:href="@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number + 1})}"
-              >Next</a
-            >
-          </nav>
+          <nav
+            th:replace="~{shared/shell :: pagination(${result},@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number - 1})},@{/manager/orders(q=${q},status=${selectedStatus},page=${result.number + 1})},'Order pages')}"
+          ></nav>
         </footer>
       </section>
       <p class="footnote">Managers can view order history on this page.</p>
