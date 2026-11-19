@@ -507,7 +507,12 @@ dialog.app-dialog h2 {
 }
 .menu-actions {
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: max-content;
+}
+.menu-actions .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .username-hint.username-error {
   color: #b82b20;
@@ -886,7 +891,7 @@ dialog.app-dialog h2 {
 .menu-table .btn {
   min-height: 34px;
   font-size: 11px;
-  padding: 6px 18px;
+  padding: 6px 12px;
 }
 .menu-notice {
   margin-top: 24px;
