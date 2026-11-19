@@ -17,3 +17,11 @@ Serving Management dùng `status=READY|SERVED`, mặc định Ready. Mục Serve
 không có form/nút xác nhận; hiển thị theo bàn và đơn, giữ bộ lọc khi chuyển
 mục. Tiến độ tính toàn đơn, không phụ thuộc từ khóa tìm kiếm. Polling giữ
 thông báo Ready riêng và cập nhật lịch sử khi món/đơn thay đổi.
+
+## Nội dung hướng dẫn trên giao diện
+
+Chỉ hiển thị hướng dẫn thao tác, điều kiện nghiệp vụ, cảnh báo và trạng thái
+cần thiết cho nhân viên/khách. Không đưa ghi chú kiểm thử, lý do triển khai,
+cơ chế lưu dữ liệu hoặc chi tiết polling lên giao diện. Ghi chú lập trình
+nằm trong mã nguồn hoặc tài liệu phát triển. Ghi chú đơn và mô tả món do
+nhân viên nhập vẫn được hiển thị, có escape HTML như trước.

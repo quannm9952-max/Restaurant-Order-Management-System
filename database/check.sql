@@ -26,7 +26,6 @@ ORDER BY p.payment_time, p.payment_id;
 SELECT o.order_id, o.total_amount, SUM(CASE WHEN d.preparation_status <> 'CANCELLED'
        THEN d.quantity * d.unit_price_at_order ELSE 0 END) AS item_total
 FROM Orders o JOIN Order_Detail d ON d.order_id = o.order_id
-WHERE o.notes LIKE 'DEMO%'
 GROUP BY o.order_id, o.total_amount
 HAVING o.total_amount <> item_total;
 

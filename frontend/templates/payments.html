@@ -8,7 +8,7 @@
     ></header>
     <main class="main-content">
       <section
-        th:replace="~{shared/shell :: heading('Payment & Invoice','Select an order, review its saved prices and collect payment.')}"
+        th:replace="~{shared/shell :: heading('Payment & Invoice','Select an order, check its bill and collect payment.')}"
       ></section>
       <div th:replace="~{shared/shell :: flash}"></div>
       <div class="payment-layout">
@@ -83,7 +83,7 @@
           <div class="flex-row spread">
             <div>
               <h2>Oak &amp; Ember Restaurant</h2>
-              <p class="tiny">Dine-in bill &#183; Saved order prices</p>
+              <p class="tiny">Dine-in bill</p>
             </div>
             <div class="right">
               <span class="eyebrow">BILL SUMMARY</span>
@@ -126,7 +126,7 @@
                   <tr>
                     <th>ITEM</th>
                     <th class="text-center">QTY</th>
-                    <th class="right">SAVED UNIT PRICE</th>
+                    <th class="right">UNIT PRICE</th>
                     <th class="right">SUBTOTAL</th>
                   </tr>
                 </thead>
@@ -328,9 +328,9 @@
               <div class="dialog-body">
                 <h3 th:text="'ORD-' + ${o.id} + ' · ' + ${o.table_code}"></h3>
                 <p class="mt-3">
-                  Record the payment collected at the restaurant. Confirming
-                  saves the reviewed quantities, completes the order, releases
-                  its table and creates the paid invoice.
+                  Confirm only after receiving the full payment. The order will
+                  close, its table will become available and the paid invoice
+                  will be ready to print.
                 </p>
                 <div class="bill-total">
                   <span>Amount collected</span

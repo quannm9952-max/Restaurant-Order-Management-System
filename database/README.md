@@ -88,3 +88,12 @@ Invoice và giải phóng bàn trong cùng transaction. Chỉ khi này đơn b�
 và khoản tiền được tính doanh thu. Invoice chưa trả do phiên bản Generate
 Bill trước đây không còn khóa đơn: khi thanh toán sẽ cập nhật đúng tổng,
 thời gian phát hành và giữ số hóa đơn cũ. Không cập nhật hóa đơn đã thanh toán.
+
+## Gỡ ghi chú lập trình trong dữ liệu mẫu
+
+Seed demo không đưa mô tả kiểm thử/fixture vào ghi chú đơn hoặc mô tả món,
+danh mục. Với database đang tồn tại, sao lưu rồi chạy
+`migrations/20261119_remove_developer_notes.sql`: chỉ xóa về NULL các cặp
+ID + câu gốc khớp chính xác. Mô tả/ghi chú đã được nhân viên chỉnh sửa và
+các bản ghi khác được giữ; tiền, trạng thái, số lượng, tài khoản không đổi.
+Migration chạy lại an toàn. Không chạy test-data.sql trên database đang dùng.

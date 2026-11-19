@@ -9,7 +9,7 @@
     ></header>
     <main id="main" class="main-content">
       <section
-        th:replace="~{shared/reports :: heading('Restaurant Orders','Monitor restaurant orders and inspect retained order details.')}"
+        th:replace="~{shared/reports :: heading('Restaurant Orders','View restaurant orders and their details.')}"
       ></section>
       <section class="panel history-panel">
         <div class="monitoring-toolbar">
@@ -108,9 +108,7 @@
           </nav>
         </footer>
       </section>
-      <p class="footnote">
-        Order history is retained. This page is read-only for Managers.
-      </p>
+      <p class="footnote">Managers can view order history on this page.</p>
     </main>
   </body>
 </html>

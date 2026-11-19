@@ -216,8 +216,7 @@
         <div>
           <strong>Confirm only after the dishes have reached the table.</strong>
           <p>
-            Each line updates independently. A Served item cannot be confirmed
-            again.
+            Confirm each dish once. A Served item cannot be confirmed again.
           </p>
         </div>
         <div class="prep-transition-label">
@@ -227,14 +226,11 @@
         </div>
       </section>
       <p class="footnote">
-        Serving progress counts all non-cancelled item lines in each order.
-        Confirmations are available only for Ready items in Open orders; served
-        items remain available here after payment.
+        Progress shows all dishes in the order except cancelled items. Confirm
+        only Ready dishes in Open orders. You can review served dishes after
+        payment.
       </p>
-      <p class="prep-sync-note" data-preparation-sync>
-        Updates automatically every 15 seconds. Refresh pauses while a
-        confirmation or filter is open.
-      </p>
+      <p class="prep-sync-note" data-preparation-sync role="status" hidden></p>
     </main>
     <th:block th:if="${selectedStatus == 'READY'}">
       <th:block th:each="order : ${queue.orders}"

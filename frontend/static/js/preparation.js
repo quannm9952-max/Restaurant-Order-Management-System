@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
       )
         return;
       const update = await response.json();
+      const sync = document.querySelector("[data-preparation-sync]");
+      if (sync) sync.hidden = true;
       if (badge) {
         badge.textContent = update.readyLines;
         badge.hidden = update.readyLines === 0;
@@ -67,9 +69,10 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.reload();
     } catch {
       const sync = document.querySelector("[data-preparation-sync]");
-      if (sync)
-        sync.textContent =
-          "Automatic refresh is temporarily unavailable. Refresh the page to check the latest items.";
+      if (sync) {
+        sync.textContent = "Refresh the page to check the latest items.";
+        sync.hidden = false;
+      }
     } finally {
       inFlight = false;
     }

@@ -148,7 +148,7 @@
           </div>
           <p
             class="tiny mt-2"
-            th:text="${order == null ? 'Order ID is assigned after creation' : 'Saved prices · ' + order.employeeName}"
+            th:text="${order == null ? 'Order ID is assigned after creation' : 'Created by ' + order.employeeName}"
           ></p>
           <div class="cart-lines">
             <div class="eyebrow border-bottom pb-2 mt-2">
@@ -164,7 +164,7 @@
                 ><strong th:text="${@money.format(line.subtotal)}"></strong>
               </div>
               <small
-                th:text="'Saved ' + ${@money.format(line.unitPriceAtOrder)} + ' × ' + ${line.quantity}"
+                th:text="${@money.format(line.unitPriceAtOrder)} + ' × ' + ${line.quantity}"
               ></small>
               <div class="flex-row spread">
                 <span
@@ -241,8 +241,8 @@
               th:text="${form != null ? form.note : null}"
             ></textarea>
             <div class="notice info">
-              Prices are saved when you create or add items. Creating an order
-              sets this table to Occupied.
+              Prices are based on when each dish is added to the order. Creating
+              an order marks the table as Occupied.
             </div>
             <div class="order-total">
               <span>Order total</span

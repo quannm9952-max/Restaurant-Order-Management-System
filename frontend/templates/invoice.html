@@ -18,7 +18,7 @@
         <div>
           <h1>Oak &amp; Ember Restaurant</h1>
           <p
-            th:text="${paid ? 'Dine-in invoice · Saved order prices' : 'Bill for customer review · Not paid'}"
+            th:text="${paid ? 'Dine-in invoice' : 'Bill for customer review · Not paid'}"
           ></p>
         </div>
         <span
@@ -59,7 +59,7 @@
             <tr>
               <th>ITEM</th>
               <th>QTY</th>
-              <th class="right">SAVED UNIT PRICE</th>
+              <th class="right">UNIT PRICE</th>
               <th class="right">SUBTOTAL</th>
             </tr>
           </thead>
@@ -86,10 +86,9 @@
       <p class="tiny">All amounts in VND. Cancelled item lines are excluded.</p>
       <footer class="invoice-thanks">
         <h2>Thank you for dining with us!</h2>
-        <p class="tiny">
-          <span
-            th:text="${paid ? 'This invoice retains the prices saved with your order.' : 'Please check the items, quantities and amount with the cashier before payment.'}"
-          ></span>
+        <p class="tiny" th:if="${!paid}">
+          Please check the items, quantities and amount with the cashier before
+          payment.
         </p>
       </footer>
     </main>

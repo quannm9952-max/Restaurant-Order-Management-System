@@ -34,8 +34,7 @@
         <div class="prep-toolbar-note">
           <span
             th:text="'Orders containing ' + ${#strings.capitalize(#strings.toLowerCase(selectedStatus))} + ' items'"
-          ></span
-          ><small>Other item statuses stay visible for context</small>
+          ></span>
         </div>
         <a
           class="prep-refresh"
@@ -141,13 +140,10 @@
         >
       </section>
       <p class="footnote">
-        Pending → Preparing → Ready. Each item updates independently. Chef
-        access ends at Ready; serving is handled by the Waiter.
+        Update each dish from Pending to Preparing, then Ready. Waiters confirm
+        when dishes have been served.
       </p>
-      <p class="prep-sync-note" data-preparation-sync>
-        Updates automatically every 15 seconds. Refresh pauses while a
-        confirmation or filter is open.
-      </p>
+      <p class="prep-sync-note" data-preparation-sync role="status" hidden></p>
     </main>
     <th:block th:each="order : ${queue.orders}"
       ><th:block th:each="line : ${order.lines}">

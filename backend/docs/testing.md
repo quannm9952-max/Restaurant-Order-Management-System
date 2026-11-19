@@ -1,3 +1,33 @@
+## Lọc ghi chú lập trình khỏi giao diện (19/11/2026)
+
+Giữ hướng dẫn thao tác, giới hạn nhập liệu, điều kiện nghiệp vụ, trạng thái
+và nhắc nhở kiểm tra thanh toán. Bỏ chi tiết triển khai về giá được lưu,
+nhịp polling, tạm dừng refresh, tương thích phương thức cũ và mô tả fixture.
+Các nhãn dùng từ thông thường như Unit price. Chỉ hiện nhắc Refresh khi
+không tải được cập nhật; hướng dẫn quy trình bếp/phục vụ vẫn giữ.
+
+Seed production bỏ 45 câu ghi chú/mô tả gốc ở Orders/Menu_item/Menu_category.
+Migration chỉ so cặp ID + nội dung gốc bằng so sánh BINARY; không dùng điều
+kiện LIKE rộng. Trên bản sao MySQL, khôi phục backup khớp đủ 9 bảng; ghi
+chú tiếng Việt tùy chỉnh ở đúng ID mẫu vẫn còn. Kiểm tra idempotence, rollback
+khi lỗi sau các UPDATE và seed chạy lại đều đạt. Giá, số lượng, trạng thái,
+tài khoản, invoice/payment và các trường khác không đổi.
+
+Docker verify **350 test đạt, 0 failure/error/skipped**. Chrome kiểm tra
+68 bố cục (17 trang × 1440/820/390/320 px), đủ Manager/Waiter/Chef/Cashier:
+không còn câu nội bộ, giữ username/full name/password hints, giới hạn ảnh,
+điều kiện món/bàn, nhóm ngày báo cáo, quy tắc doanh thu và nhập nghìn VND/
+kiểm tra chuyển khoản. Ghi chú đơn/mô tả món riêng vẫn hiển thị. Kiểm tra
+bill Unpaid giữ lời nhắc khách kiểm tra, hóa đơn Paid không có mô tả cách
+lưu dữ liệu. Giả lập chặn cập nhật bếp vẫn hiện lời nhắc tải lại và hết lỗi
+thì ẩn. Không lỗi JavaScript hoặc tràn toàn trang; đã xem ảnh mobile.
+
+Bản chính: đã sao lưu trước chuyển, xóa đúng 45 annotation gốc; đối chiếu
+từng trường của cả 9 bảng chỉ có các notes/description mục tiêu thành NULL.
+Seed khởi động không đưa các câu này trở lại. 22 bố cục đọc trên bản chính
+(11 trang × desktop/mobile) đạt, đủ bốn vai trò; không tạo giao dịch thử.
+Backup nằm trong database/backups/ui-notes-20261119, được loại khỏi Git.
+
 ## In bill trước thanh toán và tiếp tục chỉnh sửa (18/11/2026)
 
 Bỏ Generate Bill; Payment chỉ có Print Bill/Print Invoice và Process Payment.
