@@ -230,25 +230,31 @@
                     inputmode="decimal"
                     autocomplete="off"
                     spellcheck="false"
-                    aria-describedby="cash-amount-hint"
+                    aria-describedby="cash-amount-hint cash-amount-error"
                     placeholder="0 VND"
-                    disabled
-                  />
+                    disabled />
                   <input
                     type="hidden"
                     name="amountReceived"
                     data-cash-amount
-                    disabled
-                  />
+                    disabled />
                   <small class="tiny muted" id="cash-amount-hint">
                     Enter thousands: 10 → 10.000 VND; 380 → 380.000 VND.
-                  </small></label
+                  </small>
+                  <span
+                    class="form-error"
+                    id="cash-amount-error"
+                    data-payment-error
+                    role="status"
+                    aria-live="polite"
+                    hidden
+                  ></span></label
                 ><label data-cash-field hidden
                   >Change Amount<input
                     class="form-control"
                     data-cash-change
                     readonly
-                    placeholder="0 VND"
+                    placeholder="&#8212;"
                 /></label>
               </div>
               <div
@@ -288,10 +294,6 @@
                 data-payment-hint
                 th:text="${o.readyToPay ? 'Check the bill with the customer, collect payment and verify receipt before confirming.' : (o.status == 'COMPLETED' ? 'Payment is completed. View or print the invoice below.' : 'Payment becomes available when the order is Open and every active item is Served.')}"
               ></p>
-              <p class="form-error" data-payment-error hidden>
-                Enter a valid Amount Received that covers the total amount (up
-                to two decimal places).
-              </p>
             </section>
             <div class="payment-actions">
               <button

@@ -544,10 +544,12 @@ dialog.app-dialog h2 {
   white-space: nowrap;
   font-size: 12px;
 }
-[data-menu-price][aria-invalid="true"] {
+[data-menu-price][aria-invalid="true"],
+[data-cash-received][aria-invalid="true"] {
   border-color: #b82b20;
 }
-[data-menu-price][aria-invalid="true"]:focus {
+[data-menu-price][aria-invalid="true"]:focus,
+[data-cash-received][aria-invalid="true"]:focus {
   outline: 3px solid #b82b2030;
   box-shadow: none;
 }
@@ -1294,6 +1296,9 @@ dialog.app-dialog h2 {
 .payment-fields input,
 .payment-fields select {
   margin-top: 6px;
+}
+.payment-fields [data-payment-error]:not([hidden]) {
+  display: block;
 }
 .payment-verification {
   display: flex;

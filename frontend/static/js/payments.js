@@ -42,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   // The cashier types thousands; the submitted value is the actual VND amount.
   let cashUnits = "";
+  let cashInputError = "";
   let cashSelection = [0, 0];
   let displayedSelection = [0, 0];
   const cashCents = (units) => {
@@ -49,6 +50,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const [whole, fraction = ""] = units.split(",");
     const cents = Number(whole) * 100000 + Number(fraction.padEnd(5, "0"));
     return cents <= 999999999999 ? cents : null;
+  };
+  const cashMessage = (units) => {
+    if (units === "") return "";
+    if (units.includes("-")) return "Amount Received cannot be negative.";
+    if (!/^\d+(,\d*)?$/.test(units))
+      return "Use digits and one decimal separator only.";
+    if ((units.split(",")[1] || "").length > 5)
+      return "The VND amount can have no more than two decimal places.";
+    if (cashCents(units) === null)
+      return "Amount Received must not exceed 9.999.999.999,99 VND.";
+    return "";
   };
   const cashRange = () => {
     const range = [cash.selectionStart ?? 0, cash.selectionEnd ?? 0];
@@ -66,19 +78,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
   const renderCash = (units, selection = units.length) => {
+    const normalized = units.replace(/^0+(?=\d)/, "");
+    selection = Math.min(
+      normalized.length,
+      Math.max(0, selection - (units.length - normalized.length)),
+    );
+    units = normalized;
+    cashInputError = cashMessage(units);
+    if (cashInputError) {
+      const previous = cashCents(cashUnits);
+      cash.value = previous === null ? "" : money.format(previous / 100);
+      cashAmount.value = "";
+      cash.setSelectionRange(...displayedSelection);
+      return;
+    }
     const cents = cashCents(units);
     cashUnits = units;
     cashAmount.value =
       cents === null
         ? ""
         : `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
-    cash.setCustomValidity(
-      units !== "" && cents === null
-        ? "Enter a valid amount in thousands of VND."
-        : "",
-    );
-    cash.value =
-      units === "" ? "" : cents === null ? units : money.format(cents / 100);
+    cash.value = units === "" ? "" : money.format(cents / 100);
     const wholeLength = units.split(",")[0].length;
     const integerDigits = cash.value.split(",")[0].replace(/\D/g, "").length;
     const omitted = Math.max(0, wholeLength + 3 - integerDigits);
@@ -100,17 +120,21 @@ document.addEventListener("DOMContentLoaded", () => {
       .trim()
       .replace(/\s*VND$/i, "")
       .trim();
-    if (
-      /VND$/i.test(text.trim()) ||
-      /^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(value)
-    ) {
-      const cents = parseAmount(value.replace(/\./g, "").replace(",", "."));
-      if (cents === null) return value;
-      const fraction = String(cents % 100000)
-        .padStart(5, "0")
-        .replace(/0+$/, "");
+    if (/VND$/i.test(text.trim()) || /^\d{1,3}(\.\d{3})+(,\d*)?$/.test(value)) {
+      let amount;
+      if (/^\d{1,3}(\.\d{3})+(,\d*)?$/.test(value))
+        amount = value.replace(/\./g, "").replace(",", ".");
+      else if (/^\d+(,\d*)?$/.test(value)) amount = value.replace(",", ".");
+      else if (/^\d+(\.\d*)?$/.test(value)) amount = value;
+      else return value;
+      const [whole, fraction = ""] = amount.split(".");
+      const decimal = (whole.slice(-3).padStart(3, "0") + fraction).replace(
+        /0+$/,
+        "",
+      );
       return (
-        String(Math.floor(cents / 100000)) + (fraction ? "," + fraction : "")
+        (whole.length > 3 ? whole.slice(0, -3) : "0") +
+        (decimal ? "," + decimal : "")
       );
     }
     return value.replace(".", ",");
@@ -172,6 +196,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const isCash = method.value === "CASH";
     const isBank = method.value === "BANK_TRANSFER";
     const received = parseAmount(cashAmount.value);
+    const cashError =
+      cashInputError ||
+      (cash.value !== "" &&
+      received !== null &&
+      total !== null &&
+      received < total
+        ? "Amount Received must cover the total amount."
+        : "");
+    cash.setCustomValidity(isCash ? cashError : "");
+    cash.setAttribute("aria-invalid", String(isCash && Boolean(cashError)));
+    error.textContent = cashError;
+    error.hidden = !(canPay && isCash && cashError);
     method.disabled = !canPay || busy;
     verified.disabled = !canPay || busy;
     cash.readOnly = busy;
@@ -203,10 +239,9 @@ document.addEventListener("DOMContentLoaded", () => {
       !verified.checked ||
       submitting;
     confirm.disabled = process.disabled;
-    error.hidden = !(canPay && isCash && cash.value !== "" && !enough);
     form.querySelector("[data-cash-change]").value =
-      isCash && received !== null && total !== null
-        ? money.format(Math.max(0, received - total) / 100)
+      isCash && enough && received !== null && total !== null
+        ? money.format((received - total) / 100)
         : "";
   };
   quantities.forEach((input) =>
@@ -280,28 +315,47 @@ document.addEventListener("DOMContentLoaded", () => {
     update();
   };
   cash.addEventListener("beforeinput", (event) => {
+    if (event.isComposing) return;
     let [start, end] = cashRange();
-    let inserted = event.data;
-    if (event.inputType === "deleteContentBackward" && start === end)
-      start = Math.max(0, start - 1);
-    else if (event.inputType === "deleteContentForward" && start === end)
-      end = Math.min(cashUnits.length, end + 1);
-    else if (!event.inputType.startsWith("insert") || inserted === null) return;
+    let inserted;
+    if (
+      event.inputType === "deleteContentBackward" ||
+      event.inputType === "deleteContentForward"
+    ) {
+      if (start === end) {
+        if (event.inputType === "deleteContentBackward")
+          start = Math.max(0, start - 1);
+        else end = Math.min(cashUnits.length, end + 1);
+      }
+      inserted = "";
+    } else if (event.inputType.startsWith("insert") && event.data !== null)
+      inserted = event.data.replace(".", ",");
+    else return;
     event.preventDefault();
-    if (event.inputType.startsWith("delete")) inserted = "";
-    inserted = inserted.replace(".", ",");
     const next = cashUnits.slice(0, start) + inserted + cashUnits.slice(end);
     renderCash(next, start + inserted.length);
     changedCash();
   });
   cash.addEventListener("paste", (event) => {
     event.preventDefault();
-    renderCash(readCashText(event.clipboardData.getData("text")));
+    const [start, end] = cashRange();
+    const inserted = readCashText(event.clipboardData.getData("text"));
+    renderCash(
+      cashUnits.slice(0, start) + inserted + cashUnits.slice(end),
+      start + inserted.length,
+    );
     changedCash();
   });
   cash.addEventListener("input", () => {
     renderCash(readCashText(cash.value));
     changedCash();
+  });
+  cash.addEventListener("invalid", (event) => {
+    event.preventDefault();
+    if (!cash.value && !cashInputError)
+      cashInputError = "Please enter the amount received.";
+    update();
+    cash.focus();
   });
   verified.addEventListener("change", update);
   process.addEventListener("click", () => {
