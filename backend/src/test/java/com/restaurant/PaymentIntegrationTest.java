@@ -258,15 +258,53 @@ class PaymentIntegrationTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"CASH", "BANK_TRANSFER"})
-  void verifiedHttpPaymentIgnoresForgedTotalsAndRendersInvoice(String method)
+  void verifiedHttpPaymentRecordsTransactionAndStaysOnPaymentPage(String method)
       throws Exception {
-    mvc.perform(paymentPost(1100).with(csrf()).param("paymentMethod", method)
+    var request = paymentPost(1100).with(csrf()).param("paymentMethod", method)
         .param("paymentVerified", "true").param("amountReceived", "390000.00")
-        .param("totalAmount", "0.01"))
-        .andExpect(redirectedUrl("/invoices/1100"));
+        .param("totalAmount", "0.01");
+    var saved = mvc.perform(request)
+        .andExpect(redirectedUrl("/payments?orderId=1100"))
+        .andExpect(flash().attributeExists("success")).andReturn();
     assertThat(jdbc.queryForObject(
         "SELECT amount FROM Payment WHERE order_id=1100", BigDecimal.class))
         .isEqualByComparingTo("390000");
+    assertThat(jdbc.queryForObject(
+        "SELECT status FROM Orders WHERE order_id=1100", String.class))
+        .isEqualTo("COMPLETED");
+    assertThat(jdbc.queryForObject(
+        "SELECT status FROM Restaurant_tables WHERE table_id=9010",
+        String.class)).isEqualTo("AVAILABLE");
+    var page = mvc
+        .perform(get("/payments").param("orderId", "1100")
+            .flashAttrs(saved.getFlashMap()))
+        .andExpect(status().isOk()).andExpect(view().name("payments"))
+        .andReturn().getResponse().getContentAsString();
+    assertThat(page)
+        .contains("Payment successfully recorded for Order #1100",
+            "data-order-id=\"1100\"", "data-paid=\"true\"", "Print Invoice")
+        .doesNotContain("class=\"invoice-paper\"");
+    mvc.perform(request).andExpect(redirectedUrl("/payments?orderId=1100"))
+        .andExpect(flash().attributeExists("error"));
+    assertThat(jdbc.queryForObject(
+        "SELECT COUNT(*) FROM Payment WHERE order_id=1100", Integer.class))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void successfulPaymentKeepsTheCurrentOrderSearch() throws Exception {
+    var saved = mvc
+        .perform(paymentPost(1100).with(csrf())
+            .param("paymentMethod", "BANK_TRANSFER")
+            .param("paymentVerified", "true").param("search", "ORD-1100"))
+        .andExpect(redirectedUrl("/payments?orderId=1100&search=ORD-1100"))
+        .andReturn();
+    var page = mvc
+        .perform(get("/payments").param("orderId", "1100")
+            .param("search", "ORD-1100").flashAttrs(saved.getFlashMap()))
+        .andExpect(status().isOk()).andExpect(view().name("payments"))
+        .andReturn().getResponse().getContentAsString();
+    assertThat(page).contains("value=\"ORD-1100\"", "data-paid=\"true\"");
   }
 
   @ParameterizedTest
@@ -375,7 +413,7 @@ class PaymentIntegrationTest {
     mvc.perform(
         paymentPost(1100).with(csrf()).param("paymentMethod", "BANK_TRANSFER")
             .param("paymentVerified", "true"))
-        .andExpect(redirectedUrl("/invoices/1100"));
+        .andExpect(redirectedUrl("/payments?orderId=1100"));
     assertThat(jdbc.queryForObject(
         "SELECT COUNT(*) FROM Invoice WHERE order_id=1100", Integer.class))
         .isEqualTo(1);

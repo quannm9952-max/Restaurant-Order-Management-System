@@ -124,7 +124,11 @@ public class PaymentController {
       @RequestParam(required = false) List<Integer> quantity,
       @RequestParam(required = false) String billRevision,
       @RequestParam(required = false) BigDecimal expectedTotal,
+      @RequestParam(defaultValue = "") String search,
       RedirectAttributes redirectAttrs) {
+    redirectAttrs.addAttribute("orderId", orderId);
+    if (!search.isBlank())
+      redirectAttrs.addAttribute("search", search);
     try {
       long paymentId = service.confirmPayment(orderId,
           new PaymentConfirmation(paymentMethod, paymentVerified,
@@ -134,19 +138,17 @@ public class PaymentController {
           "Payment successfully recorded for Order #" + orderId + " (Txn #"
               + paymentId + ", method: " + paymentMethod
               + "). Order completed and table released.");
-      return "redirect:/invoices/" + orderId;
+      return "redirect:/payments";
     } catch (IllegalArgumentException
         | com.restaurant.exception.BusinessException | NotFoundException
         | IllegalStateException e) {
       redirectAttrs.addFlashAttribute("error",
           "Payment error for Order #" + orderId + ": " + e.getMessage());
-      redirectAttrs.addAttribute("orderId", orderId);
       return "redirect:/payments";
     } catch (DataAccessException | TransactionException ex) {
       LOG.error("Payment confirmation failed; transaction rolled back", ex);
       redirectAttrs.addFlashAttribute("error",
           "Could not confirm payment. Check this order's payment status before retrying.");
-      redirectAttrs.addAttribute("orderId", orderId);
       return "redirect:/payments";
     }
   }
