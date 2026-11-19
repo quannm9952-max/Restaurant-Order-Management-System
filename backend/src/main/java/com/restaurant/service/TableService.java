@@ -125,11 +125,15 @@ public class TableService {
   }
   @Transactional
   @PreAuthorize("hasRole('MANAGER')")
-  public RestaurantTable saveTable(Integer id, String name, int capacity) {
+  public RestaurantTable saveTable(Integer id, String name, int capacity,
+      TableStatus status) {
     if (name == null || name.isBlank() || name.trim().length() > 30
         || capacity < 1 || capacity > 100)
       throw new BusinessException("Enter a table name of at most 30 "
           + "characters and a capacity from 1 to 100.");
+    if (status != null && status != TableStatus.AVAILABLE
+        && status != TableStatus.OCCUPIED)
+      throw new BusinessException("Select Available or Occupied.");
     RestaurantTable table = id == null
         ? new RestaurantTable()
         : tableRepository.findByIdWithPessimisticLock(id)
@@ -142,8 +146,8 @@ public class TableService {
       throw new BusinessException("Table name already exists.");
     table.setTableName(normalized);
     table.setCapacity(capacity);
-    if (id == null)
-      table.setStatus(TableStatus.AVAILABLE);
+    if (status != null)
+      table.setStatus(status);
     return tableRepository.save(table);
   }
 

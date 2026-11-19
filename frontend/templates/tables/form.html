@@ -49,8 +49,29 @@
             />
           </div>
           <div class="field">
-            <label>Current status</label
-            ><input class="form-control" readonly th:value="${table.status}" />
+            <label for="status">Current status</label
+            ><select class="form-select" id="status" name="status">
+              <option
+                th:if="${table.status.name() == 'OUT_OF_SERVICE'}"
+                value=""
+                selected
+                disabled
+              >
+                Out of Service
+              </option>
+              <option
+                value="AVAILABLE"
+                th:selected="${table.status.name() == 'AVAILABLE'}"
+              >
+                Available
+              </option>
+              <option
+                value="OCCUPIED"
+                th:selected="${table.status.name() == 'OCCUPIED'}"
+              >
+                Occupied
+              </option>
+            </select>
           </div>
           <div class="notice info">
             Table history is retained. Use the status action to stop using a

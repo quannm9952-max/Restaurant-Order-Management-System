@@ -106,9 +106,10 @@ public class TableController {
   @PostMapping("/save")
   public String save(@RequestParam(required = false) Integer id,
       @RequestParam String name, @RequestParam int capacity,
+      @RequestParam(required = false) TableStatus status,
       RedirectAttributes flash, Model model) {
     try {
-      var table = tableService.saveTable(id, name, capacity);
+      var table = tableService.saveTable(id, name, capacity, status);
       flash.addFlashAttribute("successMessage", "Table saved.");
       return "redirect:/tables/" + table.getId();
     } catch (com.restaurant.exception.BusinessException e) {
@@ -116,6 +117,11 @@ public class TableController {
       draft.setId(id);
       draft.setTableName(name);
       draft.setCapacity(capacity);
+      draft.setStatus(status != null
+          ? status
+          : id == null
+              ? TableStatus.AVAILABLE
+              : tableService.getTable(id).status());
       model.addAttribute("table", draft);
       model.addAttribute("errorMessage", e.getMessage());
       return "tables/form";

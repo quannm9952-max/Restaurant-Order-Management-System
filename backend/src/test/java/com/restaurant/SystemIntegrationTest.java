@@ -824,6 +824,146 @@ class SystemIntegrationTest {
 
   @Test
   @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void tableFormOffersAvailableAndOccupiedAndSelectsCurrentStatus()
+      throws Exception {
+    for (String selected : List.of("AVAILABLE", "OCCUPIED")) {
+      jdbc.update("UPDATE Restaurant_tables SET status=? WHERE table_id=9004",
+          selected);
+      entityManager.clear();
+      var page = mvc.perform(get("/tables/9004/edit"))
+          .andExpect(status().isOk()).andReturn().getResponse()
+          .getContentAsString();
+      assertThat(tableStatusOptions(page))
+          .contains("value=\"AVAILABLE\"", "value=\"OCCUPIED\"")
+          .doesNotContain("OUT_OF_SERVICE", "disabled").containsPattern(
+              "value=\"" + selected + "\"\\s+selected=\"selected\"");
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"AVAILABLE", "OCCUPIED"})
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void managerSavesSelectedTableStatus(String selected) throws Exception {
+    jdbc.update("UPDATE Restaurant_tables SET status=? WHERE table_id=9004",
+        selected.equals("AVAILABLE") ? "OCCUPIED" : "AVAILABLE");
+    entityManager.clear();
+    mvc.perform(post("/tables/save").with(csrf()).param("id", "9004")
+        .param("name", "TEST selected status").param("capacity", "6")
+        .param("status", selected)).andExpect(redirectedUrl("/tables/9004"));
+    entityManager.flush();
+    entityManager.clear();
+    assertThat(jdbc.queryForMap("SELECT table_name,capacity,status "
+        + "FROM Restaurant_tables WHERE table_id=9004"))
+        .containsEntry("table_name", "TEST selected status")
+        .containsEntry("capacity", 6).containsEntry("status", selected);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"AVAILABLE", "OCCUPIED"})
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void newTableUsesSelectedStatus(String selected) throws Exception {
+    mvc.perform(
+        post("/tables/save").with(csrf()).param("name", "TEST new status")
+            .param("capacity", "4").param("status", selected))
+        .andExpect(status().is3xxRedirection());
+    entityManager.flush();
+    assertThat(jdbc.queryForObject("SELECT status FROM Restaurant_tables "
+        + "WHERE table_name='TEST new status'", String.class))
+        .isEqualTo(selected);
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void rejectedTableRetainsSelectedStatusWithoutSaving() throws Exception {
+    var before = jdbc
+        .queryForMap("SELECT * FROM Restaurant_tables WHERE table_id=9004");
+    var page = mvc
+        .perform(post("/tables/save").with(csrf()).param("id", "9004")
+            .param("name", "TEST rejected status").param("capacity", "101")
+            .param("status", "OCCUPIED"))
+        .andExpect(status().isOk()).andReturn().getResponse()
+        .getContentAsString();
+    assertThat(tableStatusOptions(page))
+        .containsPattern("value=\"OCCUPIED\"\\s+selected=\"selected\"");
+    entityManager.flush();
+    assertThat(
+        jdbc.queryForMap("SELECT * FROM Restaurant_tables WHERE table_id=9004"))
+        .isEqualTo(before);
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void tableStatusSelectionCannotOverrideAnOpenOrder() throws Exception {
+    int id = jdbc.queryForObject("SELECT table_id FROM Orders "
+        + "WHERE status='OPEN' ORDER BY order_id LIMIT 1", Integer.class);
+    var before = jdbc
+        .queryForMap("SELECT * FROM Restaurant_tables WHERE table_id=?", id);
+    mvc.perform(post("/tables/save").with(csrf()).param("id", "" + id)
+        .param("name", "TEST occupied edit").param("capacity", "6")
+        .param("status", "AVAILABLE")).andExpect(status().isOk())
+        .andExpect(content().string(org.hamcrest.Matchers
+            .containsString("its open order is completed or cancelled.")));
+    entityManager.flush();
+    assertThat(jdbc
+        .queryForMap("SELECT * FROM Restaurant_tables WHERE table_id=?", id))
+        .isEqualTo(before);
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void unchangedOutOfServiceTableKeepsItsStatus() throws Exception {
+    jdbc.update("UPDATE Restaurant_tables SET status='OUT_OF_SERVICE' "
+        + "WHERE table_id=9004");
+    entityManager.clear();
+    var page = mvc.perform(get("/tables/9004/edit")).andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+    assertThat(tableStatusOptions(page)).contains("disabled", "Out of Service",
+        "value=\"AVAILABLE\"", "value=\"OCCUPIED\"");
+    mvc.perform(post("/tables/save").with(csrf()).param("id", "9004")
+        .param("name", "TEST unchanged status").param("capacity", "4"))
+        .andExpect(redirectedUrl("/tables/9004"));
+    entityManager.flush();
+    assertThat(jdbc.queryForObject(
+        "SELECT status FROM Restaurant_tables " + "WHERE table_id=9004",
+        String.class)).isEqualTo("OUT_OF_SERVICE");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"OUT_OF_SERVICE", "INVALID"})
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
+  void tableStatusRejectsUnsupportedSelection(String selected)
+      throws Exception {
+    var before = jdbc
+        .queryForMap("SELECT * FROM Restaurant_tables WHERE table_id=9004");
+    var response = mvc.perform(post("/tables/save").with(csrf())
+        .param("id", "9004").param("name", "TEST invalid status")
+        .param("capacity", "6").param("status", selected)).andReturn();
+    assertThat(response.getResponse().getStatus())
+        .isEqualTo(selected.equals("INVALID") ? 400 : 200);
+    entityManager.flush();
+    assertThat(
+        jdbc.queryForMap("SELECT * FROM Restaurant_tables WHERE table_id=9004"))
+        .isEqualTo(before);
+  }
+
+  @Test
+  @WithMockUser(username = "test_waiter", roles = "WAITER")
+  void waiterCannotSaveTableStatusThroughManagerForm() throws Exception {
+    mvc.perform(post("/tables/save").with(csrf()).param("id", "9004")
+        .param("name", "TEST forbidden status").param("capacity", "4")
+        .param("status", "OCCUPIED")).andExpect(status().isForbidden());
+  }
+
+  private String tableStatusOptions(String page) {
+    var select = java.util.regex.Pattern
+        .compile("(?s)<select\\b[^>]*\\bid=\"status\"[^>]*>(.*?)</select>")
+        .matcher(page);
+    assertThat(select.find()).isTrue();
+    return select.group(1);
+  }
+
+  @Test
+  @WithMockUser(username = "test_manager", roles = "MANAGER")
   void rejectedTableRetainsDraftAndDoesNotWriteDatabase() throws Exception {
     int before = jdbc.queryForObject("SELECT COUNT(*) FROM Restaurant_tables",
         Integer.class);
