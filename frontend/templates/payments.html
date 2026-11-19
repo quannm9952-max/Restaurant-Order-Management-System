@@ -188,13 +188,6 @@
                 th:text="${@money.format(o.totalAmount)}"
               ></strong>
             </div>
-            <p class="tiny muted">
-              Cancelled lines are excluded. All amounts are in VND.
-            </p>
-            <p class="tiny muted" th:if="${o.canEditQuantities}">
-              Review quantities and print a bill for the customer. You can keep
-              editing until payment is confirmed.
-            </p>
             <p class="form-error" data-bill-error hidden>
               Enter a whole quantity of at least 1 for each item. The total must
               not exceed 9.999.999.999,99 VND.
