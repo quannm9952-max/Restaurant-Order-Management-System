@@ -538,17 +538,6 @@ select:focus-visible {
   font-size: 11px;
   margin-top: 28px;
 }
-.grouping-guide {
-  margin: -12px 0 24px;
-  font-size: 12px;
-  line-height: 1.7;
-}
-.grouping-guide a {
-  margin-left: 8px;
-  color: var(--orange-hover);
-  font-weight: 600;
-  text-decoration: underline;
-}
 .chart-scroll {
   overflow-y: hidden;
   padding-bottom: 8px;
