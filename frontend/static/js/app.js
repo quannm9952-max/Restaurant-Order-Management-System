@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initPasswordToggles();
   initUsernameInputs();
   initLoginValidation();
+  initMenuPrices();
   initMenuImages();
   initEmployeeFilters();
 });
@@ -131,16 +132,58 @@ function initScrollableRegions() {
     });
 }
 
+function initMenuPrices() {
+  document.querySelectorAll("[data-menu-price]").forEach((input) => {
+    const error = document.getElementById(
+      input.getAttribute("aria-describedby"),
+    );
+    const validate = (required = false) => {
+      input.setCustomValidity("");
+      let message = "";
+      if (input.validity.badInput) message = "Enter a valid price.";
+      else if (!input.value) {
+        if (required) message = "Please enter a price.";
+      } else if (input.valueAsNumber < 0) message = "Price cannot be negative.";
+      else if (input.validity.rangeUnderflow)
+        message = "Price must be greater than 0 VND.";
+      else if (input.validity.rangeOverflow)
+        message = "Price must not exceed 9.999.999.999,99 VND.";
+      else if (input.validity.stepMismatch)
+        message = "Use no more than two decimal places.";
+      input.setCustomValidity(message);
+      input.setAttribute("aria-invalid", String(Boolean(message)));
+      error.textContent = message;
+      error.hidden = !message;
+    };
+    ["input", "change"].forEach((event) =>
+      input.addEventListener(event, () => validate()),
+    );
+    input.addEventListener("invalid", (event) => {
+      event.preventDefault();
+      validate(true);
+      input.focus();
+    });
+    input.form.addEventListener("reset", () => setTimeout(validate));
+    validate();
+  });
+}
+
 function initMenuImages() {
   document.querySelectorAll("[data-menu-image]").forEach((input) => {
     const preview = input.form.querySelector("[data-menu-image-preview]");
     const hint = input.form.querySelector("[data-menu-image-hint]");
+    const filename = input.form.querySelector("[data-menu-image-name]");
     const original = preview.getAttribute("src");
     const defaultHint = hint.textContent.trim();
     let objectUrl;
     input.addEventListener("change", () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = undefined;
+      }
       const file = input.files[0];
+      filename.textContent = file ? file.name : "No file chosen";
+      filename.title = file ? file.name : "";
       const invalid =
         file &&
         (file.size === 0 ||
@@ -148,6 +191,7 @@ function initMenuImages() {
           (file.type && !["image/jpeg", "image/png"].includes(file.type)));
       const message = invalid ? "Choose a JPG or PNG image up to 5 MB." : "";
       input.setCustomValidity(message);
+      input.setAttribute("aria-invalid", String(Boolean(invalid)));
       hint.textContent = message || defaultHint;
       hint.classList.toggle("image-error", Boolean(invalid));
       if (file && !invalid) {
@@ -159,7 +203,10 @@ function initMenuImages() {
         else preview.removeAttribute("src");
         preview.hidden = !original;
       }
-      if (invalid) input.reportValidity();
+    });
+    input.addEventListener("invalid", (event) => {
+      event.preventDefault();
+      input.focus();
     });
   });
 }

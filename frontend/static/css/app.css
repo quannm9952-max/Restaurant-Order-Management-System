@@ -505,6 +505,52 @@ dialog.app-dialog h2 {
 .menu-image-preview[hidden] {
   display: none;
 }
+.menu-image-upload {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.menu-image-upload:focus-within {
+  outline: 3px solid #ffb393;
+  border-color: var(--orange);
+}
+.menu-image-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.menu-image-button {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border-right: 1px solid var(--border);
+  background: #f5f6f8;
+  font-size: 12px;
+}
+.menu-image-name {
+  min-width: 0;
+  padding: 10px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+[data-menu-price][aria-invalid="true"] {
+  border-color: #b82b20;
+}
+[data-menu-price][aria-invalid="true"]:focus {
+  outline: 3px solid #b82b2030;
+  box-shadow: none;
+}
 .menu-actions {
   gap: 8px;
   flex-wrap: nowrap;
