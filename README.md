@@ -40,12 +40,12 @@ docker compose down
 `menu-images`. Không dùng `down -v` khi cần giữ dữ liệu. Đổi mật khẩu DB trong
 `.env` không tự đổi mật khẩu của volume đã có.
 
-| Actor | Username | Mật khẩu |
-| --- | --- | --- |
-| Manager | `demo_manager`, `DEMO_FIXTURE_MANAGER` | 123456 |
-| Waiter | `demo_waiter`, `DEMO_FIXTURE_WAITER` | 123456 |
-| Chef | `demo_chef`, `DEMO_FIXTURE_CHEF` | 123456 |
-| Cashier | `demo_cashier`, `DEMO_FIXTURE_CASHIER` | 123456 |
+| Actor   | Username                               | Mật khẩu |
+| ------- | -------------------------------------- | -------- |
+| Manager | `demo_manager`, `DEMO_FIXTURE_MANAGER` | 123456   |
+| Waiter  | `demo_waiter`, `DEMO_FIXTURE_WAITER`   | 123456   |
+| Chef    | `demo_chef`, `DEMO_FIXTURE_CHEF`       | 123456   |
+| Cashier | `demo_cashier`, `DEMO_FIXTURE_CASHIER` | 123456   |
 
 Dùng đúng giá trị cột **Username** trong Employee Management để đăng nhập.
 Username dài 1–50 ký tự, chỉ gồm A–Z, a–z, 0–9 và dấu gạch dưới `_`;
@@ -68,7 +68,9 @@ Payment; không cần tạo bill trước.
 
 Sau khi thu ngân xác nhận đã nhận tiền, Confirm Payment lưu số lượng cuối
 cùng, thanh toán, hóa đơn và hoàn tất đơn trong cùng transaction. Lúc đó mới
-khóa đơn, giải phóng bàn và tính doanh thu. Bill thay đổi ở phiên khác sẽ yêu
+khóa đơn, giải phóng bàn và tính doanh thu. Hệ thống báo thành công và giữ
+nguyên trang Payment với đơn vừa thanh toán cùng bộ lọc tìm kiếm. Thu ngân
+chủ động chọn Print Invoice khi cần xem/in hóa đơn. Bill thay đổi ở phiên khác sẽ yêu
 cầu tải lại để kiểm tra; không tự ghi đè hoặc thu theo tổng cũ. Hóa đơn đã trả
 hiển thị **Paid** và in lại được. Các bill chưa trả từ phiên bản trước cũng
 sửa được, không cần xóa dữ liệu hoặc migration.
@@ -91,7 +93,9 @@ ví dụ `85000` → `85.000 VND`. Dữ liệu cũ được chuyển một lần
 món, giá lưu trong chi tiết đơn, tổng đơn, mọi thanh toán và hóa đơn cũ.
 Đây là hệ số chuyển dữ liệu của đồ án, không phải tỷ giá tự cập nhật.
 Menu, giỏ món, bill, hóa đơn, lịch sử, báo cáo và tiền thừa dùng cùng quy tắc.
-Giá món nhập dạng số. Ô **Amount Received** nhập theo nghìn đồng: gõ `10`
+Giá món nhập số VND thực tế: gõ `85000` hiển thị `85.000 VND`; giá âm hoặc
+sai định dạng được báo ngay dưới ô nhập. Ô **Amount Received** nhập theo
+nghìn đồng: gõ `10`
 hiện `10.000 VND`, gõ `380` hiện `380.000 VND`; tiền thừa tự tính và hiển thị
 cùng định dạng. Có thể dùng dấu phẩy cho phần lẻ của nghìn đồng, ví dụ `10,5`
 hiện `10.500 VND`, hoặc dán số đã định dạng kèm VND. Backend nhận số tiền VND

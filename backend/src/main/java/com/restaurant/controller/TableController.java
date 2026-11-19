@@ -78,9 +78,7 @@ public class TableController {
       tableService.updateTableStatus(id, newStatus);
       redirectAttributes.addFlashAttribute("successMessage",
           "Cập nhật trạng thái bàn thành công.");
-    } catch (BusinessException e) {
-      redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-    } catch (NotFoundException e) {
+    } catch (BusinessException | NotFoundException e) {
       redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
     } catch (IllegalArgumentException e) {
       redirectAttributes.addFlashAttribute("errorMessage",
@@ -112,7 +110,7 @@ public class TableController {
       var table = tableService.saveTable(id, name, capacity, status);
       flash.addFlashAttribute("successMessage", "Table saved.");
       return "redirect:/tables/" + table.getId();
-    } catch (com.restaurant.exception.BusinessException e) {
+    } catch (BusinessException e) {
       var draft = new RestaurantTable();
       draft.setId(id);
       draft.setTableName(name);

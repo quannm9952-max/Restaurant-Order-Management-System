@@ -162,7 +162,6 @@ body {
 .form-control::placeholder {
   color: #8794a8;
 }
-.form-label,
 label {
   font-size: 12px;
   color: #52647d;
@@ -184,18 +183,8 @@ label {
 .spread {
   justify-content: space-between;
 }
-.stack {
-  display: grid;
-  gap: 12px;
-}
 .right {
   text-align: right;
-}
-.grow {
-  flex: 1;
-}
-.w-full {
-  width: 100%;
 }
 .panel-pad {
   padding: 20px 24px;

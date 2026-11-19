@@ -138,19 +138,17 @@ public class PaymentController {
           "Payment successfully recorded for Order #" + orderId + " (Txn #"
               + paymentId + ", method: " + paymentMethod
               + "). Order completed and table released.");
-      return "redirect:/payments";
     } catch (IllegalArgumentException
         | com.restaurant.exception.BusinessException | NotFoundException
         | IllegalStateException e) {
       redirectAttrs.addFlashAttribute("error",
           "Payment error for Order #" + orderId + ": " + e.getMessage());
-      return "redirect:/payments";
     } catch (DataAccessException | TransactionException ex) {
       LOG.error("Payment confirmation failed; transaction rolled back", ex);
       redirectAttrs.addFlashAttribute("error",
           "Could not confirm payment. Check this order's payment status before retrying.");
-      return "redirect:/payments";
     }
+    return "redirect:/payments";
   }
 
   /** Record payment failure (Order remains Open, Table remains Occupied) */
@@ -176,13 +174,7 @@ public class PaymentController {
   public String viewInvoice(@PathVariable long orderId, Model model,
       RedirectAttributes redirectAttrs) {
     try {
-      Map<String, Object> invoice = service.invoiceData(orderId);
-      model.addAttribute("order", invoice.get("order"));
-      model.addAttribute("payment", invoice.get("payment"));
-      model.addAttribute("items", invoice.get("items"));
-      model.addAttribute("total", invoice.get("total"));
-      model.addAttribute("invoiceNumber", invoice.get("invoiceNumber"));
-      model.addAttribute("paid", true);
+      model.addAllAttributes(service.invoiceData(orderId));
       return "invoice";
     } catch (IllegalArgumentException
         | com.restaurant.exception.BusinessException | NotFoundException

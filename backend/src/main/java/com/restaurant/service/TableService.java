@@ -28,13 +28,11 @@ public class TableService {
   }
 
   /** Get all tables as view DTOs. */
-  @Transactional(readOnly = true)
   public List<TableView> listTables() {
     return toTableViews(tableRepository.findAll());
   }
 
   /** Get tables filtered by status as view DTOs. */
-  @Transactional(readOnly = true)
   public List<TableView> listTablesByStatus(String status) {
     try {
       var tableStatus = TableStatus
@@ -46,7 +44,6 @@ public class TableService {
   }
 
   /** Get a table by ID as a view DTO. */
-  @Transactional(readOnly = true)
   public TableView getTable(Integer id) {
     RestaurantTable table = tableRepository.findById(id).orElseThrow(
         () -> new NotFoundException("Không tìm thấy bàn với mã: " + id));
