@@ -279,19 +279,13 @@ select:focus-visible {
   gap: 20px;
   flex-wrap: wrap;
 }
-.manager-badge,
-.demo-badge {
+.manager-badge {
   font-size: 11px;
   font-weight: 700;
   background: var(--orange-pale);
   color: var(--orange-hover);
   padding: 7px 13px;
   border-radius: 5px;
-}
-.demo-badge {
-  font-size: 9px;
-  letter-spacing: 0.8px;
-  padding: 4px 7px;
 }
 .read-only {
   background: #edf3fc;

@@ -6,13 +6,11 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import com.restaurant.config.DemoAccounts;
 import com.restaurant.dto.order.OrderLine;
 import com.restaurant.dto.payment.PaymentConfirmation;
 import com.restaurant.dto.report.ReportModels.*;
 import com.restaurant.entity.enums.Role;
 import com.restaurant.repository.AccountRepository;
-import com.restaurant.repository.EmployeeRepository;
 import com.restaurant.security.AccountUserDetailsService;
 import com.restaurant.security.LoginFailureHandler;
 import com.restaurant.support.Usernames;
@@ -70,8 +68,6 @@ class SystemIntegrationTest {
   @Autowired
   AccountRepository accounts;
   @Autowired
-  EmployeeRepository employeeRepository;
-  @Autowired
   OrderService orders;
   @Autowired
   ReportService reports;
@@ -81,10 +77,10 @@ class SystemIntegrationTest {
   @BeforeAll
   void fixture() throws Exception {
     var populator = new ResourceDatabasePopulator();
-    for (String name : List.of("schema.sql", "test-data.sql",
-        "demo-data.sql")) {
-      String sql = Files
-          .readString(Path.of("..", "database", name), StandardCharsets.UTF_8)
+    for (String name : List.of("../database/schema.sql",
+        "src/test/resources/reporting-data.sql",
+        "src/test/resources/checkout-data.sql")) {
+      String sql = Files.readString(Path.of(name), StandardCharsets.UTF_8)
           .replace(" ENGINE=InnoDB", "").replace(" STORED", "")
           .replace("START TRANSACTION;", "").replace("COMMIT;", "");
       populator.addScript(
@@ -230,55 +226,75 @@ class SystemIntegrationTest {
   }
 
   @Test
-  void demoSetupMakesAllEightSampleAccountsUsableWithoutReplacingEmployees()
+  void initialDataCreatesFourRoleAccountsWithoutAddingTransactions()
       throws Exception {
-    var setup = new DemoAccounts(accounts, employeeRepository, encoder,
-        "123456");
-    setup.run();
+    int orderCount = jdbc.queryForObject("SELECT COUNT(*) FROM Orders",
+        Integer.class);
+    int paymentCount = jdbc.queryForObject("SELECT COUNT(*) FROM Payment",
+        Integer.class);
+    String existingHash = accounts.findById(9001).orElseThrow()
+        .getPasswordHash();
+    loadInitialData();
     for (Role role : Role.values()) {
-      for (String username : List.of("demo_" + role.name().toLowerCase(),
-          "DEMO_FIXTURE_" + role.name())) {
-        var account = accounts.findByUsername(username).orElseThrow();
-        assertThat(account.isActive()).isTrue();
-        assertThat(encoder.matches("123456", account.getPasswordHash()))
-            .isTrue();
-        if (username.startsWith("DEMO_FIXTURE_"))
-          assertThat(account.getEmployee().getId()).isEqualTo(account.getId());
-        var login = mvc.perform(formLogin().user(username).password("123456"))
-            .andExpect(
-                authenticated().withUsername(username).withRoles(role.name()))
-            .andReturn();
-        var page = mvc
-            .perform(get("/home").session(
-                (MockHttpSession) login.getRequest().getSession(false)))
-            .andExpect(status().isOk()).andReturn().getResponse()
-            .getContentAsString();
-        assertThat(page)
-            .contains("Welcome, " + account.getEmployee().getFullName());
-      }
+      String username = role.name().toLowerCase(java.util.Locale.ROOT);
+      var account = accounts.findByUsername(username).orElseThrow();
+      assertThat(account.isActive()).isTrue();
+      assertThat(encoder.matches("123456", account.getPasswordHash())).isTrue();
+      assertThat(account.getEmployee().getId()).isEqualTo(account.getId());
+      var login = mvc.perform(formLogin().user(username).password("123456"))
+          .andExpect(
+              authenticated().withUsername(username).withRoles(role.name()))
+          .andReturn();
+      var page = mvc
+          .perform(get("/home")
+              .session((MockHttpSession) login.getRequest().getSession(false)))
+          .andExpect(status().isOk()).andReturn().getResponse()
+          .getContentAsString(StandardCharsets.UTF_8);
+      assertThat(page)
+          .contains("Welcome, " + account.getEmployee().getFullName());
     }
+    assertThat(
+        jdbc.queryForObject("SELECT COUNT(*) FROM Orders", Integer.class))
+        .isEqualTo(orderCount);
+    assertThat(
+        jdbc.queryForObject("SELECT COUNT(*) FROM Payment", Integer.class))
+        .isEqualTo(paymentCount);
+    assertThat(accounts.findById(9001).orElseThrow().getPasswordHash())
+        .isEqualTo(existingHash);
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"DEMO_FIXTURE_WAITER", "demo_waiter"})
-  void demoRestartPreservesChangedPasswordsAndLockedAccounts(String username)
+  @ValueSource(strings = {"waiter", "manager"})
+  void initialDataPreservesRenamedAccountsPasswordsAndLocks(String username)
       throws Exception {
-    var setup = new DemoAccounts(accounts, employeeRepository, encoder,
-        "123456");
-    setup.run();
+    loadInitialData();
     var account = accounts.findByUsername(username).orElseThrow();
+    Integer accountId = account.getId();
+    account.setUsername("updated_" + username);
     account.setActive(false);
     account.setPasswordHash(encoder.encode("CHANGED_TEST_PASSWORD"));
     accounts.saveAndFlush(account);
-    setup.run();
+    loadInitialData();
     entityManager.clear();
-    var unchanged = accounts.findByUsername(username).orElseThrow();
+    var unchanged = accounts.findById(accountId).orElseThrow();
+    assertThat(unchanged.getUsername()).isEqualTo("updated_" + username);
+    assertThat(accounts.findByUsername(username)).isEmpty();
     assertThat(unchanged.isActive()).isFalse();
     assertThat(
         encoder.matches("CHANGED_TEST_PASSWORD", unchanged.getPasswordHash()))
         .isTrue();
-    mvc.perform(formLogin().user(username).password("CHANGED_TEST_PASSWORD"))
-        .andExpect(unauthenticated());
+    mvc.perform(formLogin().user("updated_" + username)
+        .password("CHANGED_TEST_PASSWORD")).andExpect(unauthenticated());
+  }
+
+  private void loadInitialData() throws Exception {
+    String sql = Files
+        .readString(Path.of("..", "database", "initial-data.sql"),
+            StandardCharsets.UTF_8)
+        .replace("START TRANSACTION;", "").replace("COMMIT;", "");
+    new ResourceDatabasePopulator(
+        new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)))
+        .execute(dataSource);
   }
 
   @Test

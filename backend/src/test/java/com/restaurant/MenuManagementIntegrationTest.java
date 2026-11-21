@@ -64,10 +64,10 @@ class MenuManagementIntegrationTest {
   @BeforeAll
   void fixture() throws Exception {
     var populator = new ResourceDatabasePopulator();
-    for (String name : List.of("schema.sql", "test-data.sql",
-        "demo-data.sql")) {
-      String sql = Files
-          .readString(Path.of("..", "database", name), StandardCharsets.UTF_8)
+    for (String name : List.of("../database/schema.sql",
+        "src/test/resources/reporting-data.sql",
+        "src/test/resources/checkout-data.sql")) {
+      String sql = Files.readString(Path.of(name), StandardCharsets.UTF_8)
           .replace(" ENGINE=InnoDB", "").replace(" STORED", "")
           .replace("START TRANSACTION;", "").replace("COMMIT;", "");
       populator.addScript(

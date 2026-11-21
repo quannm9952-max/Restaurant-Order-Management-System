@@ -59,7 +59,7 @@ class ReportingIntegrationTest {
   HistoryService monitoring;
 
   @BeforeAll
-  void loadSharedSchemaAndDemoData() throws Exception {
+  void loadSharedSchemaAndReportingData() throws Exception {
     // Same nine-table schema and seed as MySQL; only MySQL-specific storage
     // syntax is removed for
     // H2.
@@ -312,7 +312,7 @@ class ReportingIntegrationTest {
   }
 
   @Test
-  void demoSeedIsRepeatable() {
+  void reportingSeedIsRepeatable() {
     new ResourceDatabasePopulator(new ByteArrayResource(readSeed()))
         .execute(dataSource);
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM Payment", Long.class))
@@ -412,7 +412,7 @@ class ReportingIntegrationTest {
   private byte[] readSeed() {
     try {
       return Files
-          .readString(Path.of("..", "database", "test-data.sql"),
+          .readString(Path.of("src", "test", "resources", "reporting-data.sql"),
               StandardCharsets.UTF_8)
           .replace("START TRANSACTION;", "").replace("COMMIT;", "")
           .getBytes(StandardCharsets.UTF_8);

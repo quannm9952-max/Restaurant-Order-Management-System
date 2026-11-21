@@ -22,7 +22,7 @@ WORKDIR /app/backend
 RUN mkdir -p /app/uploads/menu && chown -R 10001:10001 /app/uploads
 COPY --from=build --chown=10001:10001 /workspace/backend/target/*.jar app.jar
 COPY --from=build --chown=10001:10001 /workspace/database/schema.sql /app/database/schema.sql
-COPY --from=build --chown=10001:10001 /workspace/database/demo-data.sql /app/database/demo-data.sql
+COPY --from=build --chown=10001:10001 /workspace/database/initial-data.sql /app/database/initial-data.sql
 USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

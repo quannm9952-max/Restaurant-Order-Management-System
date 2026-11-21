@@ -1,6 +1,4 @@
--- TEST/DEMO DATA ONLY. Use the isolated restaurant_order_management_tv5_demo database.
--- Re-runnable fixtures for member 5, not an implementation of TV1–TV4 workflows.
--- 29 Oct–04 Nov 2026: 24 SUCCESSFUL = 18.920.000 VND; 2 PENDING + 2 FAILED excluded.
+-- Checkout fixtures for isolated tests only; never loaded by the application.
 START TRANSACTION;
 
 INSERT INTO Employee (employee_id, full_name, position) VALUES
@@ -8,15 +6,16 @@ INSERT INTO Employee (employee_id, full_name, position) VALUES
   (9002, 'DEMO Chef', 'CHEF'),
   (9003, 'DEMO Cashier', 'CASHIER'),
   (9004, 'DEMO Manager', 'MANAGER')
-ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), position = VALUES(position);
+ON DUPLICATE KEY UPDATE employee_id=VALUES(employee_id);
 
--- Accounts are disabled fixture records. Interactive local demo authentication is profile-scoped.
+-- DemoAccounts activates these legacy sample accounts once in the demo profile.
+-- Reruns preserve subsequent password and account-status changes.
 INSERT INTO Account (account_id, employee_id, username, password_hash, role, is_active) VALUES
   (9001, 9001, 'DEMO_FIXTURE_WAITER', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20D3A3xH60JYdw6BY2Zr4oW17Q4p4K', 'WAITER', 0),
   (9002, 9002, 'DEMO_FIXTURE_CHEF', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20D3A3xH60JYdw6BY2Zr4oW17Q4p4K', 'CHEF', 0),
   (9003, 9003, 'DEMO_FIXTURE_CASHIER', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20D3A3xH60JYdw6BY2Zr4oW17Q4p4K', 'CASHIER', 0),
   (9004, 9004, 'DEMO_FIXTURE_MANAGER', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20D3A3xH60JYdw6BY2Zr4oW17Q4p4K', 'MANAGER', 0)
-ON DUPLICATE KEY UPDATE employee_id = VALUES(employee_id), username = VALUES(username), password_hash = VALUES(password_hash), role = VALUES(role), is_active = VALUES(is_active);
+ON DUPLICATE KEY UPDATE account_id=VALUES(account_id);
 
 INSERT INTO Restaurant_tables (table_id, table_name, capacity, status) VALUES
   (9001, 'DEMO Table 01', 4, 'OCCUPIED'),
@@ -27,48 +26,48 @@ INSERT INTO Restaurant_tables (table_id, table_name, capacity, status) VALUES
   (9006, 'DEMO Table 06', 4, 'AVAILABLE'),
   (9007, 'DEMO Table 07', 4, 'AVAILABLE'),
   (9008, 'DEMO Table 08', 4, 'OUT_OF_SERVICE')
-ON DUPLICATE KEY UPDATE table_name = VALUES(table_name), capacity = VALUES(capacity), status = VALUES(status);
+ON DUPLICATE KEY UPDATE table_id=VALUES(table_id);
 
 INSERT INTO Menu_category (category_id, category_name, description, is_active) VALUES
-  (9001, 'DEMO Main courses', 'TEST/DEMO menu data', 1)
-ON DUPLICATE KEY UPDATE category_name = VALUES(category_name), description = VALUES(description), is_active = VALUES(is_active);
+  (9001, 'DEMO Main courses', NULL, 1)
+ON DUPLICATE KEY UPDATE category_id=VALUES(category_id);
 
 INSERT INTO Menu_item (item_id, category_id, item_name, description, unit_price, is_active, is_available) VALUES
-  (9001, 9001, 'DEMO Grilled Chicken', 'TEST current menu price intentionally differs from historical order price', 9999900.00, 1, 1),
-  (9002, 9001, 'DEMO Salad', 'TEST/DEMO', 450000.00, 1, 1),
-  (9003, 9001, 'DEMO Discontinued Dessert', 'TEST/DEMO discontinued item', 120000.00, 0, 0)
-ON DUPLICATE KEY UPDATE category_id = VALUES(category_id), item_name = VALUES(item_name), description = VALUES(description), unit_price = VALUES(unit_price), is_active = VALUES(is_active), is_available = VALUES(is_available);
+  (9001, 9001, 'DEMO Grilled Chicken', NULL, 245000.00, 1, 1),
+  (9002, 9001, 'DEMO Salad', NULL, 450000.00, 1, 1),
+  (9003, 9001, 'DEMO Discontinued Dessert', NULL, 120000.00, 0, 0)
+ON DUPLICATE KEY UPDATE item_id=VALUES(item_id);
 
 INSERT INTO Orders (order_id, table_id, employee_id, created_at, status, total_amount, notes) VALUES
-  (1015, 9004, 9001, '2026-10-29 11:00:00', 'COMPLETED', 980000.00, 'DEMO reporting fixture'),
-  (1016, 9005, 9001, '2026-10-29 11:00:00', 'COMPLETED', 980000.00, 'DEMO reporting fixture'),
-  (1017, 9006, 9001, '2026-10-30 11:00:00', 'COMPLETED', 600000.00, 'DEMO reporting fixture'),
-  (1018, 9007, 9001, '2026-10-30 11:00:00', 'COMPLETED', 700000.00, 'DEMO reporting fixture'),
-  (1019, 9004, 9001, '2026-10-30 11:00:00', 'COMPLETED', 500000.00, 'DEMO reporting fixture'),
-  (1020, 9005, 9001, '2026-10-30 11:00:00', 'COMPLETED', 680000.00, 'DEMO reporting fixture'),
-  (1021, 9006, 9001, '2026-10-31 11:00:00', 'COMPLETED', 800000.00, 'DEMO reporting fixture'),
-  (1022, 9007, 9001, '2026-10-31 11:00:00', 'COMPLETED', 700000.00, 'DEMO reporting fixture'),
-  (1023, 9004, 9001, '2026-10-31 11:00:00', 'COMPLETED', 900000.00, 'DEMO reporting fixture'),
-  (1024, 9005, 9001, '2026-10-31 11:00:00', 'COMPLETED', 720000.00, 'DEMO reporting fixture'),
-  (1025, 9006, 9001, '2026-11-01 11:00:00', 'COMPLETED', 800000.00, 'DEMO reporting fixture'),
-  (1026, 9007, 9001, '2026-11-01 11:00:00', 'COMPLETED', 1000000.00, 'DEMO reporting fixture'),
-  (1027, 9004, 9001, '2026-11-01 11:00:00', 'COMPLETED', 1040000.00, 'DEMO reporting fixture'),
-  (1028, 9005, 9001, '2026-11-02 11:00:00', 'COMPLETED', 800000.00, 'DEMO reporting fixture'),
-  (1029, 9006, 9001, '2026-11-02 11:00:00', 'COMPLETED', 900000.00, 'DEMO reporting fixture'),
-  (1030, 9007, 9001, '2026-11-02 11:00:00', 'COMPLETED', 780000.00, 'DEMO reporting fixture'),
-  (1031, 9004, 9001, '2026-11-02 11:00:00', 'COMPLETED', 900000.00, 'DEMO reporting fixture'),
-  (1032, 9005, 9001, '2026-11-03 11:00:00', 'COMPLETED', 700000.00, 'DEMO reporting fixture'),
-  (1033, 9006, 9001, '2026-11-03 11:00:00', 'COMPLETED', 640000.00, 'DEMO reporting fixture'),
-  (1034, 9007, 9001, '2026-11-03 11:00:00', 'COMPLETED', 700000.00, 'DEMO reporting fixture'),
-  (1035, 9004, 9001, '2026-11-03 11:00:00', 'COMPLETED', 1260000.00, 'DEMO reporting fixture'),
-  (1037, 9005, 9001, '2026-11-04 11:00:00', 'COMPLETED', 380000.00, 'DEMO reporting fixture'),
-  (1039, 9006, 9001, '2026-11-04 11:00:00', 'COMPLETED', 680000.00, 'DEMO reporting fixture'),
-  (1042, 9007, 9001, '2026-11-04 11:00:00', 'COMPLETED', 780000.00, 'DEMO reporting fixture'),
-  (1036, 9003, 9001, '2026-11-03 19:30:00', 'OPEN', 440000.00, 'DEMO failed payment; order remains Open'),
-  (1050, 9004, 9001, '2026-11-04 10:00:00', 'CANCELLED', 0.00, 'DEMO cancelled before preparation; no successful payment'),
-  (1051, 9001, 9001, '2026-11-04 12:00:00', 'OPEN', 380000.00, 'DEMO pending items and pending payment'),
-  (1052, 9002, 9001, '2026-11-04 12:10:00', 'OPEN', 480000.00, 'DEMO Preparing and Ready items; pending payment')
-ON DUPLICATE KEY UPDATE table_id = VALUES(table_id), employee_id = VALUES(employee_id), created_at = VALUES(created_at), status = VALUES(status), total_amount = VALUES(total_amount), notes = VALUES(notes);
+  (1015, 9004, 9001, '2026-10-29 11:00:00', 'COMPLETED', 980000.00, NULL),
+  (1016, 9005, 9001, '2026-10-29 11:00:00', 'COMPLETED', 980000.00, NULL),
+  (1017, 9006, 9001, '2026-10-30 11:00:00', 'COMPLETED', 600000.00, NULL),
+  (1018, 9007, 9001, '2026-10-30 11:00:00', 'COMPLETED', 700000.00, NULL),
+  (1019, 9004, 9001, '2026-10-30 11:00:00', 'COMPLETED', 500000.00, NULL),
+  (1020, 9005, 9001, '2026-10-30 11:00:00', 'COMPLETED', 680000.00, NULL),
+  (1021, 9006, 9001, '2026-10-31 11:00:00', 'COMPLETED', 800000.00, NULL),
+  (1022, 9007, 9001, '2026-10-31 11:00:00', 'COMPLETED', 700000.00, NULL),
+  (1023, 9004, 9001, '2026-10-31 11:00:00', 'COMPLETED', 900000.00, NULL),
+  (1024, 9005, 9001, '2026-10-31 11:00:00', 'COMPLETED', 720000.00, NULL),
+  (1025, 9006, 9001, '2026-11-01 11:00:00', 'COMPLETED', 800000.00, NULL),
+  (1026, 9007, 9001, '2026-11-01 11:00:00', 'COMPLETED', 1000000.00, NULL),
+  (1027, 9004, 9001, '2026-11-01 11:00:00', 'COMPLETED', 1040000.00, NULL),
+  (1028, 9005, 9001, '2026-11-02 11:00:00', 'COMPLETED', 800000.00, NULL),
+  (1029, 9006, 9001, '2026-11-02 11:00:00', 'COMPLETED', 900000.00, NULL),
+  (1030, 9007, 9001, '2026-11-02 11:00:00', 'COMPLETED', 780000.00, NULL),
+  (1031, 9004, 9001, '2026-11-02 11:00:00', 'COMPLETED', 900000.00, NULL),
+  (1032, 9005, 9001, '2026-11-03 11:00:00', 'COMPLETED', 700000.00, NULL),
+  (1033, 9006, 9001, '2026-11-03 11:00:00', 'COMPLETED', 640000.00, NULL),
+  (1034, 9007, 9001, '2026-11-03 11:00:00', 'COMPLETED', 700000.00, NULL),
+  (1035, 9004, 9001, '2026-11-03 11:00:00', 'COMPLETED', 1260000.00, NULL),
+  (1037, 9005, 9001, '2026-11-04 11:00:00', 'COMPLETED', 380000.00, NULL),
+  (1039, 9006, 9001, '2026-11-04 11:00:00', 'COMPLETED', 680000.00, NULL),
+  (1042, 9007, 9001, '2026-11-04 11:00:00', 'COMPLETED', 780000.00, NULL),
+  (1036, 9003, 9001, '2026-11-03 19:30:00', 'OPEN', 440000.00, NULL),
+  (1050, 9004, 9001, '2026-11-04 10:00:00', 'CANCELLED', 0.00, NULL),
+  (1051, 9001, 9001, '2026-11-04 12:00:00', 'OPEN', 380000.00, NULL),
+  (1052, 9002, 9001, '2026-11-04 12:10:00', 'OPEN', 480000.00, NULL)
+ON DUPLICATE KEY UPDATE order_id=VALUES(order_id);
 
 INSERT INTO Order_Detail (order_detail_id, order_id, item_id, quantity, unit_price_at_order, item_name_at_order, preparation_status) VALUES
   (9100, 1015, 9001, 2, 245000.00, 'DEMO Grilled Chicken', 'SERVED'),
@@ -125,7 +124,7 @@ INSERT INTO Order_Detail (order_detail_id, order_id, item_id, quantity, unit_pri
   (9203, 1051, 9002, 2, 190000.00, 'DEMO Salad', 'PENDING'),
   (9204, 1052, 9001, 1, 240000.00, 'DEMO Grilled Chicken', 'PREPARING'),
   (9205, 1052, 9002, 1, 240000.00, 'DEMO Salad', 'READY')
-ON DUPLICATE KEY UPDATE order_id = VALUES(order_id), item_id = VALUES(item_id), quantity = VALUES(quantity), unit_price_at_order = VALUES(unit_price_at_order), item_name_at_order = VALUES(item_name_at_order), preparation_status = VALUES(preparation_status);
+ON DUPLICATE KEY UPDATE order_detail_id=VALUES(order_detail_id);
 
 INSERT INTO Payment (payment_id, order_id, payment_time, amount, payment_method, status, transaction_reference) VALUES
   (2021, 1015, '2026-10-29 12:20:00', 980000.00, 'Cash', 'SUCCESSFUL', 'DEMO-PAY-2021'),
@@ -156,7 +155,7 @@ INSERT INTO Payment (payment_id, order_id, payment_time, amount, payment_method,
   (2045, 1042, '2026-11-04 13:18:00', 780000.00, 'Cash', 'FAILED', 'DEMO-PAY-2045'),
   (2047, 1051, '2026-11-04 13:35:00', 380000.00, 'Cash', 'PENDING', 'DEMO-PAY-2047'),
   (2048, 1052, '2026-11-04 13:40:00', 480000.00, 'Cash', 'PENDING', 'DEMO-PAY-2048')
-ON DUPLICATE KEY UPDATE order_id = VALUES(order_id), payment_time = VALUES(payment_time), amount = VALUES(amount), payment_method = VALUES(payment_method), status = VALUES(status), transaction_reference = VALUES(transaction_reference);
+ON DUPLICATE KEY UPDATE payment_id=VALUES(payment_id);
 
 INSERT INTO Invoice (invoice_id, order_id, invoice_number, issued_at, total_amount) VALUES
   (9001, 1015, 'DEMO-INV-1015', '2026-10-29 12:20:00', 980000.00),
@@ -183,7 +182,34 @@ INSERT INTO Invoice (invoice_id, order_id, invoice_number, issued_at, total_amou
   (9022, 1037, 'DEMO-INV-1037', '2026-11-04 12:48:00', 380000.00),
   (9023, 1039, 'DEMO-INV-1039', '2026-11-04 13:04:00', 680000.00),
   (9024, 1042, 'DEMO-INV-1042', '2026-11-04 13:20:00', 780000.00)
-ON DUPLICATE KEY UPDATE order_id = VALUES(order_id), invoice_number = VALUES(invoice_number), issued_at = VALUES(issued_at), total_amount = VALUES(total_amount);
+ON DUPLICATE KEY UPDATE invoice_id=VALUES(invoice_id);
+
+
+
+
+-- Independent DEMO checkout fixture; reruns preserve existing business records.
+INSERT INTO Restaurant_tables(table_id,table_name,capacity,status) VALUES
+(9010,'DEMO Checkout Table',4,'OCCUPIED')
+ON DUPLICATE KEY UPDATE table_id=VALUES(table_id);
+INSERT INTO Orders(order_id,table_id,employee_id,created_at,status,total_amount,notes)
+VALUES(1100,9010,9001,'2026-11-05 12:00:00','OPEN',390000.00,NULL)
+ON DUPLICATE KEY UPDATE order_id=VALUES(order_id);
+INSERT INTO Order_Detail(order_detail_id,order_id,item_id,quantity,unit_price_at_order,item_name_at_order,preparation_status)
+VALUES(4100,1100,9001,2,195000.00,'DEMO checkout dish','SERVED')
+ON DUPLICATE KEY UPDATE order_detail_id=VALUES(order_detail_id);
+
+INSERT INTO Menu_category(category_id,category_name,description,is_active) VALUES
+(9101,'Main Courses',NULL,true),(9102,'Appetizers',NULL,true),(9103,'Beverages',NULL,true),(9104,'Desserts',NULL,true)
+ON DUPLICATE KEY UPDATE category_id=VALUES(category_id);
+INSERT INTO Menu_item(item_id,category_id,item_name,description,unit_price,is_active,is_available) VALUES
+(9111,9101,'DEMO Japanese A5 Wagyu Steak',NULL,650000.00,true,true),
+(9112,9101,'DEMO Lobster Thermidor',NULL,485000.00,true,true),
+(9113,9102,'DEMO Burrata with Heirloom Tomatoes',NULL,120000.00,true,true),
+(9114,9102,'DEMO French Onion Soup',NULL,85000.00,true,true),
+(9115,9103,'DEMO Classic Mojito Mocktail',NULL,60000.00,true,true),
+(9116,9103,'DEMO Premium Jasmine Tea',NULL,45000.00,true,true),
+(9117,9104,'DEMO Italian Tiramisu',NULL,90000.00,true,true),
+(9118,9104,'DEMO Belgian Chocolate Fondant',NULL,105000.00,true,true)
+ON DUPLICATE KEY UPDATE item_id=VALUES(item_id);
 
 COMMIT;
-

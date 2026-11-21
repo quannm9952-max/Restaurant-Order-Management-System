@@ -1,8 +1,6 @@
 package com.restaurant.controller;
 
 import java.security.Principal;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -16,12 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 @ControllerAdvice(assignableTypes = {ReportController.class,
     OrderMonitoringController.class, PaymentHistoryController.class})
 public class ReportAdvice {
-  private final Environment environment;
-
-  public ReportAdvice(Environment environment) {
-    this.environment = environment;
-  }
-
   @ModelAttribute
   void common(Model model, Principal principal) {
     String name = principal == null ? "Manager" : principal.getName();
@@ -29,8 +21,6 @@ public class ReportAdvice {
     model.addAttribute("managerInitials",
         name.substring(0, Math.min(name.length(), 2))
             .toUpperCase(java.util.Locale.ROOT));
-    model.addAttribute("demoMode",
-        environment.acceptsProfiles(Profiles.of("demo")));
   }
 
   @ExceptionHandler({IllegalArgumentException.class,

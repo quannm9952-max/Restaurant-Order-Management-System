@@ -28,7 +28,7 @@ jobs:
         run: docker compose --env-file .env.example config --quiet
       - name: Start Spring Boot and MySQL
         run: docker compose --env-file .env.example up --build --detach
-      - name: Check application and eight sample accounts
+      - name: Check application and four role accounts
         shell: bash
         run: |
           for attempt in $(seq 1 90); do
@@ -50,7 +50,7 @@ jobs:
               chef) path=kitchen ;;
               cashier) path=payments ;;
             esac
-            for username in "demo_$role" "DEMO_FIXTURE_${role^^}"; do
+            for username in "$role"; do
               cookies=$(mktemp)
               curl --fail --silent --cookie-jar "$cookies" http://localhost:8080/login > /tmp/login.html
               token=$(sed -n 's/.*name="_csrf"[^>]*value="\([^" ]*\)".*/\1/p' /tmp/login.html)
@@ -62,13 +62,14 @@ jobs:
                 --data-urlencode "password=123456" http://localhost:8080/login)
               test "$code" = 302
               curl --fail --silent --cookie "$cookies" http://localhost:8080/home > /tmp/home.html
-              grep -q 'Welcome, DEMO ' /tmp/home.html
+              grep -q 'Welcome, ' /tmp/home.html
+              ! grep -qi 'demo' /tmp/home.html
               code=$(curl --silent --output /tmp/page.html --write-out '%{http_code}' \
                 --cookie "$cookies" "http://localhost:8080/$path")
               test "$code" = 200
             done
           done
-          for username in 'demo_mánager' ' demo_manager' 'demo_manager '; do
+          for username in 'mánager' ' manager' 'manager '; do
             cookies=$(mktemp)
             curl --fail --silent --cookie-jar "$cookies" http://localhost:8080/login > /tmp/login.html
             token=$(sed -n 's/.*name="_csrf"[^>]*value="\([^" ]*\)".*/\1/p' /tmp/login.html)

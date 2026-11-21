@@ -10,7 +10,6 @@
 .env
 .env.*
 **/backups
-backend/docs
 uploads
 **/__pycache__
 **/*.pyc
